@@ -1,0 +1,156 @@
+TO DO LIST:
+ - EJERCICIO 6 FALTAN COSAS QUE NO ENCONTRAMOS
+ - TRADUCIR 8?
+ - INCONSISTENCIA DE ENUNCIADO EN EJERCICIO 9? (No se encontró en la carpeta especificada)
+ - REVISAR EJERCICIO 13
+ - CHECKEAR BULLSHIT EN GENERAL QUE HAYAMOS ESCRITO
+ - CONSULTA:
+	.EJ15) SE PUEDE EVITAR DECLARAR SEMAFORO COMO GLOBAL? PREGUNTAR SOBRECARGA SIMPLETHREAD Y PAIRS(FORK TOMA UNA VOIDFUNCPTR QUE ES UN PUNTERO A FUNCION VOID QUE TOMA POR ARGUMENTO UN VOID POINTER).
+	.EJ16) SE DEBE MODIFICAR SEMAPHORE O SIMPLETHREAD? INB4 YES
+
+
+1)
+De /code/machine/machine.cc, línea 60:
+
+mainMemory = new char[MEMORY_SIZE];
+
+Obtenemos que el tamaño de la memoria principal en bytes es MEMORY_SIZE, ya que ésta se representa como un array de char de ese tamaño. De /code/machine/machine.hh, líneas 32 a 36:
+
+const unsigned PAGE_SIZE = SECTOR_SIZE;  ///< Set the page size equal to the
+                                         ///< disk sector size, for
+                                         ///< simplicity.
+const unsigned NUM_PHYS_PAGES = 32;
+const unsigned MEMORY_SIZE = NUM_PHYS_PAGES * PAGE_SIZE;
+
+Y de /code/machine/disk.hh, línea 54:
+
+
+const unsigned SECTOR_SIZE = 128;       ///< Number of bytes per disk sector.
+
+Concluimos que el tamaño de una página es de 128 bytes y que la memoria principal está dividida en 32 páginas. Luego tiene un tamaño de 4096 bytes.
+
+2)
+Cambiando el tamaño de página o la cantidad de páginas, a través de las constantes PAGE_SIZE y NUM_PHYS_PAGES respectivamente (ambas descriptas en el ej. anterior).
+
+
+
+
+EJERCICIO 3)
+
+De machine/disk.cc, líneas 25-27, tenemos que:
+
+static const unsigned MAGIC_SIZE = sizeof (int);
+
+static const unsigned DISK_SIZE = MAGIC_SIZE + NUM_SECTORS * SECTOR_SIZE;
+
+De machine/disk.hh, líneas 54-58:
+
+const unsigned SECTOR_SIZE = 128;       ///< Number of bytes per disk sector.
+const unsigned SECTORS_PER_TRACK = 32;  ///< Number of sectors per disk
+                                        ///< track.
+const unsigned NUM_TRACKS = 32;         ///< Number of tracks per disk.
+const unsigned NUM_SECTORS = SECTORS_PER_TRACK * NUM_TRACKS;
+
+Por lo tanto, tenemos que el tamaño de disco, o DISK_SIZE, es igual a:
+
+DISK_SIZE = MAGIC_SIZE + NUM_SECTORS * SECTOR_SIZE
+          = sizeof (int) + SECTORS_PER_TRACK * NUM_TRACKS * SECTOR_SIZE
+          = sizeof (int) + 32 * 32 * 128
+          = sizeof (int) + 131072
+
+Lo cual sería aproximadamente 131 kB.
+
+
+
+EJERCICIO 4)
+ENCODING.HH DA 58 PERO MIPS-SIM DA 57
+De machine/encoding.hh, líneas 14-89, se puede ver que hay 58 instrucciones implementadas, ya que los códigos van del 1 al 63, pero tres valores no se utilizan y dos están reservados para control del sistema.
+Por otro lado, en mips-sim.cc, líneas 165-663, se define el método ExecInstruction, donde se definen los procedimientos para las instrucciones, en la que se definen 57 (No está OP_RFE). Por lo tanto, creemos que el simulador implementa 57 operaciones en total.
+
+
+EJERCICIO 5)
+Primero, almacena la suma de los dos registros argumento (rs y rt) en sum. Luego, para comprobar overflow, verifica si se cumple la propiedad "ambos registros tienen el mismo signo y el resultado tiene signo diferente a ellos". En ese caso, levanta una excepción. En caso contrario, guarda el resultado en el registro rd y termina.
+
+EJERCICIO 6)
+En el orden en que aparecen en el código:
+
+Initialize implementado en /code/threads/system.cc
+DEBUG ver ejercicio 9
+PrintVersion implementado en /code/threads/main.cc
+ASSERT ver ejercicio 9
+StartProcess implementado en /code/userprog/prog_test.cc
+ConsoleTest implementado en /code/userprog/prog_test.cc
+Halt declarado en /code/userprog/syscall.h
+Copy implementado en ?????  (JUANI DICE QUE PUEDEN SER DEFAULT DE C++)
+Thread::Print implementado en /code/threads/thread.cc
+FileSystem::Remove implementado en /code/filesys/file_system.cc
+FileSystem::List implementado en /code/filesys/file_system.cc
+FileSystem::Print implementado en /code/filesys/file_system.cc
+PerformanceTest implementado en /code/filesys/fs_test.cc
+Delay implementado en ???? (VER "COPY")
+MailTest implementado en /code/network/net_test.cc
+ThreadTest implementado en /code/threads/thread_test.cc
+thread->Finish implementado en /code/threads/thread.cc
+
+EJERCICIO 7)
+Se opta por simular un CPU para simplificar el proceso de programación y depuración de código. Al estar en un entorno simulado, se dispone de más herramientas para debugging o revisión (por ejemplo, GDB), además de que ejecutar una nueva versión no requiere cargarla en un procesador real sino que se puede realizar rápidamente al recompilar esa sección de código y correrla como un programa.
+
+EJERCICIO 8)
+Según /code/lib/debug.hh, cada bandera sirve para mostrar mensajes relevantes a una parte específica del sistema operativo (o de los componentes emulados, como por ejemplo el disco rígido). Las banderas son:
+
+/// * `+` -- turn on all debug messages.
+/// * `t` -- thread system.
+/// * `s` -- semaphores, locks, and conditions.
+/// * `i` -- interrupt emulation.
+/// * `m` -- machine emulation (requires *USER_PROGRAM*).
+/// * `d` -- disk emulation (requires *FILESYS*).
+/// * `f` -- file system (requires *FILESYS*).
+/// * `a` -- address spaces (requires *USER_PROGRAM*).
+/// * `n` -- network emulation (requires *NETWORK*).
+
+
+EJERCICIO 9)
+Aclaración: encontramos las macros en code/lib/utility.hh, no en threads
+La macro ASSERT se comporta de manera similar a la función assert definida en <assert.h>, es decir, ASSERT(x) toma un argumento booleano x. Si x es verdadero, no ocurre nada. Si x es falso, se detiene la ejecución del programa y se notifica la propiedad no verificada, el archivo y la línea del ASSERT que falló.
+
+La macro DEBUG llama al método Print de la clase debug definida en /code/lib/debug.hh (e implementada en /code/lib/debug.cc), que recibe flags (en formato de un char) y una lista de variables y las imprime.
+
+EJERCICIO 10)
+nachos-unr19b\code\network\makefile linea 14
+DEFINES      = -DUSER_PROGRAM -DVMEM -DFILESYS_NEEDED -DFILESYS -DNETWORK
+
+EJERCICIO 11)
+Class Synchlist in threads/synch_list.hh
+Class List in lib/list.hh
+
+La clase List define una lista simplemente enlazada donde cada elemento de la lista contiene un puntero hacia su valor. Hace todo el manejo de la estructura, junto con su funcionalidad básica. Permite además mantener una lista ordenada según su valor (usando SortedInsert y SortedPop).
+La clase Synchlist define una lista que cumple dos propiedades: sólo un hilo a la vez la puede acceder y los hilos que quieran eliminar elementos de ella esperarán a que tenga elementos. Para ello utiliza List junto con locks.
+
+EJERCICIO 12)
+alumno@pelle04:~/Escritorio/nachos-unr19b/code$ grep -rn "main("
+userland/sort.c:18:main(void)
+userland/halt.c:16:main(void)
+userland/tiny_shell.c:5:main(void)
+userland/shell.c:99:main(void)
+userland/matmult.c:20:main(void)
+userland/filetest.c:16:main(void)
+bin/disasm.c:36:main(int argc, char *argv[])
+bin/out.c:167:main(int argc, char *argv[])
+bin/fuse/nachosfuse.c:158:main(int argc, char *argv[])
+bin/fuse/nachosfuse.c:160:    return fuse_main(argc, argv, &OPERATIONS, NULL);
+bin/readnoff.c:28:main(int argc, char *argv[])
+bin/coff2flat.c:75:main(int argc, char *argv[])
+bin/coff2noff.c:82:main(int argc, char *argv[])
+bin/main.c:34:main(int argc, char *argv[])
+threads/main.cc:101:main(int argc, char **argv)
+
+alumno@pelle04:~/Escritorio/nachos-unr19b/code/userprog$ grep -rn "main"
+Makefile.depends:1:main.o: ../threads/main.cc ../threads/copyright.h ../lib/utility.hh \
+
+La función main del ejecutable nachos está definida en /code/threads/main.cc. Esto es claro pues el cuerpo de la función contiene la inicialización del sistema operativo.
+
+EJERCICIO 13)
+En thread/main.cc están las lineas de comando.
+
+`-rs` -- causes `Yield` to occur at random (but repeatable) spots.
+Es decir, que al ejecutar nachos con esta opción se le puede pasar un número que utilizará como semilla para la función pseudoaleatoria que determina los cambios de (término lindo para cuando en un thread un proceso se va y entra otro).
