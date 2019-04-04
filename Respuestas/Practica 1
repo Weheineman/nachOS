@@ -34,7 +34,7 @@ static const unsigned MAGIC_SIZE = sizeof (int);
 static const unsigned DISK_SIZE = MAGIC_SIZE + NUM_SECTORS * SECTOR_SIZE;
 
 De machine/disk.hh, líneas 54-58:
-
+ 
 const unsigned SECTOR_SIZE = 128;       ///< Number of bytes per disk sector.
 const unsigned SECTORS_PER_TRACK = 32;  ///< Number of sectors per disk
                                         ///< track.
