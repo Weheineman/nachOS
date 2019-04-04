@@ -20,7 +20,7 @@ Concluimos que el tamaño de una página es de 128 bytes y que la memoria princi
 
 
 EJERCICIO 2)
-Cambiando el tamaño de página o la cantidad de páginas, a través de las constantes PAGE_SIZE y NUM_PHYS_PAGES respectivamente (ambas descriptas en el ej. anterior).
+Cambiando el tamaño de página o la cantidad de páginas, a través de las constantes PAGE_SIZE y NUM_PHYS_PAGES respectivamente (ambas descriptas en el ejercicio anterior).
 
 
 EJERCICIO 3)
@@ -49,7 +49,6 @@ Lo cual sería aproximadamente 131 kB.
 
 
 EJERCICIO 4)
-ENCODING.HH DA 58 PERO MIPS-SIM DA 57
 De machine/encoding.hh, líneas 14-89, se puede ver que hay 58 instrucciones implementadas, ya que los códigos van del 1 al 63, pero tres valores no se utilizan y dos están reservados para control del sistema.
 Por otro lado, en mips-sim.cc, líneas 165-663, se define el método ExecInstruction, donde se definen los procedimientos para las instrucciones, en la que se definen 57 (No está OP_RFE). Por lo tanto, creemos que el simulador implementa 57 operaciones en total.
 
@@ -61,7 +60,7 @@ Primero, almacena la suma de los dos registros argumento (rs y rt) en sum. Luego
 EJERCICIO 6)
 En el orden en que aparecen en el código:
 
-PRIMER NIVEL:
+PRIMER NIVEL (main):
  -- Initialize implementado en /code/threads/system.cc
  -- DEBUG definido en code/lib/utility.hh
  -- strcmp implementado en string.h
@@ -69,15 +68,15 @@ PRIMER NIVEL:
  -- ThreadTest implementado en /code/threads/thread_test.cc
  -- Thread::Finish implementado en /code/threads/thread.cc
 
-
 SEGUNDO NIVEL:
 En Initialize:
 	 -- ASSERT definido en /code/lib/utility.hh
-	 -- strcmp string.h
+	 -- strcmp implementado en string.h
 	 -- RandomInit implementado en /code/machine/system_dep.cc
 	 -- atoi implementado en stdlib.h
 	 -- Debug::SetFlags implementado en /code/lib/debug.cc
-	 -- Timer implementado en /code/machine/timer.cc
+	 -- Timer::Timer implementado en /code/machine/timer.cc
+	 -- Thread::Thread implementado en /code/threads/thread.cc
 	 -- Thread::SetStatus implementado en /code/threads/thread.cc
 	 -- Interrupt::Enable implementado en /code/machine/interrupt.cc
 	 -- CallOnUserAbort implementado en /code/machine/system_dep.cc
@@ -91,14 +90,16 @@ En PrintVersion:
 	 -- printf implementado en stdio.h
 
 En ThreadTest:
-	 -- DEBUG definido en code/lib/utility.hh
+	 -- DEBUG definido en /code/lib/utility.hh
 	 -- snprintf implementado en stdio.h
+	 -- Thread::Thread implementado en /code/threads/thread.cc
 
-En currentThread -> Finish:
-	 -- interrupt->SetLevel implementado en /code/machine/interrupt.cc
-	 -- ASSERT definido en code/lib/utility.hh
-	 -- DEBUG definido en code/lib/utility.hh
-	 -- Sleep implementado en /code/threads/thread.cc
+En Thread::Finish:
+	 -- Interrupt::SetLevel implementado en /code/machine/interrupt.cc
+	 -- ASSERT definido en /code/lib/utility.hh
+	 -- DEBUG definido en /code/lib/utility.hh
+	 -- Thread::GetName definido en /code/threads/thread.cc
+	 -- Thread::Sleep implementado en /code/threads/thread.cc
 
 
 
@@ -121,49 +122,59 @@ Según /code/lib/debug.hh, cada bandera sirve para mostrar mensajes relevantes a
 
 
 EJERCICIO 9)
-Aclaración: encontramos las macros en code/lib/utility.hh, no en threads
-La macro ASSERT se comporta de manera similar a la función assert definida en <assert.h>, es decir, ASSERT(x) toma un argumento booleano x. Si x es verdadero, no ocurre nada. Si x es falso, se detiene la ejecución del programa y se notifica la propiedad no verificada, el archivo y la línea del ASSERT que falló.
+Aclaración: encontramos las macros en /code/lib/utility.hh, no en threads
+La macro ASSERT se comporta de manera similar a la función assert definida en <assert.h>. Es decir, ASSERT(x) toma un argumento booleano x. Luego, si x es verdadero, no ocurre nada. Si x es falso, se detiene la ejecución del programa y se notifica la propiedad no verificada, el archivo y la línea del ASSERT que falló.
 
 La macro DEBUG llama al método Print de la clase debug definida en /code/lib/debug.hh (e implementada en /code/lib/debug.cc), que recibe flags (en formato de un char) y una lista de variables y las imprime.
 
 
 EJERCICIO 10)
-Están definidas en nachos-unr19b\code\network\makefile linea 14
+Se encuentran definidas en los archivos 'Makefile' con la instrucción -Dmacro. 
+Al ejecutar la instrucción 'make' desde la carpeta raiz(/code), el archivo Makefile lanza la instrucción 'make' dentro de cada carpeta subyacente. Dichos Makefile utilizan distintos archivos compartidos, los cuales pueden ser accedidos desde cada uno gracias a la instrucción INCLUDE_DIRS, que indica los directorios correspondientes. De esta forma, saben cuales son las macros que deben utilizar para compilar.
+
+A continuación, presentamos un ejemplo de donde pueden encontrarse definidas algunas de las macro.
+Las constantes USER_PROGRAM, FILESYS_NEEDED y NETWORK se encuentran definidas en /code/network/makefile, línea 14:
+
 DEFINES      = -DUSER_PROGRAM -DVMEM -DFILESYS_NEEDED -DFILESYS -DNETWORK
 
+Las constantes USER_PROGRAM, FILESYS_NEEDED y FILESYS_STUB se encuentra definido en /code/userprog/makefile, linea 15
+
+DEFINES      = -DUSER_PROGRAM -DFILESYS_NEEDED -DFILESYS_STUB \
+               -DDFS_TICKS_FIX
 
 EJERCICIO 11)
-Class Synchlist se define en threads/synch_list.hh
-Class List se define en lib/list.hh
+Class Synchlist se define en /code/threads/synch_list.hh
+Class List se define en /code/lib/list.hh
 
 La clase List define una lista simplemente enlazada donde cada elemento de la lista contiene un puntero hacia su valor. Hace todo el manejo de la estructura, junto con su funcionalidad básica. Permite además mantener una lista ordenada según su valor (usando SortedInsert y SortedPop).
 La clase Synchlist define una lista que cumple dos propiedades: sólo un hilo a la vez la puede acceder y los hilos que quieran eliminar elementos de ella esperarán a que tenga elementos. Para ello utiliza List junto con locks.
 
 
 EJERCICIO 12)
-La función main aparece en los siguientes archivos:
+Utilizando el comando 'grep -rn "main" ', vemos que las definiciones de un main están en los siguientes archivos:
+  userland/sort.c:18:main(void)
+  userland/halt.c:16:main(void)
+  userland/tiny_shell.c:5:main(void)
+  userland/shell.c:99:main(void)
+  userland/matmult.c:20:main(void)
+  userland/filetest.c:16:main(void)
+  bin/disasm.c:36:main(int argc, char *argv[])
+  bin/out.c:167:main(int argc, char *argv[])
+  bin/fuse/nachosfuse.c:158:main(int argc, char *argv[])
+  bin/readnoff.c:28:main(int argc, char *argv[])
+  bin/coff2flat.c:75:main(int argc, char *argv[])
+  bin/coff2noff.c:82:main(int argc, char *argv[])
+  bin/main.c:34:main(int argc, char *argv[])
+  threads/main.cc:101:main(int argc, char **argv)
 
-alumno@pelle04:~/Escritorio/nachos-unr19b/code$ grep -rn "main("
-userland/sort.c:18:main(void)
-userland/halt.c:16:main(void)
-userland/tiny_shell.c:5:main(void)
-userland/shell.c:99:main(void)
-userland/matmult.c:20:main(void)
-userland/filetest.c:16:main(void)
-bin/disasm.c:36:main(int argc, char *argv[])
-bin/out.c:167:main(int argc, char *argv[])
-bin/fuse/nachosfuse.c:158:main(int argc, char *argv[])
-bin/fuse/nachosfuse.c:160:    return fuse_main(argc, argv, &OPERATIONS, NULL);
-bin/readnoff.c:28:main(int argc, char *argv[])
-bin/coff2flat.c:75:main(int argc, char *argv[])
-bin/coff2noff.c:82:main(int argc, char *argv[])
-bin/main.c:34:main(int argc, char *argv[])
-threads/main.cc:101:main(int argc, char **argv)
-
+Utilizando el mismo comando en el directorio userprog, obtenemos el siguiente resultado:
 alumno@pelle04:~/Escritorio/nachos-unr19b/code/userprog$ grep -rn "main"
 Makefile.depends:1:main.o: ../threads/main.cc ../threads/copyright.h ../lib/utility.hh \
 
-La función main del ejecutable nachos está definida en /code/threads/main.cc. Esto es claro pues el cuerpo de la función contiene la inicialización del sistema operativo.
+Esto nos da una idea que, al realizar la instruccion make dentro de este directorio, el archivo makefile utiliza el archivo /threads/main.cc para compilar main.o.
+Por lo tanto, cuando se llamen los archivos objeto para inicializar nachos dentro del directorio, main.o será convocada utilizando la función main previamente mencionada. 
+
+
 
 
 EJERCICIO 13)
