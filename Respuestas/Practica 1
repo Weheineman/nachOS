@@ -64,23 +64,45 @@ Primero, almacena la suma de los dos registros argumento (rs y rt) en sum. Luego
 EJERCICIO 6)
 En el orden en que aparecen en el código:
 
-Initialize implementado en /code/threads/system.cc
-DEBUG ver ejercicio 9
-PrintVersion implementado en /code/threads/main.cc
-ASSERT ver ejercicio 9
-StartProcess implementado en /code/userprog/prog_test.cc
-ConsoleTest implementado en /code/userprog/prog_test.cc
-Halt declarado en /code/userprog/syscall.h
-Copy implementado en ?????  (JUANI DICE QUE PUEDEN SER DEFAULT DE C++)
-Thread::Print implementado en /code/threads/thread.cc
-FileSystem::Remove implementado en /code/filesys/file_system.cc
-FileSystem::List implementado en /code/filesys/file_system.cc
-FileSystem::Print implementado en /code/filesys/file_system.cc
-PerformanceTest implementado en /code/filesys/fs_test.cc
-Delay implementado en ???? (VER "COPY")
-MailTest implementado en /code/network/net_test.cc
-ThreadTest implementado en /code/threads/thread_test.cc
-thread->Finish implementado en /code/threads/thread.cc
+PRIMER NIVEL:
+ -- Initialize implementado en /code/threads/system.cc
+ -- DEBUG definido en code/lib/utility.hh
+ -- strcmp implementado en string.h
+ -- PrintVersion implementado en /code/threads/main.cc
+ -- ThreadTest implementado en /code/threads/thread_test.cc
+ -- Thread::Finish implementado en /code/threads/thread.cc
+
+
+SEGUNDO NIVEL:
+En Initialize:
+	 -- ASSERT definido en /code/lib/utility.hh
+	 -- strcmp string.h
+	 -- RandomInit implementado en /code/machine/system_dep.cc
+	 -- atoi implementado en stdlib.h
+	 -- Debug::SetFlags implementado en /code/lib/debug.cc
+	 -- Timer implementado en /code/machine/timer.cc
+	 -- Thread::SetStatus implementado en /code/threads/thread.cc
+	 -- Interrupt::Enable implementado en /code/machine/interrupt.cc
+	 -- CallOnUserAbort implementado en /code/machine/system_dep.cc
+	 -- Cleanup implementado en /code/threads/system.cc
+	 -- PreemptiveScheduler::SetUp implementado en /code/threads/preemptive.cc
+
+En DEBUG:
+	 -- debug.Print implementado en /code/lib/debug.cc
+
+En PrintVersion:
+	 -- printf implementado en stdio.h
+
+En ThreadTest:
+	 -- DEBUG definido en code/lib/utility.hh
+	 -- snprintf implementado en stdio.h
+
+En currentThread -> Finish:
+	 -- interrupt->SetLevel implementado en /code/machine/interrupt.cc
+	 -- ASSERT definido en code/lib/utility.hh
+	 -- DEBUG definido en code/lib/utility.hh
+	 -- Sleep implementado en /code/threads/thread.cc
+
 
 
 EJERCICIO 7)
