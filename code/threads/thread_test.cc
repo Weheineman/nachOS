@@ -84,7 +84,7 @@ ThreadTest()
 
     // name[i] will contain the name of the (i+1)th process. This happens
     // because name is 0-indexed and the processes are 1-indexed.
-    char **name = new char* [threadAmount - 1];
+    char **name = new char* [threadAmount];
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
         char *currentName = name[threadNum-1] = new char [64];
         snprintf(currentName, 64, "%s%d", "Number ", threadNum);

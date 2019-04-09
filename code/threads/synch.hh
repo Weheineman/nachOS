@@ -108,6 +108,9 @@ private:
     const char *name;
 
     // Add other needed fields here.
+    Semaphore *lockSemaphore;
+    char *semaphoreName;
+    Thread *lockThread;
 };
 
 // This class defined a “condition variable”.
@@ -146,7 +149,7 @@ class Condition {
 public:
 
     // Constructor: indicate which lock the condition variable belongs to.
-    Condition(const char *debugName, Lock *conditionLock);
+    Condition(const char *debugName, Lock *conditionLock_);
 
     ~Condition();
 
@@ -166,6 +169,7 @@ private:
     const char *name;
 
     // Other needed fields are to be added here.
+    Lock *conditionLock;
 };
 
 

@@ -110,10 +110,20 @@ Semaphore::V()
 /// case in the network assignment will not work!
 
 Lock::Lock(const char *debugName)
-{}
+{
+    name = debugName;
+    semaphoreName = new char [64];
+    strcpy(semaphoreName, "Semaphore of ");
+    strcat(semaphoreName, debugName);
+    lockSemaphore = new Semaphore(semaphoreName, 1);
+    lockThread = nullptr;
+}
 
 Lock::~Lock()
-{}
+{
+    delete semaphoreName;
+    delete lockSemaphore;
+}
 
 const char *
 Lock::GetName() const
@@ -123,18 +133,33 @@ Lock::GetName() const
 
 void
 Lock::Acquire()
-{}
+{
+    ASSERT(not IsHeldByCurrentThread());
+
+    lockSemaphore->P();
+    lockThread = currentThread;
+}
 
 void
 Lock::Release()
-{}
+{
+    ASSERT(IsHeldByCurrentThread());
+
+    lockThread = nullptr;
+    lockSemaphore->V();
+}
 
 bool
 Lock::IsHeldByCurrentThread() const
-{}
+{
+    return lockThread == currentThread;
+}
 
-Condition::Condition(const char *debugName, Lock *conditionLock)
-{}
+Condition::Condition(const char *debugName, Lock *conditionLock_)
+{
+    name = debugName;
+    conditionLock = conditionLock_;
+}
 
 Condition::~Condition()
 {}
@@ -147,7 +172,9 @@ Condition::GetName() const
 
 void
 Condition::Wait()
-{}
+{
+    conditionLock->Release();
+}
 
 void
 Condition::Signal()
