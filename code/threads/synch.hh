@@ -172,6 +172,7 @@ private:
     Lock *conditionLock;
     Lock *queueLock;
     Semaphore *sleepQueue;
+    char *sleepQueueName;
     int sleeperAmount;
     char *queueLockName;
     Semaphore *handshakeSemaphore;
