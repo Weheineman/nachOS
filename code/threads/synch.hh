@@ -170,6 +170,12 @@ private:
 
     // Other needed fields are to be added here.
     Lock *conditionLock;
+    Lock *queueLock;
+    Semaphore *sleepQueue;
+    int sleeperAmount;
+    char *queueLockName;
+    Semaphore *handshakeSemaphore;
+    char *handshakeSemaphoreName;
 };
 
 

@@ -159,10 +159,30 @@ Condition::Condition(const char *debugName, Lock *conditionLock_)
 {
     name = debugName;
     conditionLock = conditionLock_;
+    queueLockName = new char [64];
+    strcpy(queueLockName, "Queue lock of ");
+    strcat(queueLockName, debugName);
+    queueLock = new Lock(queueLockName);
+    sleepQueueName = new char [64];
+    strcpy(sleepQueueName, "Sleep queue of ");
+    strcat(sleepQueueName, debugName);
+    sleepQueue = new Semaphore(sleepQueueName, 0);
+    handshakeSemaphoreName = new char [64];
+    strcpy(handshakeSemaphoreName, "Handshake semaphore of ");
+    strcat(handshakeSemaphoreName, debugName);
+    handshakeSemaphore = new Semaphore(handshakeSemaphoreName, 0);
+    sleeperAmount = 0;
 }
 
 Condition::~Condition()
-{}
+{
+    delete queueLock;
+    delete queueLockName;
+    delete sleepQueue;
+    delete sleepQueueName;
+    delete handshakeSemaphore;
+    delete handshakeSemaphoreName;
+}
 
 const char *
 Condition::GetName() const
@@ -173,13 +193,40 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
+    ASSERT(conditionLock->IsHeldByCurrentThread());
+
+    queueLock->Acquire();
+    sleeperAmount++;
+    queueLock->Release();
+
     conditionLock->Release();
+    sleepQueue->P();
+
+    // When woken up, reacquire lock
+    conditionLock->Acquire();
+    handshakeSemaphore->V();
 }
 
 void
 Condition::Signal()
-{}
+{
+    ASSERT(conditionLock->IsHeldByCurrentThread());
+    queueLock->Acquire();
+    if(sleeperAmount > 0){
+        sleeperAmount--;
+        sleepQueue->V();
+    }
+    queueLock->Release();
+}
 
 void
 Condition::Broadcast()
-{}
+{
+    ASSERT(conditionLock->IsHeldByCurrentThread());
+    queueLock->Acquire();
+    while(sleeperAmount > 0){
+        sleeperAmount--;
+        sleepQueue->V();
+    }
+    queueLock->Release();
+}
