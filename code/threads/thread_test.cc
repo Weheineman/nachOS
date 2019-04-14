@@ -18,6 +18,12 @@
 // String Semaphore Pair, used to test Semaphores.
 typedef std::pair<char*, Semaphore*> StrSemPair;
 
+struct TestLockStruct {
+	char* name;
+	int* testVariable;
+	Lock* testLock;
+	Semaphore* testSemaphore;
+};
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
@@ -64,6 +70,33 @@ void SemaphoreThread(void *pointerPair_){
     testSemaphore->V();
 }
 
+void LockThread(void *structPointer_){
+    // Reinterpret arg `pointerPair` as a pair<*char, *Lock> pointer.
+    TestLockStruct *structPointer = (TestLockStruct*) structPointer_;
+
+    // Rename the elements of pointerPair for more clarity
+    char *name = structPointer -> name;
+    int *testVariable = structPointer -> testVariable;
+    Lock *testLock = structPointer -> testLock;
+	Semaphore *testSemaphore = structPointer -> testSemaphore;
+
+    // If the lines dealing with interrupts are commented, the code will
+    // behave incorrectly, because printf execution may cause race
+    // conditions.
+    int currentValue;
+    for (unsigned num = 0; num < 1000000; num++) {
+		testLock -> Acquire();
+        currentValue = *testVariable;
+		currentValue++;
+        *testVariable = currentValue;
+		testLock -> Release();
+        //currentThread->Yield();
+    }
+    printf("!!! Thread `%s` has finished\n", name);
+    testSemaphore -> V();
+}
+
+
 
 /// Set up a ping-pong between several threads.
 ///
@@ -82,6 +115,12 @@ ThreadTest()
     Semaphore *testSemaphore = new Semaphore("Ejercicio 15", semInit);
     #endif
 
+	#ifdef LOCK_TEST
+	int testVariable = 0;
+	Lock *testLock = new Lock("Test Lock");
+	Semaphore *lockTestSemaphore = new Semaphore("lockTestSemaphore", 0);
+	#endif
+
     // name[i] will contain the name of the (i+1)th process. This happens
     // because name is 0-indexed and the processes are 1-indexed.
     char **name = new char* [threadAmount];
@@ -89,14 +128,33 @@ ThreadTest()
         char *currentName = name[threadNum-1] = new char [64];
         snprintf(currentName, 64, "%s%d", "Number ", threadNum);
         Thread *newThread = new Thread(currentName);
+
         #ifdef SEMAPHORE_TEST
         // Launch semaphore test threads
         StrSemPair *pointerPair = new StrSemPair;
         *pointerPair = std::make_pair(currentName, testSemaphore);
         newThread->Fork(SemaphoreThread, (void*) pointerPair);
+
+        #elif defined LOCK_TEST
+        TestLockStruct *testStruct = new TestLockStruct;
+        testStruct -> name = currentName;
+        testStruct -> testVariable = &testVariable;
+        testStruct -> testLock = testLock;
+        newThread->Fork(LockThread, (void*) testStruct);
+
         #else
         // Launch simple threads
         newThread->Fork(SimpleThread, (void*) currentName);
         #endif
     }
+
+    #ifdef LOCK_TEST
+    for(int i = 0; i < threadAmount; i++)
+        lockTestSemaphore->P();
+    char *lockTestMsg = new char [64];
+    snprintf(lockTestMsg, 64, "Lock test variable value: %d \n", testVariable);
+    DEBUG('s', lockTestMsg);
+    #endif
+
+    DEBUG('t', "Exiting thread test\n");
 }

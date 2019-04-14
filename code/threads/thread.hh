@@ -41,11 +41,14 @@
 
 #include "lib/utility.hh"
 
+
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
 #endif
 
+/// To avoid mutual includes involving this file and synch.hh
+class Port;
 
 /// CPU register state to be saved on context switch.
 ///
@@ -92,10 +95,15 @@ private:
     /// All registers except for `stackTop`.
     HostMemoryAddress machineState[MACHINE_STATE_SIZE];
 
+    // COSAS DEL JOIN PLS WRITE BETTER COMMENT
+    bool enableJoin;
+    Port *joinPort;
+    char *joinPortName;
+
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName);
+    Thread(const char *debugName, bool enableJoin_ = false);
 
     /// Deallocate a Thread.
     ///
@@ -107,6 +115,10 @@ public:
 
     /// Make thread run `(*func)(arg)`.
     void Fork(VoidFunctionPtr func, void *arg);
+
+    /// Blocks the running thread until the thread on which
+    /// Join is called finishes.
+    void Join();
 
     /// Relinquish the CPU if any other thread is runnable.
     void Yield();

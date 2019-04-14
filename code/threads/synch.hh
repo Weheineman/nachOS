@@ -180,4 +180,27 @@ private:
 };
 
 
+class Port{
+public:
+    Port(const char* debugName);
+
+    ~Port();
+
+    const char* GetName() const;
+
+    void Send(int message);
+    void Receive(int *message);
+
+private:
+    const char* name;
+    int messageBuffer;
+    int receiverAmount;
+    Lock *portLock;
+    char *portLockName;
+    Condition *sender;
+    char *senderName;
+    Condition *receiver;
+    char *receiverName;
+};
+
 #endif

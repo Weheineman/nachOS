@@ -38,14 +38,24 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName)
+Thread::Thread(const char *threadName, bool enableJoin_)
 {
-    name     = threadName;
-    stackTop = nullptr;
-    stack    = nullptr;
-    status   = JUST_CREATED;
+    name       = threadName;
+    enableJoin = enableJoin_;
+    joinPort   = nullptr;
+
+    if(enableJoin){
+        joinPortName = new char [64];
+        strcpy(joinPortName, "Join Port of ");
+        strcat(joinPortName, name);
+        joinPort = new Port(joinPortName);
+    }
+
+    stackTop   = nullptr;
+    stack      = nullptr;
+    status     = JUST_CREATED;
 #ifdef USER_PROGRAM
-    space    = nullptr;
+    space      = nullptr;
 #endif
 }
 
@@ -64,6 +74,11 @@ Thread::~Thread()
     ASSERT(this != currentThread);
     if (stack != nullptr)
         DeallocBoundedArray((char *) stack, STACK_SIZE * sizeof *stack);
+
+    if(enableJoin){
+        delete joinPort;
+        delete joinPortName;
+    }
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
@@ -101,6 +116,15 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     scheduler->ReadyToRun(this);  // `ReadyToRun` assumes that interrupts
                                   // are disabled!
     interrupt->SetLevel(oldLevel);
+}
+
+void
+Thread::Join()
+{
+    ASSERT(enableJoin);
+
+    int dummy;
+    joinPort->Receive(&dummy);
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -159,6 +183,8 @@ Thread::Finish()
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
+
+    joinPort->Send(1);
 
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.

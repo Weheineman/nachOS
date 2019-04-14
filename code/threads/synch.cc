@@ -74,7 +74,7 @@ Semaphore::P()
     char *acquireMsg = new char [64];
     snprintf(acquireMsg, 64, "%s%s%s%s%c", "P() called on ", GetName(),
         " by ", currentThread->GetName(), '\n');
-    DEBUG('s', acquireMsg);
+    // DEBUG('s', acquireMsg);
 
     interrupt->SetLevel(oldLevel);  // Re-enable interrupts.
 }
@@ -99,7 +99,7 @@ Semaphore::V()
     char *releaseMsg = new char [64];
     snprintf(releaseMsg, 64, "%s%s%s%s%c", "V() called on ", GetName(),
         " by ", currentThread->GetName(), '\n');
-    DEBUG('s', releaseMsg);
+    // DEBUG('s', releaseMsg);
 
     interrupt->SetLevel(oldLevel);
 }
@@ -159,18 +159,22 @@ Condition::Condition(const char *debugName, Lock *conditionLock_)
 {
     name = debugName;
     conditionLock = conditionLock_;
+
     queueLockName = new char [64];
     strcpy(queueLockName, "Queue lock of ");
     strcat(queueLockName, debugName);
     queueLock = new Lock(queueLockName);
+
     sleepQueueName = new char [64];
     strcpy(sleepQueueName, "Sleep queue of ");
     strcat(sleepQueueName, debugName);
     sleepQueue = new Semaphore(sleepQueueName, 0);
+
     handshakeSemaphoreName = new char [64];
     strcpy(handshakeSemaphoreName, "Handshake semaphore of ");
     strcat(handshakeSemaphoreName, debugName);
     handshakeSemaphore = new Semaphore(handshakeSemaphoreName, 0);
+
     sleeperAmount = 0;
 }
 
@@ -229,4 +233,68 @@ Condition::Broadcast()
         sleepQueue->V();
     }
     queueLock->Release();
+}
+
+Port::Port(const char* debugName)
+{
+    name = debugName;
+    receiverAmount = 0;
+
+    portLockName = new char [64];
+    strcpy(portLockName, "Buffer lock of ");
+    strcat(portLockName, debugName);
+    portLock = new Lock(portLockName);
+
+    senderName = new char [64];
+    strcpy(senderName, "Sender of ");
+    strcat(senderName, debugName);
+    sender = new Condition(senderName, portLock);
+
+    receiverName = new char [64];
+    strcpy(receiverName, "Receiver of ");
+    strcat(receiverName, debugName);
+    receiver = new Condition(receiverName, portLock);
+}
+
+Port::~Port()
+{
+    delete portLock;
+    delete portLockName;
+    delete sender;
+    delete senderName;
+    delete receiver;
+    delete receiverName;
+}
+
+const char*
+Port::GetName() const
+{
+    return name;
+}
+
+void
+Port::Send(int message)
+{
+    portLock->Acquire();
+    while(receiverAmount == 0)
+        sender->Wait();
+
+    messageBuffer = message;
+    receiver->Signal();
+
+    portLock->Release();
+}
+
+void
+Port::Receive(int *message)
+{
+    portLock->Acquire();
+
+    receiverAmount++;
+    sender->Signal();
+    receiver->Wait();
+
+    *message = messageBuffer;
+    receiverAmount--;
+    portLock->Release();
 }
