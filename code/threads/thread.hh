@@ -95,6 +95,9 @@ private:
     /// All registers except for `stackTop`.
     HostMemoryAddress machineState[MACHINE_STATE_SIZE];
 
+    int priority;
+    int oldPriority;
+
     // COSAS DEL JOIN PLS WRITE BETTER COMMENT
     bool enableJoin;
     Port *joinPort;
@@ -103,7 +106,8 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool enableJoin_ = false);
+    Thread(const char *debugName, bool enableJoin_ = false,
+           int priority_ = 0);
 
     /// Deallocate a Thread.
     ///
@@ -134,7 +138,15 @@ public:
 
     void SetStatus(ThreadStatus st);
 
+    void SetPriority(int newPriority);
+
+    void RestorePriority();
+
     const char *GetName() const;
+
+    const bool GetEnableJoin() const;
+
+    const int GetPriority() const;
 
     void Print() const;
 

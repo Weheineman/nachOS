@@ -102,6 +102,9 @@ public:
     /// Useful for checks in `Release` and in condition variables.
     bool IsHeldByCurrentThread() const;
 
+    // Returns the thread currently holding the lock
+    Thread* LockOwner();
+
 private:
 
     /// For debugging.
@@ -194,7 +197,7 @@ public:
 private:
     const char* name;
     int messageBuffer;
-    int receiverAmount;
+    bool emptyBuffer;
     Lock *portLock;
     char *portLockName;
     Condition *sender;

@@ -3,4 +3,10 @@ COMENTAR TODO
 Condition Variables esta bien asi? Realmente hace falta handshake?
 Debug flags, como agregar?
 Como hacer testing elegante de threads?
+Como evitar que el primer send no sea bloqueante?
 En thread.hh fix bed england del Join
+Es obligatorio que un hilo hijo llame a Finish?
+Si pongo Send en Finish se vuelve bloqueante hasta que llaman a Join. Como hago para que funcione aun si no llaman a Join?
+Cuando es necesario INT_OFF?
+El Print de Scheduler no se rompe todo? No tiene locks
+Si hago hierarchic? promotion para evitar inversion de prioridades, me gustaria meter mano en Lock::Acquire... pero tiene region critica y no hay locks... who watches the Watchmen?

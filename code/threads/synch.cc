@@ -155,6 +155,12 @@ Lock::IsHeldByCurrentThread() const
     return lockThread == currentThread;
 }
 
+Thread*
+Lock::LockOwner()
+{
+    return lockThread;
+}
+
 Condition::Condition(const char *debugName, Lock *conditionLock_)
 {
     name = debugName;
@@ -238,7 +244,7 @@ Condition::Broadcast()
 Port::Port(const char* debugName)
 {
     name = debugName;
-    receiverAmount = 0;
+    emptyBuffer = true;
 
     portLockName = new char [64];
     strcpy(portLockName, "Buffer lock of ");
@@ -276,11 +282,14 @@ void
 Port::Send(int message)
 {
     portLock->Acquire();
-    while(receiverAmount == 0)
+
+    while(not emptyBuffer)
         sender->Wait();
 
     messageBuffer = message;
+    emptyBuffer = false;
     receiver->Signal();
+
 
     portLock->Release();
 }
@@ -290,11 +299,12 @@ Port::Receive(int *message)
 {
     portLock->Acquire();
 
-    receiverAmount++;
-    sender->Signal();
-    receiver->Wait();
+    while(emptyBuffer)
+        receiver->Wait();
 
     *message = messageBuffer;
-    receiverAmount--;
+    emptyBuffer = true;
+    sender->Signal();
+
     portLock->Release();
 }

@@ -25,13 +25,15 @@
 /// Initialize the list of ready but not running threads to empty.
 Scheduler::Scheduler()
 {
-    readyList = new List<Thread *>;
+    for(int i = 0; i < priorityAmount; i++)
+        readyList[i] = new List<Thread *>;
 }
 
 /// De-allocate the list of ready threads.
 Scheduler::~Scheduler()
 {
-    delete readyList;
+    for(int i = 0; i < priorityAmount; i++)
+        delete readyList[i];
 }
 
 /// Mark a thread as ready, but not running.
@@ -43,10 +45,11 @@ Scheduler::ReadyToRun(Thread *thread)
 {
     ASSERT(thread != nullptr);
 
-    DEBUG('t', "Putting thread %s on ready list\n", thread->GetName());
+    DEBUG('t', "Putting thread %s on ready list %d\n", thread->GetName(),
+          thread->GetPriority());
 
     thread->SetStatus(READY);
-    readyList->Append(thread);
+    readyList[thread->GetPriority()]->Append(thread);
 }
 
 /// Return the next thread to be scheduled onto the CPU.
@@ -57,7 +60,13 @@ Scheduler::ReadyToRun(Thread *thread)
 Thread *
 Scheduler::FindNextToRun()
 {
-    return readyList->Pop();
+    // Returns the first thread in the non-empty queue with the highest priority
+    for(int i = priorityAmount - 1; i >= 0; i--)
+        if(not readyList[i]->IsEmpty())
+            return readyList[i]->Pop();
+
+    // If no thread is found, there are no ready threads and nullptr is returned
+    return nullptr;
 }
 
 /// Dispatch the CPU to `nextThread`.
@@ -137,5 +146,34 @@ void
 Scheduler::Print()
 {
     printf("Ready list contents:\n");
-    readyList->Apply(ThreadPrint);
+    for(int i = priorityAmount - 1; i >= 0; i--){
+        // If the list is empty, there is nothing to print
+        if(readyList[i]->IsEmpty())
+            continue;
+
+        printf("Priority %d\n", i);
+        readyList[i]->Apply(ThreadPrint);
+    }
+}
+
+const int
+Scheduler::GetPriorityAmount() const
+{
+    return priorityAmount;
+}
+
+void
+Scheduler::PromoteThread(Thread *promoted, int newPriority)
+{
+    readyList[promoted->GetPriority()]->Remove(promoted);
+    promoted->SetPriority(newPriority);
+    ReadyToRun(promoted);
+}
+
+void
+Scheduler::DemoteThread(Thread *demoted)
+{
+    readyList[demoted->GetPriority()]->Remove(demoted);
+    demoted->RestorePriority();
+    ReadyToRun(demoted);
 }

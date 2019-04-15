@@ -39,10 +39,18 @@ public:
     // Print contents of ready list.
     void Print();
 
+    void PromoteThread(Thread *promoted, int newPriority);
+
+    void DemoteThread(Thread *demoted);
+
+    const int GetPriorityAmount() const;
+
 private:
+    // Amount of levels of priority that can be assigned to threads.
+    static const int priorityAmount = 10;
 
     // Queue of threads that are ready to run, but not running.
-    List<Thread*> *readyList;
+    List<Thread*> *readyList[priorityAmount];
 
 };
 

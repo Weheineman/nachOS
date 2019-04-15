@@ -38,11 +38,15 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool enableJoin_)
+Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
 {
     name       = threadName;
     enableJoin = enableJoin_;
     joinPort   = nullptr;
+
+    ASSERT(priority >= 0 and priority < scheduler->GetPriorityAmount());
+    priority   = priority_;
+    oldPriority = priority_;
 
     if(enableJoin){
         joinPortName = new char [64];
@@ -159,10 +163,34 @@ Thread::GetName() const
     return name;
 }
 
+const bool
+Thread::GetEnableJoin() const
+{
+    return enableJoin;
+}
+
+const int
+Thread::GetPriority() const
+{
+    return priority;
+}
+
 void
 Thread::Print() const
 {
     printf("%s, ", name);
+}
+
+void
+Thread::SetPriority(int newPriority)
+{
+    priority = newPriority;
+}
+
+void
+Thread::RestorePriority()
+{
+    priority = oldPriority;
 }
 
 /// Called by `ThreadRoot` when a thread is done executing the forked
@@ -179,12 +207,12 @@ Thread::Print() const
 void
 Thread::Finish()
 {
+    joinPort->Send(1);
+
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
 
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
-
-    joinPort->Send(1);
 
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
