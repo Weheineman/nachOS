@@ -135,7 +135,7 @@ void
 Lock::Acquire()
 {
     ASSERT(not IsHeldByCurrentThread());
-
+    
     lockSemaphore->P();
     lockThread = currentThread;
 }
@@ -225,6 +225,7 @@ Condition::Signal()
     if(sleeperAmount > 0){
         sleeperAmount--;
         sleepQueue->V();
+        handshakeSemaphore->P();
     }
     queueLock->Release();
 }
@@ -237,6 +238,7 @@ Condition::Broadcast()
     while(sleeperAmount > 0){
         sleeperAmount--;
         sleepQueue->V();
+        handshakeSemaphore->P();
     }
     queueLock->Release();
 }

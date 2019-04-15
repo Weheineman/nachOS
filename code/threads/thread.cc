@@ -207,7 +207,8 @@ Thread::RestorePriority()
 void
 Thread::Finish()
 {
-    joinPort->Send(1);
+    if(enableJoin)
+      joinPort->Send(1);
 
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
