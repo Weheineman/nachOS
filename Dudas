@@ -1,6 +1,5 @@
 PRACTICA 2
 COMENTAR TODO
-Condition Variables esta bien asi? Realmente hace falta handshake? (Si)
 Debug flags, como agregar? ------> (Dejar comentado en un txt o hacer varios targets)
 Como hacer testing elegante de threads?
 Como evitar que el primer send no sea bloqueante? (Agregar tercer variable condicion)

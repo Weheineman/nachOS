@@ -116,7 +116,7 @@ Lock::Lock(const char *debugName)
     strcpy(semaphoreName, "Semaphore of ");
     strcat(semaphoreName, debugName);
     lockSemaphore = new Semaphore(semaphoreName, 1);
-    lockThread = nullptr;
+    lockOwner = nullptr;
 }
 
 Lock::~Lock()
@@ -135,9 +135,15 @@ void
 Lock::Acquire()
 {
     ASSERT(not IsHeldByCurrentThread());
-    
+
+    // Prevent priority inversion. This happens if the lock is taken by a
+    // thread with lower priority.
+    if(lockOwner != nullptr)
+        if(currentThread->GetPriority() > lockOwner->GetPriority())
+            scheduler->PromoteThread(lockOwner, currentThread->GetPriority());
+
     lockSemaphore->P();
-    lockThread = currentThread;
+    lockOwner = currentThread;
 }
 
 void
@@ -145,20 +151,17 @@ Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
 
-    lockThread = nullptr;
+    // Restore the original thread priority, in case it had been promoted.
+    scheduler->DemoteThread(currentThread);
+
+    lockOwner = nullptr;
     lockSemaphore->V();
 }
 
 bool
 Lock::IsHeldByCurrentThread() const
 {
-    return lockThread == currentThread;
-}
-
-Thread*
-Lock::LockOwner()
-{
-    return lockThread;
+    return lockOwner == currentThread;
 }
 
 Condition::Condition(const char *debugName, Lock *conditionLock_)

@@ -113,7 +113,7 @@ private:
     // Add other needed fields here.
     Semaphore *lockSemaphore;
     char *semaphoreName;
-    Thread *lockThread;
+    Thread *lockOwner;
 };
 
 // This class defined a “condition variable”.

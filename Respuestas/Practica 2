@@ -1,0 +1,17 @@
+Cuando un proceso toma un lock, es éste el único que puede liberarlo. Esto se hace explícito en la implementación de Lock::Release(), en la línea que dice:
+
+    ASSERT(IsHeldByCurrentThread());
+
+Consecuentemente, para evitar la inversión de prioridades es sensato elevar la prioridad del proceso que posee el lock a la prioridad más alta de los procesos que lo están esperando, ya que será éste quien lo libere.
+
+No es así en el caso de los semáforos, donde cualquier proceso puede llamar al método V(). Un ejemplo se encuentra en thread_test.cc, donde implementamos un lock test que consiste en varios threads que incrementan una variable compartida una cantidad fija de veces (en paralelo). Una vez han terminado todos, se comprueba el valor de la variable:
+
+    for(int i = 0; i < threadAmount; i++)
+        lockTestSemaphore->P();
+    char *lockTestMsg = new char [64];
+    snprintf(lockTestMsg, 64, "Lock test variable value: %d \n", testVariable);
+    DEBUG('s', lockTestMsg);
+
+Para asegurar que los threads lanzados hayan terminado, se realiza un P() por cada uno de ellos. Cuando un thread termina de sumar, realiza un V().
+
+No existe entonces una forma clara y general de elevar la priordad de threads específicos para evitar la inversión de prioridades al usar semáforos.

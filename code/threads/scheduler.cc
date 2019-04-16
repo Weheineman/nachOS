@@ -62,8 +62,11 @@ Scheduler::FindNextToRun()
 {
     // Returns the first thread in the non-empty queue with the highest priority
     for(int i = priorityAmount - 1; i >= 0; i--)
-        if(not readyList[i]->IsEmpty())
-            return readyList[i]->Pop();
+        if(not readyList[i]->IsEmpty()){
+            Thread *nextThread = readyList[i]->Pop();
+            DEBUG('t', "Next thread to run is %s\n", nextThread->GetName());
+            return nextThread;
+        }
 
     // If no thread is found, there are no ready threads and nullptr is returned
     return nullptr;
