@@ -129,7 +129,7 @@ La macro DEBUG llama al método Print de la clase debug definida en /code/lib/de
 
 
 EJERCICIO 10)
-Se encuentran definidas en los archivos 'Makefile' con la instrucción -Dmacro.
+Se encuentran definidas en los archivos 'Makefile' con la instrucción -Dmacro. 
 Al ejecutar la instrucción 'make' desde la carpeta raiz(/code), el archivo Makefile lanza la instrucción 'make' dentro de cada carpeta subyacente. Dichos Makefile utilizan distintos archivos compartidos, los cuales pueden ser accedidos desde cada uno gracias a la instrucción INCLUDE_DIRS, que indica los directorios correspondientes. De esta forma, saben cuales son las macros que deben utilizar para compilar.
 
 A continuación, presentamos un ejemplo de donde pueden encontrarse definidas algunas de las macro.
@@ -172,7 +172,7 @@ alumno@pelle04:~/Escritorio/nachos-unr19b/code/userprog$ grep -rn "main"
 Makefile.depends:1:main.o: ../threads/main.cc ../threads/copyright.h ../lib/utility.hh \
 
 Esto nos da una idea que, al realizar la instruccion make dentro de este directorio, el archivo makefile utiliza el archivo /threads/main.cc para compilar main.o.
-Por lo tanto, cuando se llamen los archivos objeto para inicializar nachos dentro del directorio, main.o será convocada utilizando la función main previamente mencionada.
+Por lo tanto, cuando se llamen los archivos objeto para inicializar nachos dentro del directorio, main.o será convocada utilizando la función main previamente mencionada. 
 
 
 

@@ -71,10 +71,10 @@ Semaphore::P()
     value--;  // Semaphore available, consume its value.
 
     // Print debug message
-    char *acquireMsg = new char [64];
+    char acquireMsg[64];
     snprintf(acquireMsg, 64, "%s%s%s%s%c", "P() called on ", GetName(),
         " by ", currentThread->GetName(), '\n');
-    // DEBUG('s', acquireMsg);
+    DEBUG('s', acquireMsg);
 
     interrupt->SetLevel(oldLevel);  // Re-enable interrupts.
 }
@@ -96,10 +96,10 @@ Semaphore::V()
     value++;
 
     // Print debug message
-    char *releaseMsg = new char [64];
+    char releaseMsg[64];
     snprintf(releaseMsg, 64, "%s%s%s%s%c", "V() called on ", GetName(),
         " by ", currentThread->GetName(), '\n');
-    // DEBUG('s', releaseMsg);
+    DEBUG('s', releaseMsg);
 
     interrupt->SetLevel(oldLevel);
 }
@@ -121,8 +121,8 @@ Lock::Lock(const char *debugName)
 
 Lock::~Lock()
 {
-    delete semaphoreName;
     delete lockSemaphore;
+    delete [] semaphoreName;
 }
 
 const char *
@@ -164,6 +164,12 @@ Lock::IsHeldByCurrentThread() const
     return lockOwner == currentThread;
 }
 
+Thread*
+Lock::LockOwner()
+{
+    return lockOwner;
+}
+
 Condition::Condition(const char *debugName, Lock *conditionLock_)
 {
     name = debugName;
@@ -190,11 +196,11 @@ Condition::Condition(const char *debugName, Lock *conditionLock_)
 Condition::~Condition()
 {
     delete queueLock;
-    delete queueLockName;
+    delete [] queueLockName;
     delete sleepQueue;
-    delete sleepQueueName;
+    delete [] sleepQueueName;
     delete handshakeSemaphore;
-    delete handshakeSemaphoreName;
+    delete [] handshakeSemaphoreName;
 }
 
 const char *
@@ -270,11 +276,11 @@ Port::Port(const char* debugName)
 Port::~Port()
 {
     delete portLock;
-    delete portLockName;
+    delete [] portLockName;
     delete sender;
-    delete senderName;
+    delete [] senderName;
     delete receiver;
-    delete receiverName;
+    delete [] receiverName;
 }
 
 const char*
