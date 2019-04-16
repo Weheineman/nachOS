@@ -43,6 +43,7 @@ SimpleThread(void *name_)
         currentThread->Yield();
     }
     printf("!!! Thread `%s` has finished\n", name);
+	delete [] name;
 }
 
 
@@ -65,9 +66,11 @@ void SemaphoreThread(void *pointerPair_){
         printf("*** Thread `%s` is running: iteration %u\n", name, num);
         currentThread->Yield();
     }
+
     printf("!!! Thread `%s` has finished\n", name);
 
     testSemaphore->V();
+	delete [] name;
 }
 
 void LockThread(void *structPointer_){
@@ -84,16 +87,18 @@ void LockThread(void *structPointer_){
     // behave incorrectly, because printf execution may cause race
     // conditions.
     int currentValue;
-    for (unsigned num = 0; num < 1000000; num++) {
+	unsigned int iterationNumber = 1000000;
+    for (unsigned num = 0; num < iterationNumber; num++) {
 		testLock -> Acquire();
         currentValue = *testVariable;
 		currentValue++;
         *testVariable = currentValue;
+		currentThread->Yield();
 		testLock -> Release();
-        //currentThread->Yield();
     }
     printf("!!! Thread `%s` has finished\n", name);
     testSemaphore -> V();
+	delete [] name;
 }
 
 
@@ -118,7 +123,7 @@ ThreadTest()
 	#ifdef LOCK_TEST
 	int testVariable = 0;
 	Lock *testLock = new Lock("Test Lock");
-	Semaphore *lockTestSemaphore = new Semaphore("lockTestSemaphore", 0);
+	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
 	#endif
 
     // name[i] will contain the name of the (i+1)th process. This happens
@@ -127,7 +132,7 @@ ThreadTest()
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
         char *currentName = name[threadNum-1] = new char [64];
         snprintf(currentName, 64, "%s%d", "Number ", threadNum);
-        Thread *newThread = new Thread(currentName);
+        Thread *newThread = new Thread(currentName, false, threadNum);
 
         #ifdef SEMAPHORE_TEST
         // Launch semaphore test threads
@@ -140,6 +145,7 @@ ThreadTest()
         testStruct -> name = currentName;
         testStruct -> testVariable = &testVariable;
         testStruct -> testLock = testLock;
+        testStruct -> testSemaphore = finishCheck;
         newThread->Fork(LockThread, (void*) testStruct);
 
         #else
@@ -148,12 +154,19 @@ ThreadTest()
         #endif
     }
 
+	delete [] name;
+
     #ifdef LOCK_TEST
     for(int i = 0; i < threadAmount; i++)
-        lockTestSemaphore->P();
-    char *lockTestMsg = new char [64];
+        finishCheck->P();
+    char lockTestMsg[64];
     snprintf(lockTestMsg, 64, "Lock test variable value: %d \n", testVariable);
-    DEBUG('s', lockTestMsg);
+
+	// DEBUG('s', lockTestMsg);
+	printf("%s\n", lockTestMsg);
+
+	delete testLock;
+	delete finishCheck;
     #endif
 
     DEBUG('t', "Exiting thread test\n");

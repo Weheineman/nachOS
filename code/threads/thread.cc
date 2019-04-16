@@ -81,7 +81,7 @@ Thread::~Thread()
 
     if(enableJoin){
         delete joinPort;
-        delete joinPortName;
+        delete [] joinPortName;
     }
 }
 
@@ -207,12 +207,13 @@ Thread::RestorePriority()
 void
 Thread::Finish()
 {
-    joinPort->Send(1);
+    if(enableJoin)
+      joinPort->Send(1);
 
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
 
-    DEBUG('t', "Finishing thread \"%s\"\n", GetName());
+    DEBUG('t', "Finishing thread \"%s\"\n", name);
 
     threadToBeDestroyed = currentThread;
     Sleep();  // Invokes `SWITCH`.
@@ -272,7 +273,7 @@ Thread::Sleep()
     ASSERT(this == currentThread);
     ASSERT(interrupt->GetLevel() == INT_OFF);
 
-    DEBUG('t', "Sleeping thread \"%s\"\n", GetName());
+    DEBUG('t', "Sleeping thread \"%s\"\n", name);
 
     Thread *nextThread;
     status = BLOCKED;
