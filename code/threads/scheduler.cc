@@ -50,8 +50,8 @@ Scheduler::ReadyToRun(Thread *thread)
 
     thread->SetStatus(READY);
     readyList[thread->GetPriority()]->Append(thread);
-    
-    DEBUG('t', "Priority Queue size: %d\n", readyList[thread->GetPriority()] -> Length());
+
+    // DEBUG('t', "Priority Queue size: %d\n", readyList[thread->GetPriority()] -> Length());
 }
 
 /// Return the next thread to be scheduled onto the CPU.

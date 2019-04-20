@@ -21,12 +21,13 @@ struct TestLockStruct {
 };
 
 struct TestCondStruct {
-	int bufferSize;
+	unsigned int bufferSize;
 	List<char*> *buffer;
-	Condition *TestConditionProd;
-	Condition *TestConditionCons;
+	Condition *testConditionProd;
+	Condition *testConditionCons;
 	Lock *condLock;
 	Semaphore *finishCheck;
+	unsigned int amount;
 };
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
@@ -102,57 +103,62 @@ void
 CondTestProducer(void *structPointer_)
 {
 	TestCondStruct *structPointer = (TestCondStruct*) structPointer_;
-	
-	int bufferSize = structPointer -> bufferSize;
+
+	unsigned int bufferSize = structPointer -> bufferSize;
 	List<char*> *buffer = structPointer -> buffer;
 	Condition *testConditionProd = structPointer -> testConditionProd;
 	Condition *testConditionCons = structPointer -> testConditionCons;
 	Lock *condLock = structPointer -> condLock;
-	
-	int produceAmount = 1000;
-	int produceTotal = 0;
-	
+	unsigned int produceTotal = structPointer -> amount;
+
+	unsigned int produceAmount = 0;
+
 	while(produceTotal != produceAmount){
 		condLock->Acquire();
 		while(buffer->Length() == bufferSize){
 			testConditionProd->Wait();
-			}
-		buffer->append(currentThread->GetName());
-		produceTotal++;
-		DEBUG('t', "I'm producer %s and I'm producing memes for the %d th time. \n",
-		 currentThread->GetName(), produceTotal);
-		testConditionCons->Signal();
-		condLock->Release();
 		}
+		buffer->Append(currentThread->GetName());
+		produceAmount++;
+		printf("I'm producer %s and I'm producing memes for the %d th time. \n",
+			   currentThread->GetName(), produceAmount);
+
+		testConditionCons->Broadcast();
+		condLock->Release();
+	}
+
+	printf("!!! Thread Producer `%s` has finished\n", currentThread->GetName());
 }
 
-void 
+void
 CondTestConsumer(void *structPointer_)
 {
 	TestCondStruct *structPointer = (TestCondStruct*) structPointer_;
-	
-	int bufferSize = structPointer -> bufferSize;
+
 	List<char*> *buffer = structPointer -> buffer;
 	Condition *testConditionProd = structPointer -> testConditionProd;
 	Condition *testConditionCons = structPointer -> testConditionCons;
 	Lock *condLock = structPointer -> condLock;
-	
-	int consumeAmount = 1000;
-	int consumeTotal = 0;
+	Semaphore *finishCheck = structPointer -> finishCheck;
+	unsigned int consumeTotal = structPointer -> amount;
+
+	unsigned int consumeAmount = 0;
 	char* name;
-	
+
 	while(consumeTotal != consumeAmount){
 		condLock->Acquire();
 		while(buffer->IsEmpty()){
 			testConditionCons->Wait();
-			}
-		name = buffer->Pop();
-		DEBUG('t', "I'm consumer %s and producer %s sent me memes. \n", 
-		 currentThread->GetName(), name);
-		testConditionProd->Signal();
-		condLock->Release();
 		}
-		
+		name = buffer->Pop();
+		consumeAmount++;
+		printf("I'm consumer %s and producer %s sent me memes. \n",
+		       currentThread->GetName(), name);
+		testConditionProd->Broadcast();
+		condLock->Release();
+	}
+
+	printf("!!! Thread Consumer `%s` has finished\n", currentThread->GetName());
 	finishCheck -> V();
 }
 
@@ -177,7 +183,7 @@ ThreadTest()
 	int testVariable = 0;
 	Lock *testLock = new Lock("Test Lock");
 	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
-	
+
 	TestLockStruct *testStruct = new TestLockStruct;
 	testStruct -> testVariable = &testVariable;
 	testStruct -> testLock = testLock;
@@ -185,22 +191,23 @@ ThreadTest()
 	#endif
 
 	#ifdef COND_TEST
-	int bufferSize = 10;
+	unsigned int bufferSize = 10;
 	List<char*> *buffer = new List<char*>;
 	Lock *condLock = new Lock("Test Lock for Condition Variable");
-	Condition *TestConditionProd = new Condition("Condition for Producers", condLock);
-	Condition *TestConditionCons = new Condition("Condition for Consumers", condLock);
+	Condition *testConditionProd = new Condition("Condition for Producers", condLock);
+	Condition *testConditionCons = new Condition("Condition for Consumers", condLock);
 	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
-	
+
 	TestCondStruct *testStruct = new TestCondStruct;
 	testStruct -> bufferSize = bufferSize;
 	testStruct -> buffer = buffer;
 	testStruct -> condLock = condLock;
-	testStruct -> TestConditionProd = TestConditionProd;
-	testStruct -> TestConditionCons = TestConditionCons;
+	testStruct -> testConditionProd = testConditionProd;
+	testStruct -> testConditionCons = testConditionCons;
 	testStruct -> finishCheck = finishCheck;
+	testStruct -> amount = 10;
 	#endif
-    
+
     // name will be used to generate the thread names
     char *name = new char [64];
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
@@ -212,9 +219,9 @@ ThreadTest()
         newThread->Fork(SemaphoreThread, (void*) testSemaphore);
 
         #elif defined LOCK_TEST
-        
+
         newThread->Fork(LockThread, (void*) testStruct);
-        
+
         #elif defined COND_TEST
 
         snprintf(name, 64, "%s%d", "Number' ", threadNum);
@@ -222,7 +229,7 @@ ThreadTest()
 
 		newThread->Fork(CondTestProducer, (void*) testStruct);
 		newThread2->Fork(CondTestConsumer, (void*) testStruct);
-		
+
         #else
         // Launch simple threads
 		void *dummy = nullptr;
@@ -244,20 +251,20 @@ ThreadTest()
 	delete testLock;
 	delete finishCheck;
     delete testStruct;
-    
+
     #elif defined COND_TEST
     for(int i = 0; i < threadAmount; i++)
         finishCheck->P();
-    
+
     delete buffer;
     delete condLock;
-    delete TestConditionProd;
-    delete TestConditionCons;
+    delete testConditionProd;
+    delete testConditionCons;
     delete finishCheck;
     delete testStruct;
     #endif
 
-	
+
 
     DEBUG('t', "Exiting thread test\n");
 }

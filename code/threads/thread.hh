@@ -142,7 +142,7 @@ public:
 
     void RestorePriority();
 
-    const char *GetName() const;
+    char *GetName();
 
     const bool GetEnableJoin() const;
 
