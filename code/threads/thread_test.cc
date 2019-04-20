@@ -70,7 +70,7 @@ void SemaphoreThread(void *pointerPair_){
     printf("!!! Thread `%s` has finished\n", name);
 
     testSemaphore->V();
-	delete [] name;
+	//delete [] name;
 }
 
 void LockThread(void *structPointer_){
@@ -98,7 +98,7 @@ void LockThread(void *structPointer_){
     }
     printf("!!! Thread `%s` has finished\n", name);
     testSemaphore -> V();
-	delete [] name;
+	//delete [] name;
 }
 
 
@@ -132,7 +132,7 @@ ThreadTest()
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
         char *currentName = name[threadNum-1] = new char [64];
         snprintf(currentName, 64, "%s%d", "Number ", threadNum);
-        Thread *newThread = new Thread(currentName, false, threadNum);
+        Thread *newThread = new Thread(currentName);
 
         #ifdef SEMAPHORE_TEST
         // Launch semaphore test threads

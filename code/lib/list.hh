@@ -66,6 +66,8 @@ public:
 
     /// Is the list empty?
     bool IsEmpty() const;
+    
+    unsigned Length();
 
     /// Routines to put/get items on/off list in order (sorted by key).
 
@@ -299,6 +301,23 @@ List<Item>::SortedPop(int *keyPtr)
     delete element;
     return thing;
 }
+
+template <class Item>
+unsigned
+List<Item>::Length()
+{
+    if (IsEmpty())
+        return 0;
+
+    unsigned total = 0;
+    
+    ListNode *element = first;
+    
+    for(; element != last; element = element -> next, total ++); 
+    
+    return total + 1;
+}
+
 
 
 #endif
