@@ -13,49 +13,37 @@
 
 #include "system.hh"
 #include "synch.hh"
-#include <utility>
-
-// String Semaphore Pair, used to test Semaphores.
-typedef std::pair<char*, Semaphore*> StrSemPair;
 
 struct TestLockStruct {
-	char* name;
 	int* testVariable;
 	Lock* testLock;
-	Semaphore* testSemaphore;
+	Semaphore* finishCheck;
 };
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
-/// * `name` points to a string with a thread name, just for debugging
-///   purposes.
+/// *dummy exists only to satisfy the function type necessary for Fork
 void
-SimpleThread(void *name_)
+SimpleThread(void *dummy)
 {
-    // Reinterpret arg `name` as a string.
-    char *name = (char *) name_;
-
     // If the lines dealing with interrupts are commented, the code will
     // behave incorrectly, because printf execution may cause race
     // conditions.
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", name, num);
+        printf("*** Thread `%s` is running: iteration %u\n",
+		       currentThread->GetName(), num);
         currentThread->Yield();
     }
-    printf("!!! Thread `%s` has finished\n", name);
-	delete [] name;
+
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
 }
 
 
 // Same as SimpleThread but is called only if SEMAPHORE_TEST is defined.
 // Uses the semaphore declared in ThreadTest.
-void SemaphoreThread(void *pointerPair_){
-    // Reinterpret arg `pointerPair` as a pair<*char, *Semaphore> pointer.
-    StrSemPair *pointerPair = (StrSemPair*) pointerPair_;
-
-    // Rename the elements of pointerPair for more clarity
-    char *name = pointerPair->first;
-    Semaphore *testSemaphore = pointerPair->second;
+void SemaphoreThread(void *testSemaphore_){
+    // Reinterpret arg `pointerPair` as a Semaphore pointer.
+    Semaphore *testSemaphore = (Semaphore*) testSemaphore_;
 
     testSemaphore->P();
 
@@ -63,14 +51,14 @@ void SemaphoreThread(void *pointerPair_){
     // behave incorrectly, because printf execution may cause race
     // conditions.
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", name, num);
+        printf("*** Thread `%s` is running: iteration %u\n",
+		       currentThread->GetName(), num);
         currentThread->Yield();
     }
 
-    printf("!!! Thread `%s` has finished\n", name);
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
 
     testSemaphore->V();
-	//delete [] name;
 }
 
 void LockThread(void *structPointer_){
@@ -78,16 +66,15 @@ void LockThread(void *structPointer_){
     TestLockStruct *structPointer = (TestLockStruct*) structPointer_;
 
     // Rename the elements of pointerPair for more clarity
-    char *name = structPointer -> name;
     int *testVariable = structPointer -> testVariable;
     Lock *testLock = structPointer -> testLock;
-	Semaphore *testSemaphore = structPointer -> testSemaphore;
+	Semaphore *finishCheck = structPointer -> finishCheck;
 
     // If the lines dealing with interrupts are commented, the code will
     // behave incorrectly, because printf execution may cause race
     // conditions.
     int currentValue;
-	unsigned int iterationNumber = 1000000;
+	unsigned int iterationNumber = 100;
     for (unsigned num = 0; num < iterationNumber; num++) {
 		testLock -> Acquire();
         currentValue = *testVariable;
@@ -96,9 +83,10 @@ void LockThread(void *structPointer_){
 		currentThread->Yield();
 		testLock -> Release();
     }
-    printf("!!! Thread `%s` has finished\n", name);
-    testSemaphore -> V();
-	//delete [] name;
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
+
+	// Increase the value of the finishCheck Semaphore
+    finishCheck -> V();
 }
 
 
@@ -110,7 +98,7 @@ void LockThread(void *structPointer_){
 void
 ThreadTest()
 {
-    DEBUG('t', "Entering thread test\n");
+	DEBUG('t', "Entering thread test\n");
     // Amount of threads to launch
     const int threadAmount = 5;
 
@@ -126,35 +114,31 @@ ThreadTest()
 	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
 	#endif
 
-    // name[i] will contain the name of the (i+1)th process. This happens
-    // because name is 0-indexed and the processes are 1-indexed.
-    char **name = new char* [threadAmount];
+    // name will be used to generate the thread names
+    char *name = new char [64];
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
-        char *currentName = name[threadNum-1] = new char [64];
-        snprintf(currentName, 64, "%s%d", "Number ", threadNum);
-        Thread *newThread = new Thread(currentName);
+        snprintf(name, 64, "%s%d", "Number ", threadNum);
+        Thread *newThread = new Thread(name);
 
         #ifdef SEMAPHORE_TEST
         // Launch semaphore test threads
-        StrSemPair *pointerPair = new StrSemPair;
-        *pointerPair = std::make_pair(currentName, testSemaphore);
-        newThread->Fork(SemaphoreThread, (void*) pointerPair);
+        newThread->Fork(SemaphoreThread, (void*) testSemaphore);
 
         #elif defined LOCK_TEST
         TestLockStruct *testStruct = new TestLockStruct;
-        testStruct -> name = currentName;
         testStruct -> testVariable = &testVariable;
         testStruct -> testLock = testLock;
-        testStruct -> testSemaphore = finishCheck;
+        testStruct -> finishCheck = finishCheck;
         newThread->Fork(LockThread, (void*) testStruct);
 
         #else
         // Launch simple threads
-        newThread->Fork(SimpleThread, (void*) currentName);
+		void *dummy = nullptr;
+        newThread->Fork(SimpleThread, dummy);
         #endif
     }
 
-	delete [] name;
+	delete name;
 
     #ifdef LOCK_TEST
     for(int i = 0; i < threadAmount; i++)

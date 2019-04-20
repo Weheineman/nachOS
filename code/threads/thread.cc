@@ -40,7 +40,8 @@ IsThreadStatus(ThreadStatus s)
 /// * `threadName` is an arbitrary string, useful for debugging.
 Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
 {
-    name       = threadName;
+    name       = new char [64];
+    strcpy(name, threadName);
     enableJoin = enableJoin_;
     joinPort   = nullptr;
 
@@ -83,6 +84,8 @@ Thread::~Thread()
         delete joinPort;
         delete [] joinPortName;
     }
+
+    delete [] name;
 }
 
 /// Invoke `(*func)(arg)`, allowing caller and callee to execute
