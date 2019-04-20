@@ -273,6 +273,11 @@ Port::Port(const char* debugName)
     strcpy(receiverName, "Receiver of ");
     strcat(receiverName, debugName);
     receiver = new Condition(receiverName, portLock);
+    
+    senderBlockerName = new char [64];
+    strcpy(senderBlockerName, "Sender blocker of ");
+    strcat(senderBlockerName, debugName);
+    senderBlocker = new Condition(senderBlockerName, portLock);
 }
 
 Port::~Port()
@@ -283,6 +288,8 @@ Port::~Port()
     delete [] senderName;
     delete receiver;
     delete [] receiverName;
+    delete senderBlocker;
+    delete [] senderBlockerName;
 }
 
 const char*
@@ -303,6 +310,7 @@ Port::Send(int message)
     emptyBuffer = false;
     receiver->Signal();
 
+    senderBlocker -> Wait();
 
     portLock->Release();
 }
@@ -317,7 +325,11 @@ Port::Receive(int *message)
 
     *message = messageBuffer;
     emptyBuffer = true;
+    
+    senderBlocker -> Signal();
+    
     sender->Signal();
 
     portLock->Release();
 }
+

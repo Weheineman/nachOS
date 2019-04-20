@@ -204,6 +204,8 @@ private:
     char *senderName;
     Condition *receiver;
     char *receiverName;
+    Condition *senderBlocker;
+    char *senderBlockerName;
 };
 
 #endif
