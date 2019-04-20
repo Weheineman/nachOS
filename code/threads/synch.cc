@@ -32,7 +32,8 @@
 /// * `initialValue` is the initial value of the semaphore.
 Semaphore::Semaphore(const char *debugName, int initialValue)
 {
-    name  = debugName;
+    name  = new char [64];
+    strcpy(name, debugName);
     value = initialValue;
     queue = new List<Thread *>;
 }
@@ -43,6 +44,7 @@ Semaphore::Semaphore(const char *debugName, int initialValue)
 Semaphore::~Semaphore()
 {
     delete queue;
+    delete [] name;
 }
 
 const char *

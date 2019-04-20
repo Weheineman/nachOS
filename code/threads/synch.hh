@@ -58,7 +58,7 @@ public:
 private:
 
     /// For debugging.
-    const char *name;
+    char *name;
 
     /// Semaphore value, it is always `>= 0`.
     int value;
