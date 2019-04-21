@@ -263,29 +263,16 @@ ThreadTest()
     delete testStruct;
 
     #elif defined COND_TEST
-    for(int i = 0; i < threadAmount; i++)
+	for(int i = 0; i < threadAmount; i++)
         finishCheck->P();
 
-    delete buffer;
-	printf("Deleted buffer\n");
-    delete condLock;
-	printf("Deleted condLock\n");
-    delete testConditionProd;
-	printf("Deleted testProd\n");
-    delete testConditionCons;
-
-
-
-	printf("Deleted testCons\n");
-	printf("%s\n", finishCheck->GetName());
-
-	// Uncomment the next line to get a segmentation fault :)
-    // delete finishCheck;
-
-	printf("Deleted finishCheck\n");
-    delete testStruct;
-	printf("Deleted testStruct\n");
-    #endif
+	delete buffer;
+	delete condLock;
+	delete testConditionProd;
+	delete testConditionCons;
+    delete finishCheck;
+	delete testStruct;
+	#endif
 
     DEBUG('t', "Exiting thread test\n");
 }

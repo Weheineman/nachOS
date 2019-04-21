@@ -115,10 +115,8 @@ Lock::Lock(const char *debugName)
 {
     name = debugName;
     semaphoreName = new char [64];
-    strcpy(semaphoreName, "Semaphore of ");
-    strcat(semaphoreName, debugName);
+    snprintf(semaphoreName, 64, "Semaphore of %s", debugName);
     lockSemaphore = new Semaphore(semaphoreName, 1);
-    delete semaphoreName;
     lockOwner = nullptr;
 }
 
