@@ -30,6 +30,19 @@ struct TestCondStruct {
 	unsigned int amount;
 };
 
+struct TestPortBlockStruct {
+	bool* testFlag;
+	Port* port;
+	Semaphore* finishCheck;
+};
+
+struct TestPortStruct{
+	Port* port;
+	Semaphore* finishCheck;
+	unsigned int amount;
+};
+
+
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
 /// *dummy exists only to satisfy the function type necessary for Fork
@@ -170,6 +183,70 @@ CondTestConsumer(void *structPointer_)
 	finishCheck -> V();
 }
 
+void PortTestSender (void* structPointer_){
+	TestPortBlockStruct* structPointer = (TestPortBlockStruct *) structPointer_;
+	bool* testFlag = structPointer -> testFlag;
+	Port* port = structPointer -> port;
+	Semaphore* finishCheck = structPointer -> finishCheck;
+	
+	port -> Send(1);
+	
+	DEBUG('t', "%s successfully sent a message.\n", currentThread ->GetName());
+	
+	*testFlag = true;
+	
+	finishCheck -> V();
+}
+
+void PortTestReceiver (void* structPointer_){
+	TestPortBlockStruct* structPointer = (TestPortBlockStruct *) structPointer_;
+	bool* testFlag = structPointer -> testFlag;
+	Port* port = structPointer -> port;
+	Semaphore* finishCheck = structPointer -> finishCheck;
+	
+	int dummy;
+	
+	port -> Receive(&dummy);
+	
+	DEBUG('t', "%s successfully received a message.\n", currentThread ->GetName());
+	
+	*testFlag = true;
+		
+	finishCheck -> V();
+}
+
+void PortTestSenderMany (void* structPointer_){
+	TestPortStruct* structPointer = (TestPortStruct *) structPointer_;
+	Port* port = structPointer -> port;
+	Semaphore* finishCheck = structPointer -> finishCheck;
+	unsigned int amount = structPointer -> amount;
+	int sent = rand() % 10000;
+	
+	for(unsigned int i = 0; i < amount; i++, sent ++){
+		port -> Send(sent);
+		printf("Sender %s sent %u.\n", currentThread -> GetName(), sent);
+	}
+	
+	finishCheck -> V();
+}
+
+void PortTestReceiverMany (void* structPointer_){
+	TestPortStruct* structPointer = (TestPortStruct *) structPointer_;
+	Port* port = structPointer -> port;
+	Semaphore* finishCheck = structPointer -> finishCheck;
+	unsigned int amount = structPointer -> amount;
+	
+	int buffer;
+	
+	for(unsigned int i = 0; i < amount; i++){
+		port -> Receive(&buffer);
+		printf("Receiver %s received %u.\n", currentThread -> GetName(), buffer);
+	}
+	
+	finishCheck -> V();
+}
+
+
 /// Set up a ping-pong between several threads.
 ///
 /// Do it by launching ten threads which call `SimpleThread`, and finally
@@ -178,6 +255,64 @@ void
 ThreadTest()
 {
 	DEBUG('t', "Entering thread test\n");
+	
+    #ifdef PORT_BLOCK_TEST
+    // This test case must be called without random yields.
+    Port* testPort = new Port("Test Port");
+    Semaphore* finishCheck = new Semaphore("finishCheckSemaphore", 0);
+    bool senderFlag = false;
+    bool receiverFlag = false;
+    
+    TestPortBlockStruct* testStructSender = new TestPortBlockStruct;
+    testStructSender -> port = testPort;
+    testStructSender -> finishCheck = finishCheck;
+    testStructSender -> testFlag = &senderFlag;
+    
+    Thread* sender = new Thread("Sender");
+    sender -> Fork(PortTestSender, (void *) testStructSender);
+	currentThread -> Yield();
+	
+	ASSERT(!senderFlag);    
+    
+    TestPortBlockStruct* testStructReceiver = new TestPortBlockStruct;
+    testStructReceiver -> port = testPort;
+    testStructReceiver -> finishCheck = finishCheck;
+    testStructReceiver -> testFlag = &receiverFlag;
+    
+    Thread* receiver = new Thread("Receiver");
+    receiver -> Fork(PortTestReceiver, (void *) testStructReceiver);
+	currentThread -> Yield();
+	
+	finishCheck -> P();
+	finishCheck -> P();
+
+	printf("!!! Blocking Send Test success.\n");
+	
+	senderFlag = false;
+	receiverFlag = false;
+	
+	Thread* receiver2 = new Thread("Receiver2");
+    receiver2 -> Fork(PortTestReceiver, (void *) testStructReceiver);
+	currentThread -> Yield();
+	
+	ASSERT(!receiverFlag);
+	
+	Thread* sender2 = new Thread("Sender2");
+    sender2 -> Fork(PortTestSender, (void *) testStructSender);
+    currentThread -> Yield();
+	
+	finishCheck -> P();
+	finishCheck -> P();
+
+    printf("!!! Blocking Receive Test success.\n");
+
+    delete testPort;
+    delete finishCheck;
+    delete testStructSender;
+    delete testStructReceiver;
+    
+    #else	
+	
     // Amount of threads to launch
     const int threadAmount = 3;
 
@@ -214,6 +349,17 @@ ThreadTest()
 	testStruct -> testConditionCons = testConditionCons;
 	testStruct -> finishCheck = finishCheck;
 	testStruct -> amount = 5;
+	
+	#elif defined PORT_TEST
+	
+	Port* port = new Port("Test Port");
+	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
+
+	TestPortStruct *testStruct = new TestPortStruct;
+	testStruct -> port = port;
+	testStruct -> finishCheck = finishCheck;
+	testStruct -> amount = 10;
+	
 	#endif
 
     // name will be used to generate the thread names
@@ -240,8 +386,17 @@ ThreadTest()
 
 		newThread->Fork(CondTestProducer, (void*) testStruct);
 		newThread2->Fork(CondTestConsumer, (void*) testStruct);
+		
+		#elif defined PORT_TEST
+		
+		snprintf(name, 64, "%s%d", "Number ", threadNum);
+		Thread *newThread2 = new Thread(name);
+
+		newThread->Fork(PortTestSenderMany, (void*) testStruct);
+		newThread2->Fork(PortTestReceiverMany, (void*) testStruct);
 
         #else
+        
         // Launch simple threads
 		void *dummy = nullptr;
         newThread->Fork(SimpleThread, dummy);
@@ -272,6 +427,18 @@ ThreadTest()
 	delete testConditionCons;
     delete finishCheck;
 	delete testStruct;
+	
+	#elif defined PORT_TEST
+	
+    for(int i = 0; i < 2 * threadAmount; i++)
+        finishCheck->P();
+    
+    delete port;
+    delete finishCheck;
+    delete testStruct;
+	
+	#endif
+
 	#endif
 
     DEBUG('t', "Exiting thread test\n");
