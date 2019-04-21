@@ -32,7 +32,8 @@
 /// * `initialValue` is the initial value of the semaphore.
 Semaphore::Semaphore(const char *debugName, int initialValue)
 {
-    name  = debugName;
+    name  = new char [64];
+    strncpy(name, debugName, 64);
     value = initialValue;
     queue = new List<Thread *>;
 }
@@ -43,6 +44,7 @@ Semaphore::Semaphore(const char *debugName, int initialValue)
 Semaphore::~Semaphore()
 {
     delete queue;
+    delete [] name;
 }
 
 const char *
@@ -71,9 +73,9 @@ Semaphore::P()
     value--;  // Semaphore available, consume its value.
 
     // Print debug message
-    char acquireMsg[64];
-    snprintf(acquireMsg, 64, "%s%s%s%s%c", "P() called on ", GetName(),
-        " by ", currentThread->GetName(), '\n');
+    char acquireMsg[128];
+    snprintf(acquireMsg, 128, "P() called on %s by %s\n", GetName(),
+             currentThread->GetName());
     DEBUG('s', acquireMsg);
 
     interrupt->SetLevel(oldLevel);  // Re-enable interrupts.
@@ -96,9 +98,9 @@ Semaphore::V()
     value++;
 
     // Print debug message
-    char releaseMsg[64];
-    snprintf(releaseMsg, 64, "%s%s%s%s%c", "V() called on ", GetName(),
-        " by ", currentThread->GetName(), '\n');
+    char releaseMsg[128];
+    snprintf(releaseMsg, 128, "V() called on %s by %s\n", GetName(),
+             currentThread->GetName());
     DEBUG('s', releaseMsg);
 
     interrupt->SetLevel(oldLevel);
@@ -113,10 +115,9 @@ Lock::Lock(const char *debugName)
 {
     name = debugName;
     semaphoreName = new char [64];
-    strcpy(semaphoreName, "Semaphore of ");
-    strcat(semaphoreName, debugName);
+    snprintf(semaphoreName, 64, "Semaphore of %s", debugName);
     lockSemaphore = new Semaphore(semaphoreName, 1);
-    lockThread = nullptr;
+    lockOwner = nullptr;
 }
 
 Lock::~Lock()
@@ -136,8 +137,14 @@ Lock::Acquire()
 {
     ASSERT(not IsHeldByCurrentThread());
 
+    // Prevent priority inversion. This happens if the lock is taken by a
+    // thread with lower priority.
+    if(lockOwner != nullptr)
+        if(currentThread->GetPriority() > lockOwner->GetPriority())
+            scheduler->PromoteThread(lockOwner, currentThread->GetPriority());
+
     lockSemaphore->P();
-    lockThread = currentThread;
+    lockOwner = currentThread;
 }
 
 void
@@ -145,53 +152,36 @@ Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
 
-    lockThread = nullptr;
+    // Restore the original thread priority, in case it had been promoted.
+    scheduler->DemoteThread(currentThread);
+
+    lockOwner = nullptr;
     lockSemaphore->V();
 }
 
 bool
 Lock::IsHeldByCurrentThread() const
 {
-    return lockThread == currentThread;
+    return lockOwner == currentThread;
 }
 
 Thread*
 Lock::LockOwner()
 {
-    return lockThread;
+    return lockOwner;
 }
 
 Condition::Condition(const char *debugName, Lock *conditionLock_)
 {
     name = debugName;
     conditionLock = conditionLock_;
-
-    queueLockName = new char [64];
-    strcpy(queueLockName, "Queue lock of ");
-    strcat(queueLockName, debugName);
-    queueLock = new Lock(queueLockName);
-
-    sleepQueueName = new char [64];
-    strcpy(sleepQueueName, "Sleep queue of ");
-    strcat(sleepQueueName, debugName);
-    sleepQueue = new Semaphore(sleepQueueName, 0);
-
-    handshakeSemaphoreName = new char [64];
-    strcpy(handshakeSemaphoreName, "Handshake semaphore of ");
-    strcat(handshakeSemaphoreName, debugName);
-    handshakeSemaphore = new Semaphore(handshakeSemaphoreName, 0);
-
+    sleepQueue = new List<Semaphore*>;
     sleeperAmount = 0;
 }
 
 Condition::~Condition()
 {
-    delete queueLock;
-    delete [] queueLockName;
     delete sleepQueue;
-    delete [] sleepQueueName;
-    delete handshakeSemaphore;
-    delete [] handshakeSemaphoreName;
 }
 
 const char *
@@ -205,42 +195,44 @@ Condition::Wait()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
 
-    queueLock->Acquire();
+    char *semaphoreName = new char [64];
+    snprintf(semaphoreName, 64, "Condition Variable %s Semaphore of Thread %s",
+             GetName(), currentThread->GetName());
+    Semaphore *newSemaphore = new Semaphore(semaphoreName, 0);
+    delete semaphoreName;
+
     sleeperAmount++;
-    queueLock->Release();
-
+    sleepQueue->Append(newSemaphore);
     conditionLock->Release();
-    sleepQueue->P();
+    newSemaphore->P();
 
-    // When woken up, reacquire lock
+    // When woken up reacquire lock
     conditionLock->Acquire();
-    handshakeSemaphore->V();
+    delete newSemaphore;
 }
 
 void
 Condition::Signal()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
-    queueLock->Acquire();
+
     if(sleeperAmount > 0){
         sleeperAmount--;
-        sleepQueue->V();
-        handshakeSemaphore->P();
+        Semaphore *wakeUp = sleepQueue->Pop();
+        wakeUp->V();
     }
-    queueLock->Release();
 }
 
 void
 Condition::Broadcast()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
-    queueLock->Acquire();
+
     while(sleeperAmount > 0){
         sleeperAmount--;
-        sleepQueue->V();
-        handshakeSemaphore->P();
+        Semaphore *wakeUp = sleepQueue->Pop();
+        wakeUp->V();
     }
-    queueLock->Release();
 }
 
 Port::Port(const char* debugName)
@@ -262,6 +254,11 @@ Port::Port(const char* debugName)
     strcpy(receiverName, "Receiver of ");
     strcat(receiverName, debugName);
     receiver = new Condition(receiverName, portLock);
+
+    senderBlockerName = new char [64];
+    strcpy(senderBlockerName, "Sender blocker of ");
+    strcat(senderBlockerName, debugName);
+    senderBlocker = new Condition(senderBlockerName, portLock);
 }
 
 Port::~Port()
@@ -272,6 +269,8 @@ Port::~Port()
     delete [] senderName;
     delete receiver;
     delete [] receiverName;
+    delete senderBlocker;
+    delete [] senderBlockerName;
 }
 
 const char*
@@ -292,6 +291,7 @@ Port::Send(int message)
     emptyBuffer = false;
     receiver->Signal();
 
+    senderBlocker -> Wait();
 
     portLock->Release();
 }
@@ -306,6 +306,9 @@ Port::Receive(int *message)
 
     *message = messageBuffer;
     emptyBuffer = true;
+
+    senderBlocker -> Signal();
+
     sender->Signal();
 
     portLock->Release();

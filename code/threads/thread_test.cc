@@ -13,49 +13,47 @@
 
 #include "system.hh"
 #include "synch.hh"
-#include <utility>
-
-// String Semaphore Pair, used to test Semaphores.
-typedef std::pair<char*, Semaphore*> StrSemPair;
 
 struct TestLockStruct {
-	char* name;
-	int* testVariable;
-	Lock* testLock;
-	Semaphore* testSemaphore;
+	int *testVariable;
+	Lock *testLock;
+	Semaphore *finishCheck;
+};
+
+struct TestCondStruct {
+	unsigned int bufferSize;
+	List<char*> *buffer;
+	Condition *testConditionProd;
+	Condition *testConditionCons;
+	Lock *condLock;
+	Semaphore *finishCheck;
+	unsigned int amount;
 };
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
-/// * `name` points to a string with a thread name, just for debugging
-///   purposes.
+/// *dummy exists only to satisfy the function type necessary for Fork
 void
-SimpleThread(void *name_)
+SimpleThread(void *dummy)
 {
-    // Reinterpret arg `name` as a string.
-    char *name = (char *) name_;
-
     // If the lines dealing with interrupts are commented, the code will
     // behave incorrectly, because printf execution may cause race
     // conditions.
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", name, num);
+        printf("*** Thread `%s` is running: iteration %u\n",
+		       currentThread->GetName(), num);
         currentThread->Yield();
     }
-    printf("!!! Thread `%s` has finished\n", name);
-	delete [] name;
+
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
 }
 
 
 // Same as SimpleThread but is called only if SEMAPHORE_TEST is defined.
 // Uses the semaphore declared in ThreadTest.
-void SemaphoreThread(void *pointerPair_){
-    // Reinterpret arg `pointerPair` as a pair<*char, *Semaphore> pointer.
-    StrSemPair *pointerPair = (StrSemPair*) pointerPair_;
-
-    // Rename the elements of pointerPair for more clarity
-    char *name = pointerPair->first;
-    Semaphore *testSemaphore = pointerPair->second;
+void SemaphoreThread(void *testSemaphore_){
+    // Reinterpret arg `pointerPair` as a Semaphore pointer.
+    Semaphore *testSemaphore = (Semaphore*) testSemaphore_;
 
     testSemaphore->P();
 
@@ -63,14 +61,14 @@ void SemaphoreThread(void *pointerPair_){
     // behave incorrectly, because printf execution may cause race
     // conditions.
     for (unsigned num = 0; num < 10; num++) {
-        printf("*** Thread `%s` is running: iteration %u\n", name, num);
+        printf("*** Thread `%s` is running: iteration %u\n",
+		       currentThread->GetName(), num);
         currentThread->Yield();
     }
 
-    printf("!!! Thread `%s` has finished\n", name);
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
 
     testSemaphore->V();
-	delete [] name;
 }
 
 void LockThread(void *structPointer_){
@@ -78,16 +76,15 @@ void LockThread(void *structPointer_){
     TestLockStruct *structPointer = (TestLockStruct*) structPointer_;
 
     // Rename the elements of pointerPair for more clarity
-    char *name = structPointer -> name;
     int *testVariable = structPointer -> testVariable;
     Lock *testLock = structPointer -> testLock;
-	Semaphore *testSemaphore = structPointer -> testSemaphore;
+	Semaphore *finishCheck = structPointer -> finishCheck;
 
     // If the lines dealing with interrupts are commented, the code will
     // behave incorrectly, because printf execution may cause race
     // conditions.
     int currentValue;
-	unsigned int iterationNumber = 1000000;
+	unsigned int iterationNumber = 100;
     for (unsigned num = 0; num < iterationNumber; num++) {
 		testLock -> Acquire();
         currentValue = *testVariable;
@@ -96,12 +93,82 @@ void LockThread(void *structPointer_){
 		currentThread->Yield();
 		testLock -> Release();
     }
-    printf("!!! Thread `%s` has finished\n", name);
-    testSemaphore -> V();
-	delete [] name;
+    printf("!!! Thread `%s` has finished\n", currentThread->GetName());
+
+	// Increase the value of the finishCheck Semaphore
+    finishCheck -> V();
 }
 
+void
+CondTestProducer(void *structPointer_)
+{
+	TestCondStruct *structPointer = (TestCondStruct*) structPointer_;
 
+	unsigned int bufferSize = structPointer -> bufferSize;
+	List<char*> *buffer = structPointer -> buffer;
+	Condition *testConditionProd = structPointer -> testConditionProd;
+	Condition *testConditionCons = structPointer -> testConditionCons;
+	Lock *condLock = structPointer -> condLock;
+	unsigned int produceTotal = structPointer -> amount;
+
+	unsigned int produceAmount = 0;
+
+	while(produceAmount < produceTotal){
+		condLock->Acquire();
+
+		while(buffer->Length() == bufferSize){
+			testConditionProd->Wait();
+		}
+
+		char *producerName = new char [64];
+		strcpy(producerName, currentThread->GetName());
+		buffer->Append(producerName);
+		produceAmount++;
+		printf("I'm producer %s and I'm producing memes for the %d th time. \n",
+			   currentThread->GetName(), produceAmount);
+		testConditionCons->Broadcast();
+
+		condLock->Release();
+	}
+
+	printf("!!! Thread Producer `%s` has finished\n",currentThread->GetName());
+}
+
+void
+CondTestConsumer(void *structPointer_)
+{
+	TestCondStruct *structPointer = (TestCondStruct*) structPointer_;
+
+	List<char*> *buffer = structPointer -> buffer;
+	Condition *testConditionProd = structPointer -> testConditionProd;
+	Condition *testConditionCons = structPointer -> testConditionCons;
+	Lock *condLock = structPointer -> condLock;
+	Semaphore *finishCheck = structPointer -> finishCheck;
+	unsigned int consumeTotal = structPointer -> amount;
+
+	unsigned int consumeAmount = 0;
+	char *producerName;
+
+	while(consumeAmount < consumeTotal){
+		condLock->Acquire();
+
+		while(buffer->IsEmpty()){
+			testConditionCons->Wait();
+		}
+
+		producerName = buffer->Pop();
+		consumeAmount++;
+		printf("I'm consumer %s and producer %s sent me memes. \n",
+		       currentThread->GetName(), producerName);
+		delete producerName;
+		testConditionProd->Broadcast();
+
+		condLock->Release();
+	}
+
+	printf("!!! Thread Consumer `%s` has finished\n", currentThread->GetName());
+	finishCheck -> V();
+}
 
 /// Set up a ping-pong between several threads.
 ///
@@ -110,47 +177,74 @@ void LockThread(void *structPointer_){
 void
 ThreadTest()
 {
-    DEBUG('t', "Entering thread test\n");
+	DEBUG('t', "Entering thread test\n");
     // Amount of threads to launch
-    const int threadAmount = 5;
+    const int threadAmount = 3;
 
     #ifdef SEMAPHORE_TEST
     // Initial value of the semaphore
     const int semInit = 3;
     Semaphore *testSemaphore = new Semaphore("Ejercicio 15", semInit);
-    #endif
 
-	#ifdef LOCK_TEST
+	#elif defined LOCK_TEST
+
 	int testVariable = 0;
 	Lock *testLock = new Lock("Test Lock");
 	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
+
+	TestLockStruct *testStruct = new TestLockStruct;
+	testStruct -> testVariable = &testVariable;
+	testStruct -> testLock = testLock;
+	testStruct -> finishCheck = finishCheck;
+
+	#elif defined COND_TEST
+
+	unsigned int bufferSize = 5;
+	List<char*> *buffer = new List<char*>;
+	Lock *condLock = new Lock("Test Lock for Condition Variable");
+	Condition *testConditionProd = new Condition("Condition for Producers", condLock);
+	Condition *testConditionCons = new Condition("Condition for Consumers", condLock);
+	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
+
+	TestCondStruct *testStruct = new TestCondStruct;
+	testStruct -> bufferSize = bufferSize;
+	testStruct -> buffer = buffer;
+	testStruct -> condLock = condLock;
+	testStruct -> testConditionProd = testConditionProd;
+	testStruct -> testConditionCons = testConditionCons;
+	testStruct -> finishCheck = finishCheck;
+	testStruct -> amount = 5;
 	#endif
 
-    // name[i] will contain the name of the (i+1)th process. This happens
-    // because name is 0-indexed and the processes are 1-indexed.
-    char **name = new char* [threadAmount];
+    // name will be used to generate the thread names
+    char *name = new char [64];
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
-        char *currentName = name[threadNum-1] = new char [64];
-        snprintf(currentName, 64, "%s%d", "Number ", threadNum);
-        Thread *newThread = new Thread(currentName, false, threadNum);
+        snprintf(name, 64, "%s%d", "Number ", threadNum);
+        Thread *newThread = new Thread(name);
 
         #ifdef SEMAPHORE_TEST
+
         // Launch semaphore test threads
-        StrSemPair *pointerPair = new StrSemPair;
-        *pointerPair = std::make_pair(currentName, testSemaphore);
-        newThread->Fork(SemaphoreThread, (void*) pointerPair);
+        newThread->Fork(SemaphoreThread, (void*) testSemaphore);
 
         #elif defined LOCK_TEST
-        TestLockStruct *testStruct = new TestLockStruct;
-        testStruct -> name = currentName;
-        testStruct -> testVariable = &testVariable;
-        testStruct -> testLock = testLock;
-        testStruct -> testSemaphore = finishCheck;
+
+		// Launch lock test threads
         newThread->Fork(LockThread, (void*) testStruct);
+
+        #elif defined COND_TEST
+
+		// Launch condition variable test (consumer/producer) threads
+        snprintf(name, 64, "%s%d", "Number' ", threadNum);
+        Thread *newThread2 = new Thread(name);
+
+		newThread->Fork(CondTestProducer, (void*) testStruct);
+		newThread2->Fork(CondTestConsumer, (void*) testStruct);
 
         #else
         // Launch simple threads
-        newThread->Fork(SimpleThread, (void*) currentName);
+		void *dummy = nullptr;
+        newThread->Fork(SimpleThread, dummy);
         #endif
     }
 
@@ -162,12 +256,23 @@ ThreadTest()
     char lockTestMsg[64];
     snprintf(lockTestMsg, 64, "Lock test variable value: %d \n", testVariable);
 
-	// DEBUG('s', lockTestMsg);
 	printf("%s\n", lockTestMsg);
 
 	delete testLock;
 	delete finishCheck;
-    #endif
+    delete testStruct;
+
+    #elif defined COND_TEST
+	for(int i = 0; i < threadAmount; i++)
+        finishCheck->P();
+
+	delete buffer;
+	delete condLock;
+	delete testConditionProd;
+	delete testConditionCons;
+    delete finishCheck;
+	delete testStruct;
+	#endif
 
     DEBUG('t', "Exiting thread test\n");
 }
