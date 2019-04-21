@@ -52,12 +52,12 @@ Debug::Print(char flag, const char *format, ...) const
     if (!IsEnabled(flag))
         return;
 
-    fprintf(stdout, "[%c] ", flag);
+    fprintf(stderr, "[%c] ", flag);
 
     va_list ap;
     // You will get an unused variable message here -- ignore it.
     va_start(ap, format);
-    vfprintf(stdout, format, ap);
+    vfprintf(stderr, format, ap);
     va_end(ap);
 
     fflush(stderr);
@@ -74,7 +74,7 @@ Debug::PrintCont(char flag, const char *format, ...) const
     va_list ap;
     // You will get an unused variable message here -- ignore it.
     va_start(ap, format);
-    vfprintf(stdout, format, ap);
+    vfprintf(stderr, format, ap);
     va_end(ap);
 
     fflush(stderr);

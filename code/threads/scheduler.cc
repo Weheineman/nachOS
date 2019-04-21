@@ -45,13 +45,11 @@ Scheduler::ReadyToRun(Thread *thread)
 {
     ASSERT(thread != nullptr);
 
-    DEBUG('t', "Putting thread %s on ready list %d (ReadyToRun)\n", thread->GetName(),
+    DEBUG('t', "Putting thread %s on ready list %d\n", thread->GetName(),
           thread->GetPriority());
 
     thread->SetStatus(READY);
     readyList[thread->GetPriority()]->Append(thread);
-
-    // DEBUG('t', "Priority Queue size: %d\n", readyList[thread->GetPriority()] -> Length());
 }
 
 /// Return the next thread to be scheduled onto the CPU.
@@ -175,7 +173,7 @@ Scheduler::PromoteThread(Thread *promoted, int newPriority)
 void
 Scheduler::DemoteThread(Thread *demoted)
 {
-    //readyList[demoted->GetPriority()]->Remove(demoted);
+    readyList[demoted->GetPriority()]->Remove(demoted);
     demoted->RestorePriority();
-    //ReadyToRun(demoted);
+    ReadyToRun(demoted);
 }

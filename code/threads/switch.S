@@ -127,17 +127,20 @@ SWITCH:
 /// * `rdi` -- points to `Thread::Finish` [`WhenDonePCState`].
         .globl  ThreadRoot
 ThreadRoot:
+        push   %rbp
+        mov    %rsp,%rbp
         push   %rdi
         push   %rsi
         callq  *%rax  // StartupPC()
         mov    %rbx,%rdi
-        mov    (%rsp),%rsi
-        callq  *%rsi  // InitialPC(InitialArg)
         pop    %rsi
+        callq  *%rsi  // InitialPC(InitialArg)
         pop    %rsi
         callq  *%rsi  // WhenDonePC()
 
         // NOT REACHED.
+        mov    %rbp,%rsp
+        pop    %rbp
         ret
 
 /// void SWITCH(Thread *t1, Thread *t2)

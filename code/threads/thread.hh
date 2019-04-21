@@ -142,7 +142,7 @@ public:
 
     void RestorePriority();
 
-    char *GetName();
+    const char *GetName() const;
 
     const bool GetEnableJoin() const;
 
@@ -161,7 +161,7 @@ private:
     /// Ready, running or blocked.
     ThreadStatus status;
 
-    char *name;
+    const char *name;
 
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);

@@ -58,7 +58,7 @@ public:
 private:
 
     /// For debugging.
-    char *name;
+    const char *name;
 
     /// Semaphore value, it is always `>= 0`.
     int value;
@@ -113,7 +113,7 @@ private:
     // Add other needed fields here.
     Semaphore *lockSemaphore;
     char *semaphoreName;
-    Thread *lockOwner;
+    Thread *lockThread;
 };
 
 // This class defined a “condition variable”.
@@ -171,14 +171,15 @@ private:
 
     const char *name;
 
-    // Lock of the condition variable.
+    // Other needed fields are to be added here.
     Lock *conditionLock;
-
-    // Amount of threads waiting on the condition variable
+    Lock *queueLock;
+    Semaphore *sleepQueue;
+    char *sleepQueueName;
     int sleeperAmount;
-
-    // List of semaphores corresponding to the sleeping threads
-    List <Semaphore*> *sleepQueue;
+    char *queueLockName;
+    Semaphore *handshakeSemaphore;
+    char *handshakeSemaphoreName;
 };
 
 
@@ -203,8 +204,6 @@ private:
     char *senderName;
     Condition *receiver;
     char *receiverName;
-    Condition *senderBlocker;
-    char *senderBlockerName;
 };
 
 #endif
