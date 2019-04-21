@@ -171,15 +171,14 @@ private:
 
     const char *name;
 
-    // Other needed fields are to be added here.
+    // Lock of the condition variable.
     Lock *conditionLock;
-    Lock *queueLock;
-    Semaphore *sleepQueue;
-    char *sleepQueueName;
+
+    // Amount of threads waiting on the condition variable
     int sleeperAmount;
-    char *queueLockName;
-    Semaphore *handshakeSemaphore;
-    char *handshakeSemaphoreName;
+
+    // List of semaphores corresponding to the sleeping threads
+    List <Semaphore*> *sleepQueue;
 };
 
 
