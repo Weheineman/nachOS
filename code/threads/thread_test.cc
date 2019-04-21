@@ -247,6 +247,18 @@ void PortTestReceiverMany (void* structPointer_){
 	finishCheck -> V();
 }
 
+void
+JoinTest(void *dummy)
+{
+   for (unsigned num = 0; num < 10; num++) {
+        printf("*** Thread `%s` is running: iteration %u\n",
+		       currentThread->GetName(), num);
+        currentThread->Yield();
+    }
+
+    printf("!!! Thread `%s` with Join flag has finished\n", currentThread->GetName());
+}
+
 
 /// Set up a ping-pong between several threads.
 ///
@@ -316,8 +328,12 @@ ThreadTest()
     char *name = new char [64];
     for(int threadNum = 1; threadNum <= threadAmount; threadNum++){
         snprintf(name, 64, "%s%d", "Number ", threadNum);
-        Thread *newThread = new Thread(name);
-
+        #ifdef JOIN_TEST
+	Thread *newThread = new Thread(name, true, 0);
+	#elif
+	Thread *newThread = new Thread(name);
+	#endif
+	
         #ifdef SEMAPHORE_TEST
 
         // Launch semaphore test threads
@@ -345,8 +361,13 @@ ThreadTest()
 		newThread->Fork(PortTestSenderMany, (void*) testStruct);
 		newThread2->Fork(PortTestReceiverMany, (void*) testStruct);
 
-        #else
-
+        #elif defined JOIN_TEST
+                // Launch Join test threads
+	void *dummy = nullptr;
+	newThread->Fork(JoinTest, dummy);
+	newThread->Join();
+	
+	#else
         // Launch simple threads
 		void *dummy = nullptr;
         newThread->Fork(SimpleThread, dummy);
