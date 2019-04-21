@@ -22,14 +22,14 @@
 #include "system.hh"
 
 
-/// Initialize the list of ready but not running threads to empty.
+/// Initialize the lists of ready but not running threads to empty.
 Scheduler::Scheduler()
 {
     for(int i = 0; i < priorityAmount; i++)
         readyList[i] = new List<Thread *>;
 }
 
-/// De-allocate the list of ready threads.
+/// De-allocate the lists of ready threads.
 Scheduler::~Scheduler()
 {
     for(int i = 0; i < priorityAmount; i++)
@@ -45,8 +45,8 @@ Scheduler::ReadyToRun(Thread *thread)
 {
     ASSERT(thread != nullptr);
 
-    DEBUG('t', "Putting thread %s on ready list %d (ReadyToRun)\n", thread->GetName(),
-          thread->GetPriority());
+    DEBUG('t', "Putting thread %s on ready list %d (ReadyToRun)\n",
+          thread->GetName(), thread->GetPriority());
 
     thread->SetStatus(READY);
     readyList[thread->GetPriority()]->Append(thread);
@@ -167,15 +167,10 @@ Scheduler::GetPriorityAmount() const
 void
 Scheduler::PromoteThread(Thread *promoted, int newPriority)
 {
+    // Remove the thread from the old queue
     readyList[promoted->GetPriority()]->Remove(promoted);
+
+    // Change the priority and push it to the corresponding queue
     promoted->SetPriority(newPriority);
     ReadyToRun(promoted);
-}
-
-void
-Scheduler::DemoteThread(Thread *demoted)
-{
-    //readyList[demoted->GetPriority()]->Remove(demoted);
-    demoted->RestorePriority();
-    //ReadyToRun(demoted);
 }

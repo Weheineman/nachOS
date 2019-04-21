@@ -39,10 +39,11 @@ public:
     // Print contents of ready list.
     void Print();
 
+    // Increases the priority of promoted and puts it in the corresponding
+    // queue
     void PromoteThread(Thread *promoted, int newPriority);
 
-    void DemoteThread(Thread *demoted);
-
+    // Returns the maximum level of priority a thread can have
     const int GetPriorityAmount() const;
 
 private:

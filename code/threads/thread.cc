@@ -45,10 +45,12 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     enableJoin = enableJoin_;
     joinPort   = nullptr;
 
+    // Check that the priority is valid
     ASSERT(priority >= 0 and priority < scheduler->GetPriorityAmount());
     priority   = priority_;
     oldPriority = priority_;
 
+    // The Join Port only is initialized if Join is enabled on the thread
     if(enableJoin){
         joinPortName = new char [64];
         strcpy(joinPortName, "Join Port of ");
@@ -128,6 +130,8 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
 void
 Thread::Join()
 {
+    // If Join is enabled, wait until the thread to be joined calls Send (this
+    // happens inside Thread::Finish)
     ASSERT(enableJoin);
 
     int dummy;
@@ -210,6 +214,8 @@ Thread::RestorePriority()
 void
 Thread::Finish()
 {
+    // If Join is enabled, wait to synchronize with the thread that calls Join
+    // on this thread.
     if(enableJoin)
       joinPort->Send(1);
 

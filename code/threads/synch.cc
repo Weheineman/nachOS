@@ -143,6 +143,7 @@ Lock::Acquire()
         if(currentThread->GetPriority() > lockOwner->GetPriority())
             scheduler->PromoteThread(lockOwner, currentThread->GetPriority());
 
+    // Acquire the semaphore and set self as owner
     lockSemaphore->P();
     lockOwner = currentThread;
 }
@@ -153,8 +154,9 @@ Lock::Release()
     ASSERT(IsHeldByCurrentThread());
 
     // Restore the original thread priority, in case it had been promoted.
-    scheduler->DemoteThread(currentThread);
+    currentThread->RestorePriority();
 
+    // Delete owner and release semaphore
     lockOwner = nullptr;
     lockSemaphore->V();
 }
@@ -195,12 +197,15 @@ Condition::Wait()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
 
+
+    // Create a Semaphore to sleep the current thread
     char *semaphoreName = new char [64];
     snprintf(semaphoreName, 64, "Condition Variable %s Semaphore of Thread %s",
              GetName(), currentThread->GetName());
     Semaphore *newSemaphore = new Semaphore(semaphoreName, 0);
     delete semaphoreName;
 
+    // Add the semaphore to the queue and sleep current thread
     sleeperAmount++;
     sleepQueue->Append(newSemaphore);
     conditionLock->Release();
@@ -216,6 +221,7 @@ Condition::Signal()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
 
+    // If there are threads waiting, wake up the first one in the queue
     if(sleeperAmount > 0){
         sleeperAmount--;
         Semaphore *wakeUp = sleepQueue->Pop();
@@ -228,6 +234,7 @@ Condition::Broadcast()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
 
+    // Wake up every thread in the queue
     while(sleeperAmount > 0){
         sleeperAmount--;
         Semaphore *wakeUp = sleepQueue->Pop();
@@ -284,13 +291,16 @@ Port::Send(int message)
 {
     portLock->Acquire();
 
+    // Wait until the buffer is empty
     while(not emptyBuffer)
         sender->Wait();
 
+    // Write the message onto the buffer and signal waiting receivers
     messageBuffer = message;
     emptyBuffer = false;
     receiver->Signal();
 
+    // Wait for a receiver to receive the message
     senderBlocker -> Wait();
 
     portLock->Release();
@@ -301,14 +311,17 @@ Port::Receive(int *message)
 {
     portLock->Acquire();
 
+    // Wait until a sender sends a message
     while(emptyBuffer)
         receiver->Wait();
 
+    // Copy the message and signal the sender that just sent the message
     *message = messageBuffer;
     emptyBuffer = true;
 
     senderBlocker -> Signal();
 
+    // Wake up other senders
     sender->Signal();
 
     portLock->Release();

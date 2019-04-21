@@ -73,7 +73,7 @@ private:
 /// A lock can have two states: free and busy. Only two operations are
 /// allowed on locks:
 ///
-/// * `Acquire` -- wait until the lock is free and mark is as busy.
+/// * `Acquire` -- wait until the lock is free and mark it as busy.
 /// * `Release` -- mark the lock as free, thereby awakening some other thread
 ///   that were blocked on an `Acquired`.
 ///
@@ -110,9 +110,13 @@ private:
     /// For debugging.
     const char *name;
 
-    // Add other needed fields here.
+    // Semaphore to implement atomic wait and awaken
     Semaphore *lockSemaphore;
+
+    // Name of the Semaphore
     char *semaphoreName;
+
+    // Thread that has acquired the lock
     Thread *lockOwner;
 };
 
@@ -181,6 +185,17 @@ private:
     List <Semaphore*> *sleepQueue;
 };
 
+/// This class defines a “port”.
+///
+/// A port is used to synchronize two threads. There are two operations on
+/// ports:
+///
+/// * `Send` -- wait until there is a receiver and store the value in the
+///   buffer.
+/// * `Receive` -- wait until there is a sender and load the value stored by
+///   send on the address given as an argument.
+///
+/// Multiple threads can call Send and Receive on the same port.
 
 class Port{
 public:
@@ -194,15 +209,26 @@ public:
     void Receive(int *message);
 
 private:
+    // Name of the port for debugging purposes
     const char* name;
+
+    // Contains the message
     int messageBuffer;
+
+    // Contains the status of messageBuffer
     bool emptyBuffer;
+
+    // Lock and condition variables (and their names) necessary to implement
+    // Send and Receive
     Lock *portLock;
     char *portLockName;
+
     Condition *sender;
     char *senderName;
+
     Condition *receiver;
     char *receiverName;
+
     Condition *senderBlocker;
     char *senderBlockerName;
 };

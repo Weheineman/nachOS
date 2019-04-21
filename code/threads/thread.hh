@@ -95,11 +95,16 @@ private:
     /// All registers except for `stackTop`.
     HostMemoryAddress machineState[MACHINE_STATE_SIZE];
 
+    // Current thread priority.
     int priority;
+
+    // Original thread priority (the one assigned when the object is created).
     int oldPriority;
 
-    // COSAS DEL JOIN PLS WRITE BETTER COMMENT
+    // Signals if Join can be called on this thread.
     bool enableJoin;
+
+    // Port used to synchronize the threads in a Join
     Port *joinPort;
     char *joinPortName;
 
@@ -138,8 +143,10 @@ public:
 
     void SetStatus(ThreadStatus st);
 
+    // Changes the priority of the thread to newPriority
     void SetPriority(int newPriority);
 
+    // Changes the priority of the thread to its original value
     void RestorePriority();
 
     char *GetName();
