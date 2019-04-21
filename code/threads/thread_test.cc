@@ -179,7 +179,7 @@ ThreadTest()
 {
 	DEBUG('t', "Entering thread test\n");
     // Amount of threads to launch
-    const int threadAmount = 1;
+    const int threadAmount = 5;
 
     #ifdef SEMAPHORE_TEST
     // Initial value of the semaphore

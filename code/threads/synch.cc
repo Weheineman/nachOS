@@ -201,6 +201,7 @@ Condition::Wait()
     snprintf(semaphoreName, 64, "Condition Variable %s Semaphore of Thread %s",
              GetName(), currentThread->GetName());
     Semaphore *newSemaphore = new Semaphore(semaphoreName, 0);
+    delete semaphoreName;
 
     sleeperAmount++;
     sleepQueue->Append(newSemaphore);
@@ -229,7 +230,7 @@ Condition::Broadcast()
 {
     ASSERT(conditionLock->IsHeldByCurrentThread());
 
-    if(sleeperAmount > 0){
+    while(sleeperAmount > 0){
         sleeperAmount--;
         Semaphore *wakeUp = sleepQueue->Pop();
         wakeUp->V();
