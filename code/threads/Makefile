@@ -10,7 +10,7 @@
 # limitation of liability and disclaimer of warranty provisions.
 
 
-DEFINES      = -DTHREADS -DDFS_TICKS_FIX -DPORT_BLOCK_TEST
+DEFINES      = -DTHREADS -DDFS_TICKS_FIX -DLATE_JOIN_TEST
 INCLUDE_DIRS = -I.. -I../machine
 HDR_FILES    = $(THREAD_HDR)
 SRC_FILES    = $(THREAD_SRC)
