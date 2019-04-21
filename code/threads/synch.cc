@@ -209,6 +209,7 @@ Condition::Wait()
 
     // When woken up reacquire lock
     conditionLock->Acquire();
+    delete newSemaphore;
 }
 
 void
@@ -220,7 +221,6 @@ Condition::Signal()
         sleeperAmount--;
         Semaphore *wakeUp = sleepQueue->Pop();
         wakeUp->V();
-        delete wakeUp;
     }
 }
 
@@ -233,7 +233,6 @@ Condition::Broadcast()
         sleeperAmount--;
         Semaphore *wakeUp = sleepQueue->Pop();
         wakeUp->V();
-        delete wakeUp;
     }
 }
 
