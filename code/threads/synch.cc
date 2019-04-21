@@ -33,7 +33,7 @@
 Semaphore::Semaphore(const char *debugName, int initialValue)
 {
     name  = new char [64];
-    strcpy(name, debugName);
+    strncpy(name, debugName, 64);
     value = initialValue;
     queue = new List<Thread *>;
 }
@@ -73,9 +73,9 @@ Semaphore::P()
     value--;  // Semaphore available, consume its value.
 
     // Print debug message
-    char acquireMsg[64];
-    snprintf(acquireMsg, 64, "%s%s%s%s%c", "P() called on ", GetName(),
-        " by ", currentThread->GetName(), '\n');
+    char acquireMsg[128];
+    snprintf(acquireMsg, 128, "P() called on %s by %s\n", GetName(),
+             currentThread->GetName());
     DEBUG('s', acquireMsg);
 
     interrupt->SetLevel(oldLevel);  // Re-enable interrupts.
@@ -98,9 +98,9 @@ Semaphore::V()
     value++;
 
     // Print debug message
-    char releaseMsg[64];
-    snprintf(releaseMsg, 64, "%s%s%s%s%c", "V() called on ", GetName(),
-        " by ", currentThread->GetName(), '\n');
+    char releaseMsg[128];
+    snprintf(releaseMsg, 128, "V() called on %s by %s\n", GetName(),
+             currentThread->GetName());
     DEBUG('s', releaseMsg);
 
     interrupt->SetLevel(oldLevel);

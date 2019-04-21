@@ -179,15 +179,15 @@ ThreadTest()
 {
 	DEBUG('t', "Entering thread test\n");
     // Amount of threads to launch
-    const int threadAmount = 5;
+    const int threadAmount = 3;
 
     #ifdef SEMAPHORE_TEST
     // Initial value of the semaphore
     const int semInit = 3;
     Semaphore *testSemaphore = new Semaphore("Ejercicio 15", semInit);
-    #endif
 
-	#ifdef LOCK_TEST
+	#elif defined LOCK_TEST
+
 	int testVariable = 0;
 	Lock *testLock = new Lock("Test Lock");
 	Semaphore *finishCheck = new Semaphore("finishCheckSemaphore", 0);
@@ -196,10 +196,10 @@ ThreadTest()
 	testStruct -> testVariable = &testVariable;
 	testStruct -> testLock = testLock;
 	testStruct -> finishCheck = finishCheck;
-	#endif
 
-	#ifdef COND_TEST
-	unsigned int bufferSize = 10;
+	#elif defined COND_TEST
+
+	unsigned int bufferSize = 5;
 	List<char*> *buffer = new List<char*>;
 	Lock *condLock = new Lock("Test Lock for Condition Variable");
 	Condition *testConditionProd = new Condition("Condition for Producers", condLock);
@@ -213,7 +213,7 @@ ThreadTest()
 	testStruct -> testConditionProd = testConditionProd;
 	testStruct -> testConditionCons = testConditionCons;
 	testStruct -> finishCheck = finishCheck;
-	testStruct -> amount = 10;
+	testStruct -> amount = 5;
 	#endif
 
     // name will be used to generate the thread names
@@ -223,15 +223,18 @@ ThreadTest()
         Thread *newThread = new Thread(name);
 
         #ifdef SEMAPHORE_TEST
+
         // Launch semaphore test threads
         newThread->Fork(SemaphoreThread, (void*) testSemaphore);
 
         #elif defined LOCK_TEST
 
+		// Launch lock test threads
         newThread->Fork(LockThread, (void*) testStruct);
 
         #elif defined COND_TEST
 
+		// Launch condition variable test (consumer/producer) threads
         snprintf(name, 64, "%s%d", "Number' ", threadNum);
         Thread *newThread2 = new Thread(name);
 
@@ -245,7 +248,7 @@ ThreadTest()
         #endif
     }
 
-	delete name;
+	delete [] name;
 
     #ifdef LOCK_TEST
     for(int i = 0; i < threadAmount; i++)
@@ -253,7 +256,6 @@ ThreadTest()
     char lockTestMsg[64];
     snprintf(lockTestMsg, 64, "Lock test variable value: %d \n", testVariable);
 
-	// DEBUG('s', lockTestMsg);
 	printf("%s\n", lockTestMsg);
 
 	delete testLock;
@@ -265,14 +267,25 @@ ThreadTest()
         finishCheck->P();
 
     delete buffer;
+	printf("Deleted buffer\n");
     delete condLock;
+	printf("Deleted condLock\n");
     delete testConditionProd;
+	printf("Deleted testProd\n");
     delete testConditionCons;
-    delete finishCheck;
+
+
+
+	printf("Deleted testCons\n");
+	printf("%s\n", finishCheck->GetName());
+
+	// Uncomment the next line to get a segmentation fault :)
+    // delete finishCheck;
+
+	printf("Deleted finishCheck\n");
     delete testStruct;
+	printf("Deleted testStruct\n");
     #endif
-
-
 
     DEBUG('t', "Exiting thread test\n");
 }
