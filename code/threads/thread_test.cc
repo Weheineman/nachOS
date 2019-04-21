@@ -113,21 +113,25 @@ CondTestProducer(void *structPointer_)
 
 	unsigned int produceAmount = 0;
 
-	while(produceTotal != produceAmount){
+	while(produceAmount < produceTotal){
 		condLock->Acquire();
+
 		while(buffer->Length() == bufferSize){
 			testConditionProd->Wait();
 		}
-		buffer->Append(currentThread->GetName());
+
+		char *producerName = new char [64];
+		strcpy(producerName, currentThread->GetName());
+		buffer->Append(producerName);
 		produceAmount++;
 		printf("I'm producer %s and I'm producing memes for the %d th time. \n",
 			   currentThread->GetName(), produceAmount);
-
 		testConditionCons->Broadcast();
+
 		condLock->Release();
 	}
 
-	printf("!!! Thread Producer `%s` has finished\n", currentThread->GetName());
+	printf("!!! Thread Producer `%s` has finished\n",currentThread->GetName());
 }
 
 void
@@ -143,18 +147,22 @@ CondTestConsumer(void *structPointer_)
 	unsigned int consumeTotal = structPointer -> amount;
 
 	unsigned int consumeAmount = 0;
-	char* name;
+	char *producerName;
 
-	while(consumeTotal != consumeAmount){
+	while(consumeAmount < consumeTotal){
 		condLock->Acquire();
+
 		while(buffer->IsEmpty()){
 			testConditionCons->Wait();
 		}
-		name = buffer->Pop();
+
+		producerName = buffer->Pop();
 		consumeAmount++;
 		printf("I'm consumer %s and producer %s sent me memes. \n",
-		       currentThread->GetName(), name);
+		       currentThread->GetName(), producerName);
+		delete producerName;
 		testConditionProd->Broadcast();
+
 		condLock->Release();
 	}
 
@@ -171,7 +179,7 @@ ThreadTest()
 {
 	DEBUG('t', "Entering thread test\n");
     // Amount of threads to launch
-    const int threadAmount = 5;
+    const int threadAmount = 1;
 
     #ifdef SEMAPHORE_TEST
     // Initial value of the semaphore

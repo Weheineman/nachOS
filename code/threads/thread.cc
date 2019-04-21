@@ -160,8 +160,8 @@ Thread::SetStatus(ThreadStatus st)
     status = st;
 }
 
-const char *
-Thread::GetName() const
+char *
+Thread::GetName()
 {
     return name;
 }
