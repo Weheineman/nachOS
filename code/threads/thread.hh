@@ -38,13 +38,17 @@
 #ifndef NACHOS_THREADS_THREAD__HH
 #define NACHOS_THREADS_THREAD__HH
 
-
-#include "lib/utility.hh"
+// Uncomment if not including open_file.hh!
+// #include "lib/utility.hh"
+#include "userprog/syscall.h"
+#include "filesys/open_file.hh"
+#include "lib/table.hh"
 
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
+#include "lib/table.hh"
 #endif
 
 /// To avoid mutual includes involving this file and synch.hh
@@ -108,6 +112,9 @@ private:
     Port *joinPort;
     char *joinPortName;
 
+    // Table used to map the OpenFileIds (int) to OpenFile pointers
+    Table <OpenFile*> *fileTable;
+
 public:
 
     /// Initialize a `Thread`.
@@ -148,6 +155,19 @@ public:
 
     // Changes the priority of the thread to its original value
     void RestorePriority();
+
+    // Adds a OpenFile pointer to the table and returns the
+    // index where it is stored.
+    OpenFileId AddFile(OpenFile* filePtr);
+
+    // Returns the OpenFile pointer stored at index fileId.
+    OpenFile* GetFile(OpenFileId fileId);
+
+    // Returns true iff the fileId corresponds to a file in the table.
+    bool HasFile(OpenFileId fileId);
+
+    // Removes the file corresponding to the fileId.
+    void RemoveFile(OpenFileId fileId);
 
     char *GetName();
 

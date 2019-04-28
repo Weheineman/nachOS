@@ -74,6 +74,9 @@ DefaultHandler(ExceptionType et)
 static void
 SyscallHandler(ExceptionType _et)
 {
+    // Maximum amount of bytes that can be read/written.
+    const int maxBufferSize = 512;
+
     int scid = machine->ReadRegister(2);
 
     switch (scid) {
@@ -83,6 +86,7 @@ SyscallHandler(ExceptionType _et)
             interrupt->Halt();
             break;
 
+        // Returns 1 if successful, returns 0 otherwise.
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0)
@@ -93,13 +97,81 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
 
-            DEBUG('a', "Open requested for file `%s`.\n", filename);
+            int success = fileSystem -> Create(filename, 0);
+            machine -> WriteRegister(2, success);
+            DEBUG('a', "Attempted to create file `%s`.\n", filename);
+            break;
+        }
+
+        // Returns the OpenFileId of the specified file.
+        // If there is an error, it returns -1.
+        case SC_OPEN: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0)
+                DEBUG('a', "Error: address to filename string is null.\n");
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+                DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+
+            OpenFile *filePtr = fileSystem -> Open(filename);
+            OpenFileId fileId = currentThread -> AddFile(filePtr);
+            machine -> WriteRegister(2, fileId);
+            DEBUG('a', "Request to open file `%s`.\n", filename);
+            break;
+        }
+
+        case SC_READ: {
+            char *buffer = (char*) machine->ReadRegister(4);
+            int readSize = machine->ReadRegister(5);
+            OpenFileId fileId = machine->ReadRegister(6);
+
+            // int maxRead = max(maxBufferSize, sizeof(buffer));
+            ASSERT(readSize > 0 and readSize <= maxBufferSize);
+            // char *charBuffer = new char [readSize];
+
+
+            ASSERT(currentThread -> HasFile(fileId));
+            OpenFile *filePtr = currentThread -> GetFile(fileId);
+
+            int readBytes = filePtr -> Read(buffer, readSize);
+            // WriteBufferToUser(charBuffer, bufferAddr, readBytes);
+            machine -> WriteRegister(2, readBytes);
+            DEBUG('a', "Requested to read %d bytes from file at position %d\n",
+                  readSize, fileId);
+            break;
+        }
+
+        case SC_WRITE: {
+            char *buffer = (char*) machine->ReadRegister(4);
+            int writeSize = machine->ReadRegister(5);
+            OpenFileId fileId = machine->ReadRegister(6);
+
+            // int maxRead = max(maxBufferSize, sizeof(buffer));
+            ASSERT(writeSize > 0 and writeSize <= maxBufferSize);
+            // char *charBuffer = new char [readSize];
+
+            ASSERT(currentThread -> HasFile(fileId));
+            OpenFile *filePtr = currentThread -> GetFile(fileId);
+
+            int writtenBytes = filePtr -> Write(buffer, writeSize);
+            // WriteBufferToUser(charBuffer, bufferAddr, readBytes);
+            machine -> WriteRegister(2, writtenBytes);
+            DEBUG('a', "Requested to write %d bytes to the file at position %d\n",
+                  writeSize, fileId);
             break;
         }
 
         case SC_CLOSE: {
-            int fid = machine->ReadRegister(4);
-            DEBUG('a', "Close requested for id %u.\n", fid);
+            int fileId = machine->ReadRegister(4);
+
+            ASSERT(currentThread -> HasFile(fileId));
+            currentThread -> RemoveFile(fileId);
+
+            // FREE POINTER OF THE OPEN FILE????
+
+            DEBUG('a', "Close requested for id %u.\n", fileId);
             break;
         }
 

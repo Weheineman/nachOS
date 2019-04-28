@@ -88,7 +88,7 @@ void Yield();
 /// for the purposes of testing out these routines.
 
 /// A unique identifier for an open Nachos file.
-typedef int OpenFileId;
+typedef unsigned int OpenFileId;
 
 /// When an address space starts up, it has two open files, representing
 /// keyboard input and display output (in UNIX terms, stdin and stdout).

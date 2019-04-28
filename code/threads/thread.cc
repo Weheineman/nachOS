@@ -63,6 +63,7 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     status     = JUST_CREATED;
 #ifdef USER_PROGRAM
     space      = nullptr;
+    fileTable  = new Table<OpenFile*>();
 #endif
 }
 
@@ -198,6 +199,33 @@ void
 Thread::RestorePriority()
 {
     priority = oldPriority;
+}
+
+OpenFileId
+Thread::AddFile(OpenFile *filePtr)
+{
+    OpenFileId fileId = fileTable -> Add(filePtr);
+    return fileId;
+}
+
+OpenFile *
+Thread::GetFile(OpenFileId fileId)
+{
+    OpenFile *filePtr = fileTable -> Get(fileId);
+    return filePtr;
+}
+
+bool
+Thread::HasFile(OpenFileId fileId)
+{
+    bool found = fileTable -> HasKey(fileId);
+    return found;
+}
+
+void
+Thread::RemoveFile(OpenFileId fileId)
+{
+    fileTable -> Remove(fileId);
 }
 
 /// Called by `ThreadRoot` when a thread is done executing the forked

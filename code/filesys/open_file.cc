@@ -67,12 +67,12 @@ OpenFile::Read(char *into, unsigned numBytes)
 }
 
 int
-OpenFile::Write(const char *into, unsigned numBytes)
+OpenFile::Write(const char *from, unsigned numBytes)
 {
-    ASSERT(into != nullptr);
+    ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
 
-    int result = WriteAt(into, numBytes, seekPosition);
+    int result = WriteAt(from, numBytes, seekPosition);
     seekPosition += result;
     return result;
 }
