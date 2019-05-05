@@ -1,16 +1,17 @@
 PRACTICA 3
-La syscall Create() no deberia ser bool? (devolver success)
-Como deberian bloquearse readers y writers en una SynchConsole?
-En thread.cc las cosas agregadas se llaman con ifdef... pero solo
-con USER_PROGRAM?
-SynchConsole::GetChar() en que orden deberia agarrar lock, bloquearse y
-leer el char?
-Como agregamos synch_console.cc al make?
-En Table::Get() si devuelve T() y es un puntero, contiene nullptr?
-Tipos de los syscall?
-En Read/Write, como hacemos con el tamanio del buffer? Lo declaramos estatico?
-Lo declaramos dinamico de tamanio readSize?
-Que hacemos con los include cabeza de thread.hh (syscall y open_file)?
-En address_space.cc, por que setea pageTable[i].virtualPage?
-Cuando deletear los open file pointers?
-Tipo de Thread::RemoveFile?
+Dudas del domingo:
+EJERCICIO 2:
+TO DO:
+	Thread::DeleteAllFiles
+EJERCICIO 3:
+- Parte a
+	--Dudas:
+	Qué hago si me quedo sin páginas de RAM en la carga de un programa?
+	Es muy desprolija la forma en la que seteamos a cero cada página?
+	Cuándo llamamos a crear un address space? Nos resulta raro que cuando creamos un thread su address space sea nullptr
+	Es necesario toquetear InitRegisters?
+	Limpiamos las asignaciones al destruir el AddressSpace?
+	--Issues:
+	Cómo funciona el noffHeader? Tenemos que hacer el seteo por páginas y no entendemos cómo funciona.
+- Parte b
+	Dónde hacemos el conteo de ticks?

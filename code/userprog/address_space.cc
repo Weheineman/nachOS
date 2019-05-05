@@ -51,8 +51,6 @@ SwapHeader(noffHeader *noffH)
 /// Assumes that the object code file is in NOFF format.
 ///
 /// First, set up the translation from program memory to physical memory.
-/// For now, this is really simple (1:1), since we are only uniprogramming,
-/// and we have a single unsegmented page table.
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
@@ -75,9 +73,8 @@ AddressSpace::AddressSpace(OpenFile *executable)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= NUM_PHYS_PAGES);
-      // Check we are not trying to run anything too big -- at least until we
-      // have virtual memory.
+    ASSERT(numPages <= pageMap -> CountClear());
+      // Check we are not trying to run anything too big.
 
     DEBUG('a', "Initializing address space, num pages %u, size %u\n",
           numPages, size);
@@ -87,8 +84,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-          // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i;
+		pageTable[i].physicalPage = pageMap -> Find();
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -101,8 +97,11 @@ AddressSpace::AddressSpace(OpenFile *executable)
 
     // Zero out the entire address space, to zero the unitialized data
     // segment and the stack segment.
-    memset(mainMemory, 0, size);
-
+    for(unsigned i = 0; i < numPages; i++){
+		unsigned pageIndex = pageTable[i].physicalPage;
+		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);	
+	}
+    
     // Then, copy in the code and data segments into memory.
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
@@ -124,6 +123,9 @@ AddressSpace::AddressSpace(OpenFile *executable)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+	for(unsigned i = 0; i < numPages; i++)
+		pageMap -> Clear(pageTable[i].physicalPage);
+	
     delete [] pageTable;
 }
 
@@ -149,9 +151,9 @@ AddressSpace::InitRegisters()
     // Set the stack register to the end of the address space, where we
     // allocated the stack; but subtract off a bit, to make sure we do not
     // accidentally reference off the end!
-    machine->WriteRegister(STACK_REG, numPages * PAGE_SIZE - 16);
+    machine->WriteRegister(STACK_REG, pageTable[numPages - 1].physicalPage * PAGE_SIZE - 16);
     DEBUG('a', "Initializing stack register to %u\n",
-          numPages * PAGE_SIZE - 16);
+          pageTable[numPages - 1].physicalPage * PAGE_SIZE - 16);
 }
 
 /// On a context switch, save any machine state, specific to this address

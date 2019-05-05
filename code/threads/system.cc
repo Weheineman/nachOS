@@ -12,6 +12,7 @@
 #ifdef USER_PROGRAM
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
+#include "lib/bitmap.hh"
 #endif
 
 
@@ -41,6 +42,8 @@ SynchDisk *synchDisk;
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
+
+Bitmap *pageMap;
 #endif
 
 #ifdef NETWORK
@@ -182,6 +185,8 @@ Initialize(int argc, char **argv)
     Debugger *d = debugUserProg ? new Debugger : nullptr;
     machine = new Machine(d);  // This must come first.
     SetExceptionHandlers();
+    
+    pageMap = new Bitmap(NUM_PHYS_PAGES);
 #endif
 
 #ifdef FILESYS
@@ -212,6 +217,8 @@ Cleanup()
 
 #ifdef USER_PROGRAM
     delete machine;
+    
+    delete pageMap;
 #endif
 
 #ifdef FILESYS_NEEDED

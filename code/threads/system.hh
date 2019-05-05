@@ -17,6 +17,7 @@
 #include "machine/timer.hh"
 
 
+
 /// Initialization and cleanup routines.
 
 // Initialization, called before anything else.
@@ -35,7 +36,10 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
+#include "lib/bitmap.hh"
 extern Machine *machine;  // User program memory and registers.
+
+extern Bitmap *pageMap;   // Bitmap to check for available pages.
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
