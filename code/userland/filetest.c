@@ -8,17 +8,23 @@
 /// procedure, but if you do this, you have to be careful to allocate a big
 /// enough stack to hold the automatics!
 
-
 #include "syscall.h"
-
 
 int
 main(void)
 {
     Create("test.txt");
+    OpenFileId o = Open("test.txt");
+    Write("Look mom, I'm in the file!", 26, o);
+    Close(o);
+    o = Open("test.txt");
+    char aux[64];
+    Read(aux, 64, o);
+    Write(aux, 64, CONSOLE_OUTPUT);
+
+    // Read(aux, 64, CONSOLE_INPUT);
+    // Write("Hello World", 12, CONSOLE_OUTPUT);
+    // Write(aux, 64, CONSOLE_OUTPUT);
     Halt();
-    // OpenFileId o = Open("test.txt");
-    // Write("Hello world\n",12,o);
-    // Close(o);
     // Not reached.
 }

@@ -74,9 +74,6 @@ DefaultHandler(ExceptionType et)
 static void
 SyscallHandler(ExceptionType _et)
 {
-    // Maximum amount of bytes that can be read/written.
-    const int maxBufferSize = 512;
-
     int scid = machine->ReadRegister(2);
 
     switch (scid) {
@@ -123,43 +120,76 @@ SyscallHandler(ExceptionType _et)
         }
 
         case SC_READ: {
-            char *buffer = (char*) machine->ReadRegister(4);
+            int bufferAddr = machine->ReadRegister(4);
             int readSize = machine->ReadRegister(5);
             OpenFileId fileId = machine->ReadRegister(6);
 
-            // int maxRead = max(maxBufferSize, sizeof(buffer));
-            ASSERT(readSize > 0 and readSize <= maxBufferSize);
-            // char *charBuffer = new char [readSize];
+            if (bufferAddr == 0)
+                DEBUG('a', "Error: address to buffer string is null.\n");
 
+            char *buffer = new char [readSize];
 
-            ASSERT(currentThread -> HasFile(fileId));
-            OpenFile *filePtr = currentThread -> GetFile(fileId);
+            int readBytes;
+            if(fileId == CONSOLE_INPUT){
+                int ind;
+                for(ind = 0; ind < readSize; ind++){
+                    buffer[ind] = synchConsole -> GetChar();
+                    if(buffer[ind] == '\n'){
+                        buffer[ind] = 0;
+                        break;
+                    }
+                }
+                readBytes = ind;
+            }else{
+                ASSERT(currentThread -> HasFile(fileId));
+                OpenFile *filePtr = currentThread -> GetFile(fileId);
+                readBytes = filePtr -> Read(buffer, readSize);
+            }
 
-            int readBytes = filePtr -> Read(buffer, readSize);
-            // WriteBufferToUser(charBuffer, bufferAddr, readBytes);
+            WriteStringToUser(buffer, bufferAddr);
             machine -> WriteRegister(2, readBytes);
             DEBUG('a', "Requested to read %d bytes from file at position %d\n",
                   readSize, fileId);
+
+            delete buffer [];
             break;
         }
 
         case SC_WRITE: {
-            char *buffer = (char*) machine->ReadRegister(4);
+            int bufferAddr = machine->ReadRegister(4);
             int writeSize = machine->ReadRegister(5);
             OpenFileId fileId = machine->ReadRegister(6);
 
-            // int maxRead = max(maxBufferSize, sizeof(buffer));
-            ASSERT(writeSize > 0 and writeSize <= maxBufferSize);
-            // char *charBuffer = new char [readSize];
+            if (bufferAddr == 0)
+                DEBUG('a', "Error: address to buffer string is null.\n");
 
-            ASSERT(currentThread -> HasFile(fileId));
-            OpenFile *filePtr = currentThread -> GetFile(fileId);
+            if(writeSize == 0)
+                DEBUG('a', "Error: writeSize is 0.\n");
 
-            int writtenBytes = filePtr -> Write(buffer, writeSize);
-            // WriteBufferToUser(charBuffer, bufferAddr, readBytes);
+            char *buffer = new char [writeSize + 1];
+
+            if (!ReadStringFromUser(bufferAddr, buffer, writeSize))
+                DEBUG('a', "Error: buffer string too long (maximum is %u bytes).\n",
+                      writeSize);
+
+            int writtenBytes;
+            if(fileId == CONSOLE_OUTPUT){
+                int ind;
+                for(ind = 0; ind < writeSize and buffer[ind]; ind++)
+                    synchConsole -> PutChar(buffer[ind]);
+                synchConsole -> PutChar('\n');
+                writtenBytes = ind;
+            }else{
+                ASSERT(currentThread -> HasFile(fileId));
+                OpenFile *filePtr = currentThread -> GetFile(fileId);
+                writtenBytes = filePtr -> Write(buffer, writeSize);
+            }
+
             machine -> WriteRegister(2, writtenBytes);
             DEBUG('a', "Requested to write %d bytes to the file at position %d\n",
                   writeSize, fileId);
+
+            delete buffer [];
             break;
         }
 
@@ -168,8 +198,6 @@ SyscallHandler(ExceptionType _et)
 
             ASSERT(currentThread -> HasFile(fileId));
             currentThread -> RemoveFile(fileId);
-
-            // FREE POINTER OF THE OPEN FILE????
 
             DEBUG('a', "Close requested for id %u.\n", fileId);
             break;

@@ -99,7 +99,7 @@ typedef unsigned int OpenFileId;
 #define CONSOLE_OUTPUT  1
 
 /// Create a Nachos file, with `name`.
-void Create(const char *name);
+int Create(const char *name);
 
 /// Remove the Nachos file named `name`.
 int Remove(const char *name);
@@ -109,7 +109,12 @@ int Remove(const char *name);
 OpenFileId Open(const char *name);
 
 /// Write `size` bytes from `buffer` to the open file.
-void Write(const char *buffer, int size, OpenFileId id);
+///
+/// Return the number of bytes actually written -- if the open file is not long
+/// enough, or if it is an I/O device, and there are not enough characters to
+/// read, return whatever is available (for I/O devices, you should always
+/// wait until you can return at least one character).
+int Write(const char *buffer, int size, OpenFileId id);
 
 /// Read `size` bytes from the open file into `buffer`.
 ///

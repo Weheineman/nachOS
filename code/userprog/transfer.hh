@@ -19,7 +19,7 @@ bool ReadStringFromUser(int userAddress, char *outString,
 void WriteBufferToUser(const char *buffer, int userAddress, unsigned byteCount);
 
 /// Copy a C string from host to virtual machine.
-void WriteStringToUser(const char *string, int userAddress, unsigned byteCount);
+void WriteStringToUser(const char *string, int userAddress);
 
 
 #endif

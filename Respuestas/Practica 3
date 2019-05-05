@@ -1,0 +1,4 @@
+Cambiamos los tipos de:
+Create: ahora devuelve un int que indica si el archivo se creo exitosamente.
+1 es exito y 0 es fracaso.
+Write: ahora devuelve un int que contiene la cantidad de bytes escritos.

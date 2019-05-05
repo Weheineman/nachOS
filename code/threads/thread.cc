@@ -63,7 +63,11 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     status     = JUST_CREATED;
 #ifdef USER_PROGRAM
     space      = nullptr;
+    // Create a file table and fill the inedexes 0 and 1, which are reserved
+    // for synchConsole.
     fileTable  = new Table<OpenFile*>();
+    for(int i = 0; i < 2; i++)
+        fileTable -> Add(nullptr);
 #endif
 }
 
@@ -87,6 +91,10 @@ Thread::~Thread()
         delete joinPort;
         delete [] joinPortName;
     }
+
+    #ifdef USER_PROGRAM
+        CloseFiles();
+    #endif
 
     delete [] name;
 }
@@ -128,15 +136,17 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     interrupt->SetLevel(oldLevel);
 }
 
-void
+// If Join is enabled, wait until the thread to be joined calls Send (this
+// happens inside Thread::Finish). Returns the exit status of the joined thread.
+int
 Thread::Join()
 {
-    // If Join is enabled, wait until the thread to be joined calls Send (this
-    // happens inside Thread::Finish)
     ASSERT(enableJoin);
 
-    int dummy;
-    joinPort->Receive(&dummy);
+    int exitStatus;
+    joinPort->Receive(&exitStatus);
+
+    return exitStatus;
 }
 
 /// Check a thread's stack to see if it has overrun the space that has been
@@ -208,7 +218,7 @@ Thread::AddFile(OpenFile *filePtr)
     return fileId;
 }
 
-OpenFile *
+OpenFile*
 Thread::GetFile(OpenFileId fileId)
 {
     OpenFile *filePtr = fileTable -> Get(fileId);
@@ -225,7 +235,13 @@ Thread::HasFile(OpenFileId fileId)
 void
 Thread::RemoveFile(OpenFileId fileId)
 {
-    fileTable -> Remove(fileId);
+    OpenFile *removedFile = fileTable -> Remove(fileId);
+    delete removedFile;
+}
+
+void
+Thread::RemoveAllFiles() {
+    return;
 }
 
 /// Called by `ThreadRoot` when a thread is done executing the forked
@@ -240,12 +256,12 @@ Thread::RemoveFile(OpenFileId fileId)
 /// NOTE: we disable interrupts, so that we do not get a time slice between
 /// setting `threadToBeDestroyed`, and going to sleep.
 void
-Thread::Finish()
+Thread::Finish(int exitStatus)
 {
     // If Join is enabled, wait to synchronize with the thread that calls Join
     // on this thread.
     if(enableJoin)
-      joinPort->Send(1);
+      joinPort->Send(exitStatus);
 
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);

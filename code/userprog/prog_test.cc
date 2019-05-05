@@ -97,11 +97,11 @@ ConsoleTest(const char *in, const char *out)
 void
 SynchConsoleTest(const char *in, const char *out)
 {
-    SynchConsole* synchConsole = new SynchConsole(in, out);
+    SynchConsole* testConsole = new SynchConsole(in, out);
 
     for (;;) {
-        char ch = synchConsole->GetChar();
-        synchConsole->PutChar(ch);  // Echo it!
+        char ch = testConsole->GetChar();
+        testConsole->PutChar(ch);  // Echo it!
         if (ch == 'q')
             return;  // If `q`, then quit.
     }

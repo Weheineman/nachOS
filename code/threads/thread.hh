@@ -133,8 +133,9 @@ public:
     void Fork(VoidFunctionPtr func, void *arg);
 
     /// Blocks the running thread until the thread on which
-    /// Join is called finishes.
-    void Join();
+    /// Join is called finishes. Returns the exit status of
+    /// the joined thread.
+    int Join();
 
     /// Relinquish the CPU if any other thread is runnable.
     void Yield();
@@ -143,7 +144,7 @@ public:
     void Sleep();
 
     /// The thread is done executing.
-    void Finish();
+    void Finish(int exitStatus = 0);
 
     /// Check if thread has overflowed its stack.
     void CheckOverflow() const;
@@ -168,6 +169,9 @@ public:
 
     // Removes the file corresponding to the fileId.
     void RemoveFile(OpenFileId fileId);
+
+    // Removes all open files.
+    void RemoveAllFiles();
 
     char *GetName();
 
