@@ -8,10 +8,11 @@ EJERCICIO 3:
 	--Dudas:
 	Qué hago si me quedo sin páginas de RAM en la carga de un programa?
 	Es muy desprolija la forma en la que seteamos a cero cada página?
-	Cuándo llamamos a crear un address space? Nos resulta raro que cuando creamos un thread su address space sea nullptr
+	Cuándo llamamos a crear un address space? Nos resulta raro que cuando creamos un thread su address space sea nullptr (Se setea a mano cuando lo creamos)) (prog_test -> startprocess))
 	Es necesario toquetear InitRegisters?
 	Limpiamos las asignaciones al destruir el AddressSpace?
 	--Issues:
 	Cómo funciona el noffHeader? Tenemos que hacer el seteo por páginas y no entendemos cómo funciona.
 - Parte b
-	Dónde hacemos el conteo de ticks?
+        (COMENTAR EN DOCUMENTACION EL TEMA DE SI LLAMAN CON -rs PORQUE SON UNOS INFELICES)
+	Dónde hacemos el conteo de ticks? (Creemos que done)

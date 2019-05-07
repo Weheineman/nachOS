@@ -188,6 +188,10 @@ Initialize(int argc, char **argv)
     pageMap = new Bitmap(NUM_PHYS_PAGES);
 
     synchConsole = new SynchConsole(NULL, NULL);
+    
+    if(!randomYield)
+        timer = new Timer(TimerInterruptHandler, 0, false);
+    
     SetExceptionHandlers();
 #endif
 

@@ -91,18 +91,25 @@ AddressSpace::AddressSpace(OpenFile *executable)
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
+          
+        //Zero out the page.
+        unsigned pageIndex = pageTable[i].physicalPage;
+		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);	
     }
 
     char *mainMemory = machine->GetMMU()->mainMemory;
-
-    // Zero out the entire address space, to zero the unitialized data
-    // segment and the stack segment.
-    for(unsigned i = 0; i < numPages; i++){
-		unsigned pageIndex = pageTable[i].physicalPage;
-		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);	
-	}
     
     // Then, copy in the code and data segments into memory.
+    
+    /// GUIDIOS PARA TERMINAR EJERCICIO 3
+    
+    /// DEFINIR FUNCIÓN QUE DADA LA PAGETABLE Y UNA VIRTUAL ADDR, TE DEVUELVA LA PÁGINA QUE LA CONTIENE.
+    /// DEFINIR FUNCIÓN QUE DADA UNA PÁGINA Y UNA VIRTUAL ADDR, TE DEVUELVA EL OFFSET CON RESPECTO AL INICIO.
+    
+    /// CON ESAS COSAS HECHAS, COPIÁS EL PEDAZO QUE PUEDAS EN LA PRIMERA Y DESPUÉS, MIENTRAS TENGAS COSAS QUE
+    /// FALTEN COPIAR, VAS HACIENDO LOS READAT DE A TAMAÑO DE PÁGINA.
+    /// RINSE AND REPEAT PARA INITDATA.
+    
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
               noffH.code.virtualAddr, noffH.code.size);
@@ -151,9 +158,9 @@ AddressSpace::InitRegisters()
     // Set the stack register to the end of the address space, where we
     // allocated the stack; but subtract off a bit, to make sure we do not
     // accidentally reference off the end!
-    machine->WriteRegister(STACK_REG, pageTable[numPages - 1].physicalPage * PAGE_SIZE - 16);
+    machine->WriteRegister(STACK_REG, numPages * PAGE_SIZE - 16);
     DEBUG('a', "Initializing stack register to %u\n",
-          pageTable[numPages - 1].physicalPage * PAGE_SIZE - 16);
+          numPages * PAGE_SIZE - 16);
 }
 
 /// On a context switch, save any machine state, specific to this address
