@@ -43,6 +43,15 @@ SwapHeader(noffHeader *noffH)
     noffH->uninitData.inFileAddr  = WordToHost(noffH->uninitData.inFileAddr);
 }
 
+
+uint32_t virtualPageIndex(uint32_t virtualAddress){
+	return virtualAddress / PAGE_SIZE;
+}
+
+uint32_t virtualPageOffset(uint32_t virtualAddress){
+	return virtualAddress % PAGE_SIZE;
+}
+
 /// Create an address space to run a user program.
 ///
 /// Load the program from a file `executable`, and set everything up so that
@@ -101,27 +110,63 @@ AddressSpace::AddressSpace(OpenFile *executable)
     
     // Then, copy in the code and data segments into memory.
     
-    /// GUIDIOS PARA TERMINAR EJERCICIO 3
-    
-    /// DEFINIR FUNCIÓN QUE DADA LA PAGETABLE Y UNA VIRTUAL ADDR, TE DEVUELVA LA PÁGINA QUE LA CONTIENE.
-    /// DEFINIR FUNCIÓN QUE DADA UNA PÁGINA Y UNA VIRTUAL ADDR, TE DEVUELVA EL OFFSET CON RESPECTO AL INICIO.
-    
-    /// CON ESAS COSAS HECHAS, COPIÁS EL PEDAZO QUE PUEDAS EN LA PRIMERA Y DESPUÉS, MIENTRAS TENGAS COSAS QUE
-    /// FALTEN COPIAR, VAS HACIENDO LOS READAT DE A TAMAÑO DE PÁGINA.
-    /// RINSE AND REPEAT PARA INITDATA.
-    
     if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
-              noffH.code.virtualAddr, noffH.code.size);
-        executable->ReadAt(&(mainMemory[noffH.code.virtualAddr]),
-                           noffH.code.size, noffH.code.inFileAddr);
+        uint32_t startingPage = virtualPageIndex(noffH.code.virtualAddr);
+        uint32_t startingOffset = virtualPageOffset(noffH.code.virtualAddr);
+        uint32_t writeAmount = ((noffH.code.size) < (PAGE_SIZE - startingOffset)) ? (noffH.code.size) : (PAGE_SIZE - startingOffset);
+        uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
+		
+		DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
+              noffH.code.virtualAddr, targetAddress, writeAmount);
+		
+		executable->ReadAt(&(mainMenory[targetAddress]),
+		                   writeAmount, noffH.code.inFileAddr);
+		                   
+		uint32_t writtenSize = writeAmount;
+		uint32_t writtenPages = 1;
+		while(writtenSize < noffH.code.size){
+			writeAmount = (noffH.code.size - writtenSize < PAGE_SIZE) ? (noffH.code.size - writtenSize) : (PAGE_SIZE);
+			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
+			
+			DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
+				  noffH.code.virtualAddr + writtenSize, targetAddress, writeAmount);
+			
+			executable->ReadAt(&(mainMenory[targetAddress]),
+		                   writeAmount, noffH.code.inFileAddr + writtenSize);
+			
+			writtenSize += writeAmount;
+			writtenPages++;
+		}
+
     }
+    
     if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
-              noffH.initData.virtualAddr, noffH.initData.size);
-        executable->ReadAt(&(mainMemory[noffH.initData.virtualAddr]),
-          noffH.initData.size, noffH.initData.inFileAddr);
-    }
+        uint32_t startingPage = virtualPageIndex(noffH.initData.virtualAddr);
+        uint32_t startingOffset = virtualPageOffset(noffH.initData.virtualAddr);
+        uint32_t writeAmount = ((noffH.initData.size) < (PAGE_SIZE - startingOffset)) ? (noffH.initData.size) : (PAGE_SIZE - startingOffset);
+        uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
+		
+		DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
+              noffH.initData.virtualAddr, targetAddress, writeAmount);
+		
+		executable->ReadAt(&(mainMenory[targetAddress]),
+		                   writeAmount, noffH.initData.inFileAddr);
+		                   
+		uint32_t writtenSize = writeAmount;
+		uint32_t writtenPages = 1;
+		while(writtenSize < noffH.initData.size){
+			writeAmount = (noffH.initData.size - writtenSize < PAGE_SIZE) ? (noffH.initData.size - writtenSize) : (PAGE_SIZE);
+			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
+			
+			DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
+				  noffH.initData.virtualAddr + writtenSize, targetAddress, writeAmount);
+			
+			executable->ReadAt(&(mainMenory[targetAddress]),
+		                   writeAmount, noffH.initData.inFileAddr + writtenSize);
+			
+			writtenSize += writeAmount;
+			writtenPages++;
+	}
 
 }
 

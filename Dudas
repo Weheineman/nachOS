@@ -5,13 +5,8 @@ Los tipos no los declaramos nosotros. Que hacemos?
 EJERCICIO 3:
 - Parte a
 	--Dudas:
-	Qué hago si me quedo sin páginas de RAM en la carga de un programa?
-	Es muy desprolija la forma en la que seteamos a cero cada página?
-	Cuándo llamamos a crear un address space? Nos resulta raro que cuando creamos un thread su address space sea nullptr (Se setea a mano cuando lo creamos)) (prog_test -> startprocess))
-	Es necesario toquetear InitRegisters?
-	Limpiamos las asignaciones al destruir el AddressSpace?
+	Qué hago si me quedo sin páginas de RAM en la carga de un programa? (Nos dijeron que no hay drama que explote con un assert. Hay formas de solucionarlo pero requieren rebuscársela mucho.
 	--Issues:
-	Cómo funciona el noffHeader? Tenemos que hacer el seteo por páginas y no entendemos cómo funciona.
+	Preguntar el compilation error de que no reconoce min.
 - Parte b
         (COMENTAR EN DOCUMENTACION EL TEMA DE SI LLAMAN CON -rs PORQUE SON UNOS INFELICES)
-	Dónde hacemos el conteo de ticks? (Creemos que done)
