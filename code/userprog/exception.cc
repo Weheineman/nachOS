@@ -140,18 +140,17 @@ SyscallHandler(ExceptionType _et)
             if (bufferAddr == 0)
                 DEBUG('a', "Error: address to buffer string is null.\n");
 
-            char *buffer = new char [readSize];
+            char *buffer = new char [readSize+1];
 
             int readBytes;
             if(fileId == CONSOLE_INPUT){
                 int ind;
                 for(ind = 0; ind < readSize; ind++){
                     buffer[ind] = synchConsole -> GetChar();
-                    if(buffer[ind] == '\n'){
-                        buffer[ind] = 0;
+                    if(buffer[ind] == '\n')
                         break;
-                    }
                 }
+                buffer[ind] = 0;
                 readBytes = ind;
             }else{
                 ASSERT(currentThread -> HasFile(fileId));
