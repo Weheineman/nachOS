@@ -101,74 +101,74 @@ AddressSpace::AddressSpace(OpenFile *executable)
         pageTable[i].readOnly     = false;
           // If the code segment was entirely on a separate page, we could
           // set its pages to be read-only.
-          
+
         //Zero out the page.
         unsigned pageIndex = pageTable[i].physicalPage;
-		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);	
+		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);
     }
-    
+
     // Then, copy in the code and data segments into memory.
-    
+
     if (noffH.code.size > 0) {
         uint32_t startingPage = virtualPageIndex(noffH.code.virtualAddr);
         uint32_t startingOffset = virtualPageOffset(noffH.code.virtualAddr);
         uint32_t writeAmount = ((noffH.code.size) < (PAGE_SIZE - startingOffset)) ? (noffH.code.size) : (PAGE_SIZE - startingOffset);
         uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
-		
+
 		DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
               noffH.code.virtualAddr, targetAddress, writeAmount);
-		
+
 		executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.code.inFileAddr);
-		                   
+
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.code.size){
 			writeAmount = (noffH.code.size - writtenSize < PAGE_SIZE) ? (noffH.code.size - writtenSize) : (PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
-			
+
 			DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
 				  noffH.code.virtualAddr + writtenSize, targetAddress, writeAmount);
-			
+
 			executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.code.inFileAddr + writtenSize);
-			
+
 			writtenSize += writeAmount;
 			writtenPages++;
 		}
 
     }
-    
+
     if (noffH.initData.size > 0) {
         uint32_t startingPage = virtualPageIndex(noffH.initData.virtualAddr);
         uint32_t startingOffset = virtualPageOffset(noffH.initData.virtualAddr);
         uint32_t writeAmount = ((noffH.initData.size) < (PAGE_SIZE - startingOffset)) ? (noffH.initData.size) : (PAGE_SIZE - startingOffset);
         uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
-		
+
 		DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
               noffH.initData.virtualAddr, targetAddress, writeAmount);
-		
+
 		executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.initData.inFileAddr);
-		                   
+
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.initData.size){
 			writeAmount = (noffH.initData.size - writtenSize < PAGE_SIZE) ? (noffH.initData.size - writtenSize) : (PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
-			
+
 			DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
 				  noffH.initData.virtualAddr + writtenSize, targetAddress, writeAmount);
-			
+
 			executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.initData.inFileAddr + writtenSize);
-			
+
 			writtenSize += writeAmount;
 			writtenPages++;
 		}
 
 	}
-	
+
 }
 
 /// Deallocate an address space.
@@ -178,7 +178,7 @@ AddressSpace::~AddressSpace()
 {
 	for(unsigned i = 0; i < numPages; i++)
 		pageMap -> Clear(pageTable[i].physicalPage);
-	
+
     delete [] pageTable;
 }
 

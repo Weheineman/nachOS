@@ -119,10 +119,7 @@ private:
     Table <OpenFile*> *fileTable;
     unsigned int maxFileTableInd;
     const unsigned int tableReserved = 2;
-
-    Table <Thread*> *threadTable;
-    unsigned int maxThreadTableInd;
-
+    SpaceId spaceId;
     #endif
 
 public:
@@ -185,23 +182,8 @@ public:
     // Removes all open files.
     void RemoveAllFiles();
 
-    // Adds a Thread pointer to the table and returns the
-    // index where it is stored (the user space id corresponding
-    // to the new thread).
-    SpaceId AddThread(Thread* threadPtr);
-
-    // Returns the Thread pointer stored at index fileId.
-    Thread* GetThread(SpaceId threadId);
-
-    // Returns true iff the threadId corresponds to a thread in the table.
-    bool HasThread(SpaceId threadId);
-
-    // Removes the thread corresponding to the threadId.
-    void RemoveThread(SpaceId threadId);
-
-    // Removes all threads launched by the current thread.
-    void RemoveAllThreads();
-
+    // Returns the SpaceId of the current process
+    SpaceId GetSpaceId();
     #endif
 
     char *GetName();

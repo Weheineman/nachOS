@@ -35,7 +35,6 @@ CFLAGS       = -std=c99 -G 0 -c $(INCLUDE_DIRS) -mips1 -mfp32 \
 
 PROGRAMS = halt shell tiny_shell our_shell matmult sort filetest echo
 
-
 .PHONY: all clean
 
 all: $(PROGRAMS)
@@ -49,9 +48,9 @@ start.o: start.s ../userprog/syscall.h
 	$(RM) strt.s
 
 
-# Las reglas genéricas que siguen sirven para compilar programas simples,
-# que consistan en un único archivo fuente. Si se quieren compilar programas
-# más complejos, se deben agregar reglas adecuadas.
+# Las reglas genï¿½ricas que siguen sirven para compilar programas simples,
+# que consistan en un ï¿½nico archivo fuente. Si se quieren compilar programas
+# mï¿½s complejos, se deben agregar reglas adecuadas.
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^

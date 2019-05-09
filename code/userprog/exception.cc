@@ -28,6 +28,18 @@
 #include "threads/system.hh"
 
 
+// GUIDIOS: Borrar esto despues de hacer el ejercicio 4
+extern void
+StartProcess(const char *filename);
+
+void
+StartProcessChanta(void *filename_)
+{
+    // Reinterpret filename as a string.
+    char *filename = (char*) filename_;
+    StartProcess(filename);
+}
+
 static void
 IncrementPC()
 {
@@ -78,6 +90,7 @@ SyscallHandler(ExceptionType _et)
 
     switch (scid) {
 
+        // GUIDIOS: Comentar todos los case
         case SC_HALT:
             DEBUG('a', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
@@ -222,18 +235,39 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
 
+            // All exec threads are joinable
+            // GUIDIOS: joinable by default, set by user me parece razonable
+            Thread *newThread = new Thread(filename, true);
+            SpaceId newSpaceId = newThread -> GetSpaceId();
+            // GUIDIOS: Le puse nombre feo porque lo tenemos que matar para
+            // poder hacer el ejercicio 4. Esta declarado al comienzo de este
+            // archivo y hay que borrarlo cuando desaparezca de la linea que
+            // sigue.
+            newThread -> Fork(StartProcessChanta, (void*) filename);
 
-            // GUIDIOS: ACORDATE DE USAR StartProcess de prog_test.cc
+            // GUIDIOS: Me parece que todo esto son cosas que hay que
+            // hacer solo cuando agreguemos args, porque es mas o menos lo
+            // que hace StartProcess. Las dejo porque creo que van a servir.
+
+            // OpenFile *filePtr = fileSystem -> Open(filename);
+            // ASSERT(filePtr != nullptr);
+            // AddressSpace *newAddressSpace = new AddressSpace(filePtr);
+            // newThread -> space = newAddressSpace;
+            //
+            // delete filePtr;
+
+            machine -> WriteRegister(2, newSpaceId);
 
             break;
         }
 
         case SC_JOIN: {
-            int threadId = machine -> ReadRegister(4);
+            SpaceId spaceId = machine -> ReadRegister(4);
 
-            ASSERT(currentThread -> HasThread(threadId));
-            Thread *threadToJoin = currentThread -> GetThread(threadId);
+            ASSERT(threadTable -> HasKey(spaceId));
+            Thread *threadToJoin = threadTable -> Get(spaceId);
 
+            DEBUG('s', "Requested Join with SpaceId %d\n", spaceId);
             int exitStatus = threadToJoin -> Join();
 
             machine -> WriteRegister(2, exitStatus);

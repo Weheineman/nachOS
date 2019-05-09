@@ -44,6 +44,7 @@ SynchDisk *synchDisk;
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole; ///< Console used in syscall testing
 Bitmap *pageMap;
+Table <Thread*> *threadTable;
 #endif
 
 #ifdef NETWORK
@@ -101,6 +102,7 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     bool debugUserProg = false;  // Single step user program.
+    threadTable = new Table<Thread*>();
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
@@ -188,10 +190,10 @@ Initialize(int argc, char **argv)
     pageMap = new Bitmap(NUM_PHYS_PAGES);
 
     synchConsole = new SynchConsole(NULL, NULL);
-    
+
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
-    
+
     SetExceptionHandlers();
 #endif
 
@@ -225,6 +227,7 @@ Cleanup()
     delete machine;
     delete pageMap;
     delete synchConsole;
+    delete threadTable;
 #endif
 
 #ifdef FILESYS_NEEDED
