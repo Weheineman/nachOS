@@ -242,7 +242,8 @@ SyscallHandler(ExceptionType _et)
             // poder hacer el ejercicio 4. Esta declarado al comienzo de este
             // archivo y hay que borrarlo cuando desaparezca de la linea que
             // sigue.
-            newThread -> Fork(StartProcessChanta, (void*) filename);
+            // newThread -> Fork(StartProcessChanta, (void*) filename);
+            StartProcess(filename);
 
             // GUIDIOS: Me parece que todo esto son cosas que hay que
             // hacer solo cuando agreguemos args, porque es mas o menos lo

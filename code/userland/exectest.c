@@ -13,9 +13,8 @@
 int
 main(void)
 {
-    Halt();
-    Exec("halt");
+    Exec("../userland/halt");
 
-    // Not reached.
-    Write("This should not be printed.\n", 28, CONSOLE_OUTPUT);
+    // Hopefully reached.
+    Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
 }
