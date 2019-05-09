@@ -177,7 +177,7 @@ SyscallHandler(ExceptionType _et)
                 int ind;
                 for(ind = 0; ind < writeSize and buffer[ind]; ind++)
                     synchConsole -> PutChar(buffer[ind]);
-                synchConsole -> PutChar('\n');
+                //synchConsole -> PutChar('\n');
                 writtenBytes = ind;
             }else{
                 ASSERT(currentThread -> HasFile(fileId));
