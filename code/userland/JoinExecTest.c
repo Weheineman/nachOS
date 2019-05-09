@@ -13,10 +13,9 @@
 int
 main(void)
 {
-    OpenFileId o = Open("../userland/test.txt");
-    
     Join(Exec(../userland/AuxTest));
-
+    
+    OpenFileId o = Open("../userland/test.txt");
     char aux[64];
     Read(aux, 64, o);
     Write(aux, 64, CONSOLE_OUTPUT);
