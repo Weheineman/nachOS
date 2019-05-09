@@ -90,6 +90,7 @@ SyscallHandler(ExceptionType _et)
 
     switch (scid) {
 
+        // GUIDIOS: Comentar todos los case
         case SC_HALT:
             DEBUG('a', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
@@ -233,8 +234,6 @@ SyscallHandler(ExceptionType _et)
             if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
-
-
 
             // All exec threads are joinable
             // GUIDIOS: joinable by default, set by user me parece razonable

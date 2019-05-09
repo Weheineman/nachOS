@@ -102,6 +102,7 @@ Initialize(int argc, char **argv)
 
 #ifdef USER_PROGRAM
     bool debugUserProg = false;  // Single step user program.
+    threadTable = new Table<Thread*>();
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
@@ -190,8 +191,6 @@ Initialize(int argc, char **argv)
 
     synchConsole = new SynchConsole(NULL, NULL);
 
-    threadTable = new Table<Thread*>();
-
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
 
@@ -228,6 +227,7 @@ Cleanup()
     delete machine;
     delete pageMap;
     delete synchConsole;
+    delete threadTable;
 #endif
 
 #ifdef FILESYS_NEEDED

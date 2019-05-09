@@ -2,6 +2,7 @@ PRACTICA 3
 EJERCICIO 2:
 En Thread::AddFile() hay un assert que compara -1 con FileId que es unsigned
 Los tipos no los declaramos nosotros. Que hacemos?
+Esta bien que el read a CONSOLE_INPUT ponga un terminador en lugar de \n?
 EJERCICIO 3:
 - Parte a
 	--Dudas:
