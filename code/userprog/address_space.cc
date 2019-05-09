@@ -89,6 +89,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
           numPages, size);
 
     // First, set up the translation.
+    char *mainMemory = machine->GetMMU()->mainMemory;
 
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
@@ -105,8 +106,6 @@ AddressSpace::AddressSpace(OpenFile *executable)
         unsigned pageIndex = pageTable[i].physicalPage;
 		memset(mainMemory + pageIndex * PAGE_SIZE, 0, PAGE_SIZE);	
     }
-
-    char *mainMemory = machine->GetMMU()->mainMemory;
     
     // Then, copy in the code and data segments into memory.
     
@@ -119,7 +118,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
               noffH.code.virtualAddr, targetAddress, writeAmount);
 		
-		executable->ReadAt(&(mainMenory[targetAddress]),
+		executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.code.inFileAddr);
 		                   
 		uint32_t writtenSize = writeAmount;
@@ -131,7 +130,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 			DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
 				  noffH.code.virtualAddr + writtenSize, targetAddress, writeAmount);
 			
-			executable->ReadAt(&(mainMenory[targetAddress]),
+			executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.code.inFileAddr + writtenSize);
 			
 			writtenSize += writeAmount;
@@ -149,7 +148,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
               noffH.initData.virtualAddr, targetAddress, writeAmount);
 		
-		executable->ReadAt(&(mainMenory[targetAddress]),
+		executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.initData.inFileAddr);
 		                   
 		uint32_t writtenSize = writeAmount;
@@ -161,13 +160,15 @@ AddressSpace::AddressSpace(OpenFile *executable)
 			DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
 				  noffH.initData.virtualAddr + writtenSize, targetAddress, writeAmount);
 			
-			executable->ReadAt(&(mainMenory[targetAddress]),
+			executable->ReadAt(&(mainMemory[targetAddress]),
 		                   writeAmount, noffH.initData.inFileAddr + writtenSize);
 			
 			writtenSize += writeAmount;
 			writtenPages++;
-	}
+		}
 
+	}
+	
 }
 
 /// Deallocate an address space.
