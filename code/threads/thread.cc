@@ -223,11 +223,13 @@ Thread::RestorePriority()
 OpenFileId
 Thread::AddFile(OpenFile *filePtr)
 {
-    OpenFileId fileId = fileTable -> Add(filePtr);
-    ASSERT(fileId != -1);
+    int possibleFileId = fileTable -> Add(filePtr);
+    ASSERT(possibleFileId != -1);
+    OpenFileId fileId = possibleFileId;
 
     // GUIDIOS: max doesn't work for some reason
-    // maxFileTableInd = max(maxFileTableInd, fileId);
+    maxFileTableInd = maxx(maxFileTableInd, fileId);
+    //
     if(maxFileTableInd < fileId)
         maxFileTableInd = fileId;
 

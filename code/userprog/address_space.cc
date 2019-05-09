@@ -113,7 +113,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     if (noffH.code.size > 0) {
         uint32_t startingPage = virtualPageIndex(noffH.code.virtualAddr);
         uint32_t startingOffset = virtualPageOffset(noffH.code.virtualAddr);
-        uint32_t writeAmount = min(noffH.code.size, PAGE_SIZE - startingOffset);
+        uint32_t writeAmount = minn(noffH.code.size, PAGE_SIZE - startingOffset);
         uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
 
 		DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
@@ -125,7 +125,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.code.size){
-			writeAmount = min(noffH.code.size, writtenSize < PAGE_SIZE);
+			writeAmount = minn(noffH.code.size, writtenSize < PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
 
 			DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
@@ -143,7 +143,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
     if (noffH.initData.size > 0) {
         uint32_t startingPage = virtualPageIndex(noffH.initData.virtualAddr);
         uint32_t startingOffset = virtualPageOffset(noffH.initData.virtualAddr);
-		uint32_t writeAmount = min(noffH.initData.size, PAGE_SIZE - startingOffset);
+		uint32_t writeAmount = minn(noffH.initData.size, PAGE_SIZE - startingOffset);
         uint32_t targetAddress = pageTable[startingPage].physicalPage * PAGE_SIZE + startingOffset;
 
 		DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
@@ -155,7 +155,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.initData.size){
-			writeAmount = min(noffH.initData.size, writtenSize < PAGE_SIZE);
+			writeAmount = minn(noffH.initData.size, writtenSize < PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
 
 			DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",

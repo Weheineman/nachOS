@@ -234,27 +234,22 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
 
-            // All exec threads are joinable
-            // GUIDIOS: joinable by default, set by user me parece razonable
-            Thread *newThread = new Thread(filename, true);
-            SpaceId newSpaceId = newThread -> GetSpaceId();
-            // GUIDIOS: Le puse nombre feo porque lo tenemos que matar para
-            // poder hacer el ejercicio 4. Esta declarado al comienzo de este
-            // archivo y hay que borrarlo cuando desaparezca de la linea que
-            // sigue.
-            // newThread -> Fork(StartProcessChanta, (void*) filename);
-            StartProcess(filename);
+            // StartProcess(filename);
 
             // GUIDIOS: Me parece que todo esto son cosas que hay que
             // hacer solo cuando agreguemos args, porque es mas o menos lo
             // que hace StartProcess. Las dejo porque creo que van a servir.
+            // All exec threads are joinable
+            // GUIDIOS: joinable by default, set by user me parece razonable
+            Thread *newThread = new Thread(filename, true);
+            SpaceId newSpaceId = newThread -> GetSpaceId();
 
-            // OpenFile *filePtr = fileSystem -> Open(filename);
-            // ASSERT(filePtr != nullptr);
-            // AddressSpace *newAddressSpace = new AddressSpace(filePtr);
-            // newThread -> space = newAddressSpace;
-            //
-            // delete filePtr;
+            OpenFile *filePtr = fileSystem -> Open(filename);
+            ASSERT(filePtr != nullptr);
+            AddressSpace *newAddressSpace = new AddressSpace(filePtr);
+            newThread -> space = newAddressSpace;
+
+            delete filePtr;
 
             machine -> WriteRegister(2, newSpaceId);
 

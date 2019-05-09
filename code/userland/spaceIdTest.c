@@ -8,14 +8,27 @@
 /// procedure, but if you do this, you have to be careful to allocate a big
 /// enough stack to hold the automatics!
 
-
 #include "syscall.h"
 
+void
+intToStr(char* p, int n){
+    p[0] = '0'+n;
+    p[1] = 0;
+}
 
 int
 main(void)
 {
-    Exit(0);
-    Halt();
-    // Not reached.
+    char p1[10], p2[10];
+
+    intToStr(p1, Exec("../userland/halt"));
+    intToStr(p2, Exec("../userland/halt"));
+
+    Write(p1, 1, CONSOLE_OUTPUT);
+    Write("\n", 1, CONSOLE_OUTPUT);
+    Write(p2, 1, CONSOLE_OUTPUT);
+    Write("\n", 1, CONSOLE_OUTPUT);
+
+    // Hopefully reached.
+    Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
 }
