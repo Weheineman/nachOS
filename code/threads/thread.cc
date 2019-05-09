@@ -228,7 +228,10 @@ Thread::AddFile(OpenFile *filePtr)
     OpenFileId fileId = fileTable -> Add(filePtr);
     ASSERT(fileId != -1);
 
-    maxFileTableInd = max(maxFileTableInd, fileId);
+    // GUIDIOS: max doesn't work for some reason
+    // maxFileTableInd = max(maxFileTableInd, fileId);
+    if(maxFileTableInd < fileId)
+        maxFileTableInd = fileId;
 
     return fileId;
 }
@@ -269,7 +272,10 @@ Thread::AddThread(Thread* threadPtr){
     SpaceId threadId = threadTable -> Add(threadPtr);
     ASSERT(threadId != -1);
 
-    maxThreadTableInd = max(maxThreadTableInd, threadId);
+    // GUIDIOS: max doesn't work for some reason
+    // maxThreadTableInd = max(maxThreadTableInd, threadId);
+    if(maxThreadTableInd < threadId)
+        maxThreadTableInd = threadId;
 
     return threadId;
 }
