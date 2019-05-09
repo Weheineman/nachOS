@@ -68,7 +68,7 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     // Create a file table and fill the inedexes 0 and 1, which are reserved
     // for synchConsole.
     fileTable  = new Table<OpenFile*>();
-    for(unsigned int i = 0; i < tableReserved; i++)
+    for(int i = 0; i < tableReserved; i++)
         fileTable -> Add(nullptr);
     maxFileTableInd = 0;
 
@@ -220,20 +220,16 @@ Thread::RestorePriority()
 
 #ifdef USER_PROGRAM
 
-OpenFileId
+// GUIDIOS: Copiar los comentarios de thread.hh aca.
+int
 Thread::AddFile(OpenFile *filePtr)
 {
     int possibleFileId = fileTable -> Add(filePtr);
-    ASSERT(possibleFileId != -1);
-    OpenFileId fileId = possibleFileId;
 
-    // GUIDIOS: max doesn't work for some reason
-    maxFileTableInd = maxx(maxFileTableInd, fileId);
-    //
-    if(maxFileTableInd < fileId)
-        maxFileTableInd = fileId;
+    if(possibleFileId != -1)
+        maxFileTableInd = maxx(maxFileTableInd, SpaceId(possibleFileId));
 
-    return fileId;
+    return possibleFileId;
 }
 
 OpenFile*
@@ -260,7 +256,7 @@ Thread::RemoveFile(OpenFileId fileId)
 void
 Thread::RemoveAllFiles()
 {
-    for(unsigned int ind = tableReserved; ind <= maxFileTableInd; ind++)
+    for(int ind = tableReserved; ind <= maxFileTableInd; ind++)
         if(fileTable -> HasKey(ind))
             RemoveFile(ind);
 }

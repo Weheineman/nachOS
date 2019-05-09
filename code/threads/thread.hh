@@ -117,8 +117,8 @@ private:
     // There are two reserved entries reserved for synchConsole
     // in the table, 0 and 1.
     Table <OpenFile*> *fileTable;
-    unsigned int maxFileTableInd;
-    const unsigned int tableReserved = 2;
+    int maxFileTableInd;
+    const int tableReserved = 2;
     SpaceId spaceId;
     #endif
 
@@ -167,8 +167,8 @@ public:
     #ifdef USER_PROGRAM
 
     // Adds a OpenFile pointer to the table and returns the
-    // index where it is stored.
-    OpenFileId AddFile(OpenFile* filePtr);
+    // index where it is stored, or -1 if not successful.
+    int AddFile(OpenFile* filePtr);
 
     // Returns the OpenFile pointer stored at index fileId.
     OpenFile* GetFile(OpenFileId fileId);

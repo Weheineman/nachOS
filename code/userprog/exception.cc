@@ -99,13 +99,17 @@ SyscallHandler(ExceptionType _et)
         // Returns 1 if successful, returns 0 otherwise.
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0)
+            if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                break;
+            }
 
             char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                break;
+            }
 
             int success = fileSystem -> Create(filename, 0);
             machine -> WriteRegister(2, success);
@@ -117,17 +121,25 @@ SyscallHandler(ExceptionType _et)
         // If there is an error, it returns -1.
         case SC_OPEN: {
             int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0)
+            if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                break;
+            }
 
             char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                break;
+            }
 
             OpenFile *filePtr = fileSystem -> Open(filename);
-            OpenFileId fileId = currentThread -> AddFile(filePtr);
-            machine -> WriteRegister(2, fileId);
+            int possibleFileId = currentThread -> AddFile(filePtr);
+            if(possibleFileId == -1)
+                DEBUG('a', "Error: fileTable of %s is full.\n",
+                      currentThread -> GetName());
+
+            machine -> WriteRegister(2, possibleFileId);
             DEBUG('a', "Request to open file `%s`.\n", filename);
             break;
         }
@@ -137,12 +149,14 @@ SyscallHandler(ExceptionType _et)
             int readSize = machine->ReadRegister(5);
             OpenFileId fileId = machine->ReadRegister(6);
 
-            if (bufferAddr == 0)
+            if (bufferAddr == 0){
                 DEBUG('a', "Error: address to buffer string is null.\n");
+                break;
+            }
 
             char *buffer = new char [readSize+1];
 
-            int readBytes;
+            int readBytes = 0;
             if(fileId == CONSOLE_INPUT){
                 int ind;
                 for(ind = 0; ind < readSize; ind++){
@@ -153,15 +167,20 @@ SyscallHandler(ExceptionType _et)
                 buffer[ind] = 0;
                 readBytes = ind;
             }else{
-                ASSERT(currentThread -> HasFile(fileId));
-                OpenFile *filePtr = currentThread -> GetFile(fileId);
-                readBytes = filePtr -> Read(buffer, readSize);
+                if(currentThread -> HasFile(fileId)){
+                    OpenFile *filePtr = currentThread -> GetFile(fileId);
+                    readBytes = filePtr -> Read(buffer, readSize);
+                }else{
+                    DEBUG('a', "Error: file with id %d is not open.\n",
+                          fileId);
+                    break;
+                }
             }
 
             WriteStringToUser(buffer, bufferAddr);
             machine -> WriteRegister(2, readBytes);
             DEBUG('a', "Requested to read %d bytes from file at position %d\n",
-                  readSize, fileId);
+            readSize, fileId);
 
             delete [] buffer;
             break;
@@ -172,17 +191,23 @@ SyscallHandler(ExceptionType _et)
             int writeSize = machine->ReadRegister(5);
             OpenFileId fileId = machine->ReadRegister(6);
 
-            if (bufferAddr == 0)
+            if (bufferAddr == 0){
                 DEBUG('a', "Error: address to buffer string is null.\n");
+                break;
+            }
 
-            if(writeSize == 0)
+            if(writeSize == 0){
                 DEBUG('a', "Error: writeSize is 0.\n");
+                break;
+            }
 
             char *buffer = new char [writeSize + 1];
 
-            if (!ReadStringFromUser(bufferAddr, buffer, writeSize))
+            if (!ReadStringFromUser(bufferAddr, buffer, writeSize)){
                 DEBUG('a', "Error: buffer string too long (maximum is %u bytes).\n",
                       writeSize);
+                break;
+            }
 
             int writtenBytes;
             if(fileId == CONSOLE_OUTPUT){
@@ -192,9 +217,12 @@ SyscallHandler(ExceptionType _et)
                 //synchConsole -> PutChar('\n');
                 writtenBytes = ind;
             }else{
-                ASSERT(currentThread -> HasFile(fileId));
-                OpenFile *filePtr = currentThread -> GetFile(fileId);
-                writtenBytes = filePtr -> Write(buffer, writeSize);
+                if(currentThread -> HasFile(fileId)){
+                    OpenFile *filePtr = currentThread -> GetFile(fileId);
+                    writtenBytes = filePtr -> Write(buffer, writeSize);
+                }else{
+                    DEBUG('a', "Error: file with id %d not open.\n", fileId);
+                }
             }
 
             machine -> WriteRegister(2, writtenBytes);
@@ -208,8 +236,11 @@ SyscallHandler(ExceptionType _et)
         case SC_CLOSE: {
             int fileId = machine->ReadRegister(4);
 
-            ASSERT(currentThread -> HasFile(fileId));
-            currentThread -> RemoveFile(fileId);
+            if(currentThread -> HasFile(fileId))
+                currentThread -> RemoveFile(fileId);
+            else{
+                DEBUG('a', "Error: file %d not open.\n");
+            }
 
             DEBUG('a', "Close requested for id %u.\n", fileId);
             break;
@@ -259,7 +290,11 @@ SyscallHandler(ExceptionType _et)
         case SC_JOIN: {
             SpaceId spaceId = machine -> ReadRegister(4);
 
-            ASSERT(threadTable -> HasKey(spaceId));
+            if(not threadTable -> HasKey(spaceId)){
+                DEBUG('s', "Error: Thread with id %d not found.\n", spaceId);
+                break;
+            }
+
             Thread *threadToJoin = threadTable -> Get(spaceId);
 
             DEBUG('s', "Requested Join with SpaceId %d\n", spaceId);
