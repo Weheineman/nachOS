@@ -57,10 +57,9 @@ ReadLine(char *buffer, unsigned size, OpenFileId input)
 
     for (i = 0; i < size; i++) {
         Read(&buffer[i], 1, input);
-        if (buffer[i] == '\0') {
-            buffer[i] = '\0';
+        if (buffer[i] == '\0')
             break;
-        }
+        
     }
     return i;
 }

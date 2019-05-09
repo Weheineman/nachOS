@@ -125,7 +125,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.code.size){
-			writeAmount = minn(noffH.code.size, writtenSize < PAGE_SIZE);
+			writeAmount = minn(noffH.code.size - writtenSize, PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
 
 			DEBUG('a', "Initializing code segment at 0x%X, physical address 0x%X, size %u\n",
@@ -155,7 +155,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 		uint32_t writtenSize = writeAmount;
 		uint32_t writtenPages = 1;
 		while(writtenSize < noffH.initData.size){
-			writeAmount = minn(noffH.initData.size, writtenSize < PAGE_SIZE);
+			writeAmount = minn(noffH.initData.size - writtenSize, PAGE_SIZE);
 			targetAddress = pageTable[startingPage + writtenPages].physicalPage * PAGE_SIZE;
 
 			DEBUG('a', "Initializing data segment at 0x%X, physical address 0x%X, size %u\n",
