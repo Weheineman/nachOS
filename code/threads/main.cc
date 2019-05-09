@@ -114,6 +114,11 @@ main(int argc, char **argv)
         }
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {          // Run a user program.
+			
+			//Synch Console setup here and not in Initialize to avoid 
+			//issues with any of the console tests.
+			synchConsole = new SynchConsole(NULL, NULL);
+            
             ASSERT(argc > 1);
             StartProcess(*(argv + 1));
             argCount = 2;
