@@ -44,6 +44,7 @@ SynchDisk *synchDisk;
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole; ///< Console used in syscall testing
 Bitmap *pageMap;
+Table <Thread*> *threadTable;
 #endif
 
 #ifdef NETWORK
@@ -188,10 +189,12 @@ Initialize(int argc, char **argv)
     pageMap = new Bitmap(NUM_PHYS_PAGES);
 
     synchConsole = new SynchConsole(NULL, NULL);
-    
+
+    threadTable = new Table<Thread*>();
+
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
-    
+
     SetExceptionHandlers();
 #endif
 

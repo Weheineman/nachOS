@@ -64,6 +64,7 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     status     = JUST_CREATED;
 #ifdef USER_PROGRAM
     space      = nullptr;
+
     // Create a file table and fill the inedexes 0 and 1, which are reserved
     // for synchConsole.
     fileTable  = new Table<OpenFile*>();
@@ -71,9 +72,8 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
         fileTable -> Add(nullptr);
     maxFileTableInd = 0;
 
-    // Create a thread table
-    threadTable = new Table<Thread*>();
-    maxThreadTableInd = 0;
+    // Add this thread to the userprog thread table (declared in system.cc)
+    spaceId = threadTable -> Add(this);
 #endif
 }
 
@@ -101,8 +101,6 @@ Thread::~Thread()
     #ifdef USER_PROGRAM
         RemoveAllFiles();
         delete fileTable;
-        RemoveAllThreads();
-        delete threadTable;
     #endif
 
     delete [] name;
@@ -258,55 +256,17 @@ Thread::RemoveFile(OpenFileId fileId)
 }
 
 void
-Thread::RemoveAllFiles() {
+Thread::RemoveAllFiles()
+{
     for(unsigned int ind = tableReserved; ind <= maxFileTableInd; ind++)
         if(fileTable -> HasKey(ind))
             RemoveFile(ind);
 }
 
-// Adds a Thread pointer to the table and returns the
-// index where it is stored (the user space id corresponding
-// to the new thread).
 SpaceId
-Thread::AddThread(Thread* threadPtr){
-    SpaceId threadId = threadTable -> Add(threadPtr);
-    ASSERT(threadId != -1);
-
-    // GUIDIOS: max doesn't work for some reason
-    // maxThreadTableInd = max(maxThreadTableInd, threadId);
-    if(maxThreadTableInd < threadId)
-        maxThreadTableInd = threadId;
-
-    return threadId;
-}
-
-// Returns the Thread pointer stored at index fileId.
-Thread*
-Thread::GetThread(SpaceId threadId){
-    Thread* threadPtr = threadTable -> Get(threadId);
-    return threadPtr;
-}
-
-// Returns true iff the threadId corresponds to a thread in the table.
-bool
-Thread::HasThread(SpaceId threadId){
-    bool found = threadTable -> HasKey(threadId);
-    return found;
-}
-
-// Removes the thread corresponding to the threadId.
-void
-Thread::RemoveThread(SpaceId threadId){
-    Thread *removedThread = threadTable -> Remove(threadId);
-    delete removedThread;
-}
-
-// Removes all threads launched by the current thread.
-void
-Thread::RemoveAllThreads(){
-    for(unsigned int ind = 0; ind <= maxThreadTableInd; ind++)
-        if(threadTable -> HasKey(ind))
-            RemoveThread(ind);
+Thread::GetSpaceId()
+{
+    return spaceId;
 }
 
 #endif
@@ -329,6 +289,11 @@ Thread::Finish(int exitStatus)
     // on this thread.
     if(enableJoin)
       joinPort->Send(exitStatus);
+
+    // Remove this thread from the userprog thread table
+    #ifdef USER_PROGRAM
+    threadTable -> Remove(spaceId);
+    #endif
 
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
