@@ -48,7 +48,6 @@
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
-#include "lib/table.hh"
 #endif
 
 /// To avoid mutual includes involving this file and synch.hh
@@ -112,8 +111,19 @@ private:
     Port *joinPort;
     char *joinPortName;
 
+    #ifdef USER_PROGRAM
+
     // Table used to map the OpenFileIds (int) to OpenFile pointers
+    // There are two reserved entries reserved for synchConsole
+    // in the table, 0 and 1.
     Table <OpenFile*> *fileTable;
+    unsigned int maxFileTableInd;
+    const unsigned int tableReserved = 2;
+
+    Table <Thread*> *threadTable;
+    unsigned int maxThreadTableInd;
+
+    #endif
 
 public:
 
@@ -157,6 +167,8 @@ public:
     // Changes the priority of the thread to its original value
     void RestorePriority();
 
+    #ifdef USER_PROGRAM
+
     // Adds a OpenFile pointer to the table and returns the
     // index where it is stored.
     OpenFileId AddFile(OpenFile* filePtr);
@@ -172,6 +184,25 @@ public:
 
     // Removes all open files.
     void RemoveAllFiles();
+
+    // Adds a Thread pointer to the table and returns the
+    // index where it is stored (the user space id corresponding
+    // to the new thread).
+    SpaceId AddThread(Thread* threadPtr);
+
+    // Returns the Thread pointer stored at index fileId.
+    Thread* GetThread(SpaceId threadId);
+
+    // Returns true iff the threadId corresponds to a thread in the table.
+    bool HasThread(SpaceId threadId);
+
+    // Removes the thread corresponding to the threadId.
+    void RemoveThread(SpaceId threadId);
+
+    // Removes all threads launched by the current thread.
+    void RemoveAllThreads();
+
+    #endif
 
     char *GetName();
 

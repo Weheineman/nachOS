@@ -1,8 +1,7 @@
 PRACTICA 3
-Dudas del domingo:
 EJERCICIO 2:
-TO DO:
-	Thread::DeleteAllFiles
+En Thread::AddFile() hay un assert que compara -1 con FileId que es unsigned
+Los tipos no los declaramos nosotros. Que hacemos?
 EJERCICIO 3:
 - Parte a
 	--Dudas:

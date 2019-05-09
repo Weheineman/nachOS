@@ -151,7 +151,7 @@ SyscallHandler(ExceptionType _et)
             DEBUG('a', "Requested to read %d bytes from file at position %d\n",
                   readSize, fileId);
 
-            delete buffer [];
+            delete [] buffer;
             break;
         }
 
@@ -189,7 +189,7 @@ SyscallHandler(ExceptionType _et)
             DEBUG('a', "Requested to write %d bytes to the file at position %d\n",
                   writeSize, fileId);
 
-            delete buffer [];
+            delete [] buffer;
             break;
         }
 
@@ -200,6 +200,43 @@ SyscallHandler(ExceptionType _et)
             currentThread -> RemoveFile(fileId);
 
             DEBUG('a', "Close requested for id %u.\n", fileId);
+            break;
+        }
+
+        case SC_EXIT: {
+            int exitStatus = machine -> ReadRegister(4);
+
+            currentThread -> Finish(exitStatus);
+
+            DEBUG('a', "Exited with status %d\n", exitStatus);
+            break;
+        }
+
+        case SC_EXEC:{
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0)
+                DEBUG('a', "Error: address to filename string is null.\n");
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+                DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+
+
+            // GUIDIOS: ACORDATE DE USAR StartProcess de prog_test.cc
+
+            break;
+        }
+
+        case SC_JOIN: {
+            int threadId = machine -> ReadRegister(4);
+
+            ASSERT(currentThread -> HasThread(threadId));
+            Thread *threadToJoin = currentThread -> GetThread(threadId);
+
+            int exitStatus = threadToJoin -> Join();
+
+            machine -> WriteRegister(2, exitStatus);
             break;
         }
 

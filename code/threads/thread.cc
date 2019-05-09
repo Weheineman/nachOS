@@ -21,6 +21,7 @@
 #include "switch.h"
 #include "synch.hh"
 #include "system.hh"
+#include "lib/utility.hh"
 
 
 /// This is put at the top of the execution stack, for detecting stack
@@ -66,8 +67,13 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     // Create a file table and fill the inedexes 0 and 1, which are reserved
     // for synchConsole.
     fileTable  = new Table<OpenFile*>();
-    for(int i = 0; i < 2; i++)
+    for(unsigned int i = 0; i < tableReserved; i++)
         fileTable -> Add(nullptr);
+    maxFileTableInd = 0;
+
+    // Create a thread table
+    threadTable = new Table<Thread*>();
+    maxThreadTableInd = 0;
 #endif
 }
 
@@ -93,7 +99,10 @@ Thread::~Thread()
     }
 
     #ifdef USER_PROGRAM
-        CloseFiles();
+        RemoveAllFiles();
+        delete fileTable;
+        RemoveAllThreads();
+        delete threadTable;
     #endif
 
     delete [] name;
@@ -211,10 +220,16 @@ Thread::RestorePriority()
     priority = oldPriority;
 }
 
+#ifdef USER_PROGRAM
+
 OpenFileId
 Thread::AddFile(OpenFile *filePtr)
 {
     OpenFileId fileId = fileTable -> Add(filePtr);
+    ASSERT(fileId != -1);
+
+    maxFileTableInd = max(maxFileTableInd, fileId);
+
     return fileId;
 }
 
@@ -241,8 +256,54 @@ Thread::RemoveFile(OpenFileId fileId)
 
 void
 Thread::RemoveAllFiles() {
-    return;
+    for(unsigned int ind = tableReserved; ind <= maxFileTableInd; ind++)
+        if(fileTable -> HasKey(ind))
+            RemoveFile(ind);
 }
+
+// Adds a Thread pointer to the table and returns the
+// index where it is stored (the user space id corresponding
+// to the new thread).
+SpaceId
+Thread::AddThread(Thread* threadPtr){
+    SpaceId threadId = threadTable -> Add(threadPtr);
+    ASSERT(threadId != -1);
+
+    maxThreadTableInd = max(maxThreadTableInd, threadId);
+
+    return threadId;
+}
+
+// Returns the Thread pointer stored at index fileId.
+Thread*
+Thread::GetThread(SpaceId threadId){
+    Thread* threadPtr = threadTable -> Get(threadId);
+    return threadPtr;
+}
+
+// Returns true iff the threadId corresponds to a thread in the table.
+bool
+Thread::HasThread(SpaceId threadId){
+    bool found = threadTable -> HasKey(threadId);
+    return found;
+}
+
+// Removes the thread corresponding to the threadId.
+void
+Thread::RemoveThread(SpaceId threadId){
+    Thread *removedThread = threadTable -> Remove(threadId);
+    delete removedThread;
+}
+
+// Removes all threads launched by the current thread.
+void
+Thread::RemoveAllThreads(){
+    for(unsigned int ind = 0; ind <= maxThreadTableInd; ind++)
+        if(threadTable -> HasKey(ind))
+            RemoveThread(ind);
+}
+
+#endif
 
 /// Called by `ThreadRoot` when a thread is done executing the forked
 /// procedure.
