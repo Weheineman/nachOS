@@ -13,8 +13,10 @@
 int
 main(void)
 {
-    Exec("../userland/halt");
-
-    // Hopefully reached.
-    Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
+    Create("../userland/test.txt");
+    OpenFileId o = Open("../userland/test.txt");
+    Write("Estoy escribiendo un archivo", 28s, o);
+    Close(o);
+ 
+    Exit(0);
 }

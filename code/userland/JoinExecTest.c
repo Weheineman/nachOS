@@ -13,8 +13,16 @@
 int
 main(void)
 {
-    Exec("../userland/halt");
+    Join(Exec(../userland/AuxTest));
+    
+    OpenFileId o = Open("../userland/test.txt");
+    char aux[64];
+    Read(aux, 64, o);
+    Write(aux, 64, CONSOLE_OUTPUT);
+
+
 
     // Hopefully reached.
     Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
+    Halt();
 }
