@@ -26,13 +26,29 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
+#include "args.cc"
 
-void ExecuteProgram (void *arg){
-
+void RunUserProgram (void *argv_){
     currentThread -> space -> InitRegisters();  // Set the initial register values.
     currentThread -> space -> RestoreState();   // Load page table register.
 
-    machine->Run();  // Jump to the user program.
+    char **argv = (char**) argv_;
+    int argc = WriteArgs(argv);
+
+    // Increase by 16 because it was decreased during WriteArgs
+    // to make room for "register saves".
+    int argvAddr = machine -> ReadRegister(STACK_REG) + 16;
+
+    machine -> WriteRegister(4, argc);
+    machine -> WriteRegister(5, argvAddr);
+    machine -> Run();  // Jump to the user program.
+}
+
+void RunSimpleUserProgram (void *argv_){
+    currentThread -> space -> InitRegisters();  // Set the initial register values.
+    currentThread -> space -> RestoreState();   // Load page table register.
+
+    machine -> Run();  // Jump to the user program.
 }
 
 static void
@@ -265,6 +281,7 @@ SyscallHandler(ExceptionType _et)
 
         case SC_EXEC:{
             int filenameAddr = machine->ReadRegister(4);
+            int argvAddr = machine->ReadRegister(5);
 
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
@@ -280,11 +297,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            // GUIDIOS: Me parece que todo esto son cosas que hay que
-            // hacer solo cuando agreguemos args, porque es mas o menos lo
-            // que hace StartProcess. Las dejo porque creo que van a servir.
-            // All exec threads are joinable
-            // GUIDIOS: joinable by default, set by user me parece razonable
+
             OpenFile *filePtr = fileSystem -> Open(filename);
             if(filePtr == nullptr){
                 DEBUG('a', "Error: file %s not found.\n", filename);
@@ -292,12 +305,17 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
+            // All exec threads are joinable.
             Thread *newThread = new Thread(filename, true);
             SpaceId newSpaceId = newThread -> GetSpaceId();
             AddressSpace *newAddressSpace = new AddressSpace(filePtr);
 
             newThread -> space = newAddressSpace;
-            newThread -> Fork(ExecuteProgram, (void *) newThread);
+
+            if(argvAddr == 0)
+                newThread -> Fork(RunSimpleUserProgram, nullptr);
+            else
+                newThread -> Fork(RunUserProgram, SaveArgs(argvAddr));
 
             delete filePtr;
 
@@ -309,14 +327,19 @@ SyscallHandler(ExceptionType _et)
         case SC_JOIN: {
             SpaceId spaceId = machine -> ReadRegister(4);
 
+            if(spaceId < 0){
+                DEBUG('a', "Error: Invalid spaceId.\n");
+                break;
+            }
+
             if(not threadTable -> HasKey(spaceId)){
-                DEBUG('s', "Error: Thread with id %d not found.\n", spaceId);
+                DEBUG('a', "Error: Thread with id %d not found.\n", spaceId);
                 break;
             }
 
             Thread *threadToJoin = threadTable -> Get(spaceId);
 
-            DEBUG('s', "Requested Join with SpaceId %d\n", spaceId);
+            DEBUG('a', "Requested Join with SpaceId %d\n", spaceId);
             int exitStatus = threadToJoin -> Join();
 
             machine -> WriteRegister(2, exitStatus);

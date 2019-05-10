@@ -13,12 +13,13 @@
 int
 main(void)
 {
-    Join(Exec("../userland/AuxTest"));
-    
+    Join(Exec("../userland/AuxTest", 0));
+
     OpenFileId o = Open("../userland/test.txt");
     char aux[64];
-    Read(aux, 64, o);
-    Write(aux, 64, CONSOLE_OUTPUT);
+    int len = Read(aux, 64, o);
+    Write(aux, len, CONSOLE_OUTPUT);
+    Write("\n", 1, CONSOLE_OUTPUT);
 
 
 

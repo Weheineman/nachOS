@@ -4,7 +4,7 @@
 
 
 #include "transfer.hh"
-#include "machine/machine.h"
+#include "machine/machine.hh"
 
 
 const unsigned MAX_ARG_COUNT  = 32;
@@ -22,10 +22,12 @@ SaveArgs(int address)
         machine->ReadMem(address + i * 4, 4, &val);
         i++;
     } while (i < MAX_ARG_COUNT && val != 0);
-    if (i == MAX_ARG_COUNT && val != 0)
+    if (i == MAX_ARG_COUNT && val != 0){
         // The maximum number of arguments was reached but the last is not
         // null.  Return null as error.
+        DEBUG('e', "Error: Maximum number of arguments exceeded.\n");
         return nullptr;
+    }
 
     DEBUG('e', "Saving %u command line arguments from parent process.\n", i);
 
@@ -42,7 +44,8 @@ SaveArgs(int address)
     return ret;
 }
 
-void
+// Returns the amount of arguments written. Returns -1 if it fails.
+int
 WriteArgs(char **args)
 {
     ASSERT(args != nullptr);
@@ -52,7 +55,7 @@ WriteArgs(char **args)
     // Start writing the arguments where the current SP points.
     int args_address[MAX_ARG_COUNT];
     unsigned i;
-    int sp = machine->ReadRegister(StackReg);
+    int sp = machine->ReadRegister(STACK_REG);
     for (i = 0; i < MAX_ARG_COUNT; i++) {
         if (args[i] == nullptr)     // If the last was reached, terminate.
             break;
@@ -61,7 +64,10 @@ WriteArgs(char **args)
         args_address[i] = sp;       // Save the argument's address.
         delete args[i];             // Free the memory.
     }
-    ASSERT(i < MAX_ARG_COUNT);
+    if(not (i < MAX_ARG_COUNT)){
+        DEBUG('e', "Error: Maximum number of arguments exceeded.\n");
+        return -1;
+    }
 
     sp -= sp % 4;     // Align the stack to a multiple of four.
     sp -= i * 4 + 4;  // Make room for the array and the trailing null.
@@ -72,6 +78,8 @@ WriteArgs(char **args)
     machine->WriteMem(sp + 4 * i, 4, 0);  // The last is null.
     sp -= 16;  // Make room for the “register saves”.
 
-    machine->WriteRegister(StackReg, sp);
+    machine->WriteRegister(STACK_REG, sp);
     delete args;  // Free the array.
+
+    return i;
 }

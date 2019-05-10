@@ -22,7 +22,7 @@ static inline unsigned
 strlen(const char *s)
 {
     if(s == NULL) return 0;
-    
+
     unsigned i;
     for (i = 0; s[i] != '\0'; i++);
     return i;
@@ -59,7 +59,7 @@ ReadLine(char *buffer, unsigned size, OpenFileId input)
         Read(&buffer[i], 1, input);
         if (buffer[i] == '\0')
             break;
-        
+
     }
     return i;
 }
@@ -67,20 +67,20 @@ ReadLine(char *buffer, unsigned size, OpenFileId input)
 static char*
 ParseToken (char* line, int* length){
 	unsigned index = 0;
-	
+
 	while (line[index] == ARG_SEPARATOR) index++;
-	
+
 	if (line[index] == '\0'){
 		*length = PARSE_EMPTY;
 		return line;
 	}
-	
+
 	if (line[index] == ARG_WRAPPER){
 		char *start = line + index + 1;
 		index = 0;
-		
+
 		while(start[index] != ARG_WRAPPER && start[index] != '\0') index ++;
-		
+
 		if(start[index] == ARG_WRAPPER){
 			start[index] = '\0';
 			*length = index;
@@ -94,9 +94,9 @@ ParseToken (char* line, int* length){
 	else{
 		char *start = line + index;
 		index = 0;
-		
+
 		while(start[index] != ARG_SEPARATOR && start[index] != '\0') index ++;
-		
+
 		start[index] = '\0';
 		*length = index;
 		return start;
@@ -114,26 +114,26 @@ PrepareArguments(char *line, char **argv, unsigned argvSize)
     unsigned argCount = 0;
 	int parseResult = 0;
 	char* currentToken = line;
-	
+
 	// Traverse the whole line and replace spaces between arguments by null
     // characters, so as to be able to treat each argument as a standalone
     // string.
-    
+
     while(argCount < argvSize){
 		argv[argCount] = ParseToken(currentToken, &parseResult);
 		if(parseResult == PARSE_EMPTY)
 			break;
-		
+
 		if(parseResult == PARSE_ERR_NO_WRAPPER)
 			return ERR_BAD_SYNTAX;
-		
+
 		currentToken = argv[argCount] + parseResult + 1;
-		argCount++; 	
+		argCount++;
 	}
-    
+
     if(argCount == argvSize)
 		return ERR_TOO_MANY_ARGS;
-		
+
 	argv[argCount] = NULL;
 	return argCount;
 }
@@ -181,21 +181,21 @@ main(void)
 			// are given in the system call or not.
 			char debugMsg1[] = "Executing program...\n";
 			Write(debugMsg1, sizeof debugMsg1 - 1, OUTPUT);
-			
-			
-			const SpaceId newProc = Exec(line);
-			//~ const SpaceId newProc = Exec(line, argv);	
+
+
+			// const SpaceId newProc = Exec(line);
+			const SpaceId newProc = Exec(line + 1, argv);
 		}
         else{
 			// Comment and uncomment according to whether command line arguments
 			// are given in the system call or not.
-			const SpaceId newProc = Exec(line);
-			//~ const SpaceId newProc = Exec(line, argv);
-			
+			// const SpaceId newProc = Exec(line);
+			const SpaceId newProc = Exec(line, argv);
+
 			Join(newProc);
 		}
-        
-        
+
+
 
         // TO DO: check for errors when calling `Exec`; this depends on how
         //        errors are reported.

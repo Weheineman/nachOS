@@ -15,8 +15,8 @@ main(void)
 {
     Create("../userland/test.txt");
     OpenFileId o = Open("../userland/test.txt");
-    Write("Estoy escribiendo un archivo", 28, o);
+    Write("Estoy escribiendo un archivo\n", 29, o);
     Close(o);
- 
+
     Exit(0);
 }

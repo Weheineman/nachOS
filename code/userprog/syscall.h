@@ -59,7 +59,7 @@ typedef int SpaceId;
 /// Run the executable, stored in the Nachos file `name`, and return the
 /// address space identifier.
 /// Returns -1 if there is an error.
-SpaceId Exec(char *name);
+SpaceId Exec(char *name, int argvAddr);
 
 /// Only return once the the user program `id` has finished.
 ///

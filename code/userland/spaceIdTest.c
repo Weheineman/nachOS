@@ -21,8 +21,8 @@ main(void)
 {
     char p1[10], p2[10];
 
-    intToStr(p1, Exec("../userland/halt"));
-    intToStr(p2, Exec("../userland/halt"));
+    intToStr(p1, Exec("../userland/halt", 0));
+    intToStr(p2, Exec("../userland/halt", 0));
 
     Join(p1[0]);
     Join(p2[0]);

@@ -13,7 +13,7 @@
 int
 main(void)
 {
-    Exec("../userland/halt");
+    Exec("../userland/halt", 0);
 
     // Hopefully reached.
     Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
