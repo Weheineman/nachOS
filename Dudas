@@ -1,18 +1,10 @@
 PRACTICA 3
 GUIDIOS: Usamos threadTable para matar nachos cuando no queden running threads?
 
-GUIDIOS: Tomy acordate de volver a usar min en AddressSpace.
-Para hacer eso tenes que usar make depend
-
 EJERCICIO 3:
 - Parte a
 	--Dudas:
 	Qué hago si me quedo sin páginas de RAM en la carga de un programa? (Nos dijeron que no hay drama que explote con un assert. Hay formas de solucionarlo pero requieren rebuscársela mucho.
-	--Issues:
-	Preguntar el compilation error de que no reconoce min.
+
 - Parte b
         (COMENTAR EN DOCUMENTACION EL TEMA DE SI LLAMAN CON -rs PORQUE SON UNOS INFELICES)
-
-
-EJERCICIO 5:
-Qué onda el error handling de los TO DO que propone el ejercicio?

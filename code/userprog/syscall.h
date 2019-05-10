@@ -56,10 +56,11 @@ void Exit(int status);
 /// A unique identifier for an executing user program (address space).
 typedef int SpaceId;
 
-/// Run the executable, stored in the Nachos file `name`, and return the
-/// address space identifier.
+/// Run the executable, stored in the Nachos file `name`, using
+/// the arguments stored in argvAddr and return the address
+/// space identifier.
 /// Returns -1 if there is an error.
-SpaceId Exec(char *name, int argvAddr);
+int Exec(char *name, int argvAddr);
 
 /// Only return once the the user program `id` has finished.
 ///
@@ -100,6 +101,7 @@ typedef unsigned int OpenFileId;
 #define CONSOLE_OUTPUT  1
 
 /// Create a Nachos file, with `name`.
+/// Returns 1 if it succeeds and 0 if it fails.
 int Create(const char *name);
 
 /// Remove the Nachos file named `name`.
@@ -107,7 +109,8 @@ int Remove(const char *name);
 
 /// Open the Nachos file `name`, and return an `OpenFileId` that can be used
 /// to read and write to the file.
-OpenFileId Open(const char *name);
+/// Returns -1 if it fails.
+int Open(const char *name);
 
 /// Write `size` bytes from `buffer` to the open file.
 ///
@@ -127,11 +130,9 @@ int Write(const char *buffer, int size, OpenFileId id);
 /// Returns -1 if there is an error.
 int Read(char *buffer, int size, OpenFileId id);
 
-// GUIDIOS: Agregar todos los cambios de tipos a Respuestas/Practica\ 3
-
 /// Close the file, we are done reading and writing to it.
 /// Returns 1 if successful, 0 otherwise.
-void Close(OpenFileId id);
+int Close(OpenFileId id);
 
 
 #endif

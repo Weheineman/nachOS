@@ -1,4 +1,13 @@
-Cambiamos los tipos de:
-Create: ahora devuelve un int que indica si el archivo se creo exitosamente.
-1 es exito y 0 es fracaso.
-Write: ahora devuelve un int que contiene la cantidad de bytes escritos.
+Cambiamos los tipos de (en orden de aparicion en syscall.h):
+
+Exec: toma dos argumentos, el char* filename y un int (userspace address del argv). Ahora devuelve un int, para poder devolver -1 si ocurre un error.
+
+Create: ahora devuelve un int que indica si el archivo se creo exitosamente. 1 es exito y 0 es fracaso.
+
+Open: ahora devuelve un int, para poder devolver -1 si ocurre un error. Mismo comportamiento en caso de exito.
+
+Write: ahora devuelve un int que contiene la cantidad de bytes escritos y -1 si falla.
+
+Read: ahora devuelve -1 si falla.
+
+Close: ahora devuelve un int que indica si el archivo se creo exitosamente. 1 es exito y 0 es fracaso.

@@ -101,13 +101,14 @@ SyscallHandler(ExceptionType _et)
 
     switch (scid) {
 
-        // GUIDIOS: Comentar todos los case
+        // Stop Nachos, and print out performance stats.
         case SC_HALT:
             DEBUG('a', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
             break;
 
-        // Returns 1 if successful, returns 0 otherwise.
+        // Create a Nachos file.
+        // Returns 1 if it succeeds and 0 if it fails.
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0){
@@ -131,7 +132,7 @@ SyscallHandler(ExceptionType _et)
         }
 
         // Returns the OpenFileId of the specified file.
-        // If there is an error, it returns -1.
+        // If there is an error, it returns -1 instead.
         case SC_OPEN: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0){
@@ -150,15 +151,21 @@ SyscallHandler(ExceptionType _et)
 
             OpenFile *filePtr = fileSystem -> Open(filename);
             int possibleFileId = currentThread -> AddFile(filePtr);
-            if(possibleFileId == -1)
+            if(possibleFileId == -1){
                 DEBUG('a', "Error: fileTable of %s is full.\n",
                       currentThread -> GetName());
+                machine -> WriteRegister(2, -1);
+                break;
+            }
 
             machine -> WriteRegister(2, possibleFileId);
             DEBUG('a', "Request to open file `%s`.\n", filename);
             break;
         }
 
+        // Read `size` bytes from an open file into a user string.
+        // Returns the number of bytes read.
+        // If it fails, it returns -1 instead.
         case SC_READ: {
             int bufferAddr = machine->ReadRegister(4);
             int readSize = machine->ReadRegister(5);
@@ -173,6 +180,8 @@ SyscallHandler(ExceptionType _et)
             char *buffer = new char [readSize+1];
 
             int readBytes = 0;
+
+            // Check if reading from the console was specified.
             if(fileId == CONSOLE_INPUT){
                 int ind;
                 for(ind = 0; ind < readSize; ind++){
@@ -203,6 +212,9 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        // Write `size` bytes from a user string into an open file.
+        // Returns the number of bytes written.
+        // If it fails, it returns -1 instead.
         case SC_WRITE: {
             int bufferAddr = machine->ReadRegister(4);
             int writeSize = machine->ReadRegister(5);
@@ -230,11 +242,12 @@ SyscallHandler(ExceptionType _et)
             }
 
             int writtenBytes;
+
+            // Check if reading to the console was specified.
             if(fileId == CONSOLE_OUTPUT){
                 int ind;
                 for(ind = 0; ind < writeSize and buffer[ind]; ind++)
                     synchConsole -> PutChar(buffer[ind]);
-                //synchConsole -> PutChar('\n');
                 writtenBytes = ind;
             }else{
                 if(currentThread -> HasFile(fileId)){
@@ -254,6 +267,8 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        // Close the file.
+        // Returns 1 if successful, 0 otherwise.
         case SC_CLOSE: {
             int fileId = machine->ReadRegister(4);
 
@@ -270,6 +285,7 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        // This user program is done (`status = 0` means exited normally).
         case SC_EXIT: {
             int exitStatus = machine -> ReadRegister(4);
 
@@ -279,6 +295,9 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        // Run an executable stored in a nachos file, possibly with arguments,
+        // and return the address space identifier.
+        // Returns -1 if there is an error.
         case SC_EXEC:{
             int filenameAddr = machine->ReadRegister(4);
             int argvAddr = machine->ReadRegister(5);
@@ -297,7 +316,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-
+            // Open the file to be executed.
             OpenFile *filePtr = fileSystem -> Open(filename);
             if(filePtr == nullptr){
                 DEBUG('a', "Error: file %s not found.\n", filename);
@@ -305,13 +324,16 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
+            // Create a new thread to run the user program on.
             // All exec threads are joinable.
             Thread *newThread = new Thread(filename, true);
             SpaceId newSpaceId = newThread -> GetSpaceId();
             AddressSpace *newAddressSpace = new AddressSpace(filePtr);
 
+            // Set the new Address Space for the thread.
             newThread -> space = newAddressSpace;
 
+            // Check if arguments are given and run the user program.
             if(argvAddr == 0)
                 newThread -> Fork(RunSimpleUserProgram, nullptr);
             else
@@ -324,6 +346,10 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+
+        // Only return once the the user program `id` has finished.
+        //
+        // Return the exit status, or -1 if the user program is not found.
         case SC_JOIN: {
             SpaceId spaceId = machine -> ReadRegister(4);
 
