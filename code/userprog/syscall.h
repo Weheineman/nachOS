@@ -61,7 +61,7 @@ typedef int SpaceId;
 /// space identifier. enableJoin is used to determine if the
 /// new Thread that executes the file is joinable.
 /// Returns -1 if there is an error.
-int Exec(char *name, int argvAddr, int enableJoin);
+int Exec(char *name, char **argvAddr, int enableJoin);
 
 /// Only return once the the user program `id` has finished.
 ///
