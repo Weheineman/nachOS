@@ -27,17 +27,23 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 
+void execute_program (void *arg){
+	Thread* handlerThread = (Thread *) arg;
 
-// GUIDIOS: Borrar esto despues de hacer el ejercicio 4
-extern void
-StartProcess(const char *filename);
+	OpenFile *filePtr = fileSystem -> Open(handlerThread -> GetName());
 
-void
-StartProcessChanta(void *filename_)
-{
-    // Reinterpret filename as a string.
-    char *filename = (char*) filename_;
-    StartProcess(filename);
+	//GUIDIOS: VER QUÉ HAGO CON EL ASSERT
+    ASSERT(filePtr != nullptr);
+
+    AddressSpace *newAddressSpace = new AddressSpace(filePtr);
+    handlerThread -> space = newAddressSpace;
+
+	delete filePtr;
+
+    handlerThread -> space -> InitRegisters();  // Set the initial register values.
+    handlerThread -> space -> RestoreState();   // Load page table register.
+
+    machine->Run();  // Jump to the user program.
 }
 
 static void
@@ -203,9 +209,9 @@ SyscallHandler(ExceptionType _et)
 
             char *buffer = new char [writeSize + 1];
 
-            if (!ReadStringFromUser(bufferAddr, buffer, writeSize)){
+            if (!ReadStringFromUser(bufferAddr, buffer, writeSize+1)){
                 DEBUG('a', "Error: buffer string too long (maximum is %u bytes).\n",
-                      writeSize);
+                      writeSize+1);
                 break;
             }
 
@@ -249,21 +255,25 @@ SyscallHandler(ExceptionType _et)
         case SC_EXIT: {
             int exitStatus = machine -> ReadRegister(4);
 
-            currentThread -> Finish(exitStatus);
-
             DEBUG('a', "Exited with status %d\n", exitStatus);
+
+            currentThread -> Finish(exitStatus);
             break;
         }
 
         case SC_EXEC:{
             int filenameAddr = machine->ReadRegister(4);
-            if (filenameAddr == 0)
+            if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                break;
+            }
 
             char filename[FILE_NAME_MAX_LEN + 1];
-            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename))
+            if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                break;
+            }
 
             // StartProcess(filename);
 
@@ -275,12 +285,7 @@ SyscallHandler(ExceptionType _et)
             Thread *newThread = new Thread(filename, true);
             SpaceId newSpaceId = newThread -> GetSpaceId();
 
-            OpenFile *filePtr = fileSystem -> Open(filename);
-            ASSERT(filePtr != nullptr);
-            AddressSpace *newAddressSpace = new AddressSpace(filePtr);
-            newThread -> space = newAddressSpace;
-
-            delete filePtr;
+            newThread -> Fork(execute_program, (void *) newThread);
 
             machine -> WriteRegister(2, newSpaceId);
 

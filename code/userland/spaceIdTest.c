@@ -24,6 +24,9 @@ main(void)
     intToStr(p1, Exec("../userland/halt"));
     intToStr(p2, Exec("../userland/halt"));
 
+    Join(p1[0]);
+    Join(p2[0]);
+
     Write(p1, 1, CONSOLE_OUTPUT);
     Write("\n", 1, CONSOLE_OUTPUT);
     Write(p2, 1, CONSOLE_OUTPUT);
@@ -31,4 +34,6 @@ main(void)
 
     // Hopefully reached.
     Write("This should be printed.\n", 28, CONSOLE_OUTPUT);
+
+    Halt();
 }
