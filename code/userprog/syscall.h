@@ -58,9 +58,10 @@ typedef int SpaceId;
 
 /// Run the executable, stored in the Nachos file `name`, using
 /// the arguments stored in argvAddr and return the address
-/// space identifier.
+/// space identifier. enableJoin is used to determine if the
+/// new Thread that executes the file is joinable.
 /// Returns -1 if there is an error.
-int Exec(char *name, int argvAddr);
+int Exec(char *name, int argvAddr, int enableJoin);
 
 /// Only return once the the user program `id` has finished.
 ///

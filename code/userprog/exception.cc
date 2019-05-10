@@ -295,12 +295,15 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
-        // Run an executable stored in a nachos file, possibly with arguments,
-        // and return the address space identifier.
+        // Run the executable, stored in the Nachos file `name`, using
+        // the arguments stored in argvAddr and return the address
+        // space identifier. enableJoin is used to determine if the
+        // new Thread that executes the file is joinable.
         // Returns -1 if there is an error.
         case SC_EXEC:{
             int filenameAddr = machine->ReadRegister(4);
             int argvAddr = machine->ReadRegister(5);
+            int enableJoin = machine->ReadRegister(6);
 
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
@@ -325,8 +328,8 @@ SyscallHandler(ExceptionType _et)
             }
 
             // Create a new thread to run the user program on.
-            // All exec threads are joinable.
-            Thread *newThread = new Thread(filename, true);
+            // The joinable status depends on enableJoin.
+            Thread *newThread = new Thread(filename, bool(enableJoin));
             SpaceId newSpaceId = newThread -> GetSpaceId();
             AddressSpace *newAddressSpace = new AddressSpace(filePtr);
 

@@ -1,6 +1,6 @@
 Cambiamos los tipos de (en orden de aparicion en syscall.h):
 
-Exec: toma dos argumentos, el char* filename y un int (userspace address del argv). Ahora devuelve un int, para poder devolver -1 si ocurre un error.
+Exec: toma tres argumentos, el char* filename, un int (userspace address del argv) y un int (1 para joinable, 0 para no joinable). Ahora devuelve un int, para poder devolver -1 si ocurre un error.
 
 Create: ahora devuelve un int que indica si el archivo se creo exitosamente. 1 es exito y 0 es fracaso.
 
