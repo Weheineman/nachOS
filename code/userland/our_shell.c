@@ -179,18 +179,16 @@ main(void)
 
 			// Comment and uncomment according to whether command line arguments
 			// are given in the system call or not.
-			char debugMsg1[] = "Executing program...\n";
-			Write(debugMsg1, sizeof debugMsg1 - 1, OUTPUT);
-
-
+			
+			
 			// const SpaceId newProc = Exec(line);
-			const SpaceId newProc = Exec(line + 1, argv);
+			const SpaceId newProc = Exec(line + 1, argv, 0);
 		}
         else{
 			// Comment and uncomment according to whether command line arguments
 			// are given in the system call or not.
 			// const SpaceId newProc = Exec(line);
-			const SpaceId newProc = Exec(line, argv);
+			const SpaceId newProc = Exec(line, argv, 1);
 
 			Join(newProc);
 		}

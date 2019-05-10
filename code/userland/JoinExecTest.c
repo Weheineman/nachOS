@@ -13,7 +13,7 @@
 int
 main(void)
 {
-    Join(Exec("../userland/AuxTest", 0));
+    Join(Exec("../userland/AuxTest", 0, 1));
 
     OpenFileId o = Open("../userland/test.txt");
     char aux[64];
