@@ -27,21 +27,10 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 
-void execute_program (void *arg){
-	Thread* handlerThread = (Thread *) arg;
+void ExecuteProgram (void *arg){
 
-	OpenFile *filePtr = fileSystem -> Open(handlerThread -> GetName());
-
-	//GUIDIOS: VER QUÉ HAGO CON EL ASSERT
-    ASSERT(filePtr != nullptr);
-
-    AddressSpace *newAddressSpace = new AddressSpace(filePtr);
-    handlerThread -> space = newAddressSpace;
-
-	delete filePtr;
-
-    handlerThread -> space -> InitRegisters();  // Set the initial register values.
-    handlerThread -> space -> RestoreState();   // Load page table register.
+    currentThread -> space -> InitRegisters();  // Set the initial register values.
+    currentThread -> space -> RestoreState();   // Load page table register.
 
     machine->Run();  // Jump to the user program.
 }
@@ -107,6 +96,7 @@ SyscallHandler(ExceptionType _et)
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                machine -> WriteRegister(2, 0);
                 break;
             }
 
@@ -114,6 +104,7 @@ SyscallHandler(ExceptionType _et)
             if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine -> WriteRegister(2, 0);
                 break;
             }
 
@@ -129,6 +120,7 @@ SyscallHandler(ExceptionType _et)
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -136,6 +128,7 @@ SyscallHandler(ExceptionType _et)
             if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -157,6 +150,7 @@ SyscallHandler(ExceptionType _et)
 
             if (bufferAddr == 0){
                 DEBUG('a', "Error: address to buffer string is null.\n");
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -179,6 +173,7 @@ SyscallHandler(ExceptionType _et)
                 }else{
                     DEBUG('a', "Error: file with id %d is not open.\n",
                           fileId);
+                    machine -> WriteRegister(2, -1);
                     break;
                 }
             }
@@ -199,11 +194,13 @@ SyscallHandler(ExceptionType _et)
 
             if (bufferAddr == 0){
                 DEBUG('a', "Error: address to buffer string is null.\n");
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
             if(writeSize == 0){
                 DEBUG('a', "Error: writeSize is 0.\n");
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -212,6 +209,7 @@ SyscallHandler(ExceptionType _et)
             if (!ReadStringFromUser(bufferAddr, buffer, writeSize+1)){
                 DEBUG('a', "Error: buffer string too long (maximum is %u bytes).\n",
                       writeSize+1);
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -228,6 +226,7 @@ SyscallHandler(ExceptionType _et)
                     writtenBytes = filePtr -> Write(buffer, writeSize);
                 }else{
                     DEBUG('a', "Error: file with id %d not open.\n", fileId);
+                    machine -> WriteRegister(2, -1);
                 }
             }
 
@@ -246,9 +245,12 @@ SyscallHandler(ExceptionType _et)
                 currentThread -> RemoveFile(fileId);
             else{
                 DEBUG('a', "Error: file %d not open.\n");
+                machine -> WriteRegister(2, 0);
+                break;
             }
 
             DEBUG('a', "Close requested for id %u.\n", fileId);
+            machine -> WriteRegister(2, 1);
             break;
         }
 
@@ -263,6 +265,7 @@ SyscallHandler(ExceptionType _et)
 
         case SC_EXEC:{
             int filenameAddr = machine->ReadRegister(4);
+
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
                 break;
@@ -275,17 +278,26 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            // StartProcess(filename);
-
             // GUIDIOS: Me parece que todo esto son cosas que hay que
             // hacer solo cuando agreguemos args, porque es mas o menos lo
             // que hace StartProcess. Las dejo porque creo que van a servir.
             // All exec threads are joinable
             // GUIDIOS: joinable by default, set by user me parece razonable
+            OpenFile *filePtr = fileSystem -> Open(filename);
+            if(filePtr == nullptr){
+                DEBUG('a', "Error: file %s not found.\n", filename);
+                machine -> WriteRegister(2, -1);
+                break;
+            }
+
             Thread *newThread = new Thread(filename, true);
             SpaceId newSpaceId = newThread -> GetSpaceId();
+            AddressSpace *newAddressSpace = new AddressSpace(filePtr);
 
-            newThread -> Fork(execute_program, (void *) newThread);
+            newThread -> space = newAddressSpace;
+            newThread -> Fork(ExecuteProgram, (void *) newThread);
+
+            delete filePtr;
 
             machine -> WriteRegister(2, newSpaceId);
 
@@ -312,7 +324,6 @@ SyscallHandler(ExceptionType _et)
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
             ASSERT(false);
-
     }
 
     IncrementPC();

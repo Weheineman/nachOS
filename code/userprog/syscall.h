@@ -114,6 +114,7 @@ OpenFileId Open(const char *name);
 /// enough, or if it is an I/O device, and there are not enough characters to
 /// read, return whatever is available (for I/O devices, you should always
 /// wait until you can return at least one character).
+/// Returns -1 if there is an error.
 int Write(const char *buffer, int size, OpenFileId id);
 
 /// Read `size` bytes from the open file into `buffer`.
@@ -122,9 +123,13 @@ int Write(const char *buffer, int size, OpenFileId id);
 /// enough, or if it is an I/O device, and there are not enough characters to
 /// read, return whatever is available (for I/O devices, you should always
 /// wait until you can return at least one character).
+/// Returns -1 if there is an error.
 int Read(char *buffer, int size, OpenFileId id);
 
+// GUIDIOS: Agregar todos los cambios de tipos a Respuestas/Practica\ 3
+
 /// Close the file, we are done reading and writing to it.
+/// Returns 1 if successful, 0 otherwise.
 void Close(OpenFileId id);
 
 
