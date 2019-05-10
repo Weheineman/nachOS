@@ -268,6 +268,7 @@ SyscallHandler(ExceptionType _et)
 
             if (filenameAddr == 0){
                 DEBUG('a', "Error: address to filename string is null.\n");
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
@@ -275,6 +276,7 @@ SyscallHandler(ExceptionType _et)
             if (!ReadStringFromUser(filenameAddr, filename, sizeof filename)){
                 DEBUG('a', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine -> WriteRegister(2, -1);
                 break;
             }
 
