@@ -143,8 +143,8 @@ Thread::Fork(VoidFunctionPtr func, void *arg)
     interrupt->SetLevel(oldLevel);
 }
 
-// If Join is enabled, wait until the thread to be joined calls Send (this
-// happens inside Thread::Finish). Returns the exit status of the joined thread.
+/// If Join is enabled, wait until the thread to be joined calls Send (this
+/// happens inside Thread::Finish). Returns the exit status of the joined thread.
 int
 Thread::Join()
 {
@@ -220,7 +220,8 @@ Thread::RestorePriority()
 
 #ifdef USER_PROGRAM
 
-// GUIDIOS: Copiar los comentarios de thread.hh aca.
+/// Adds a OpenFile pointer to the table and returns the
+/// index where it is stored, or -1 if not successful.
 int
 Thread::AddFile(OpenFile *filePtr)
 {
@@ -232,6 +233,7 @@ Thread::AddFile(OpenFile *filePtr)
     return possibleFileId;
 }
 
+/// Returns the OpenFile pointer stored at index fileId.
 OpenFile*
 Thread::GetFile(OpenFileId fileId)
 {
@@ -239,6 +241,7 @@ Thread::GetFile(OpenFileId fileId)
     return filePtr;
 }
 
+/// Returns true iff the fileId corresponds to a file in the table.
 bool
 Thread::HasFile(OpenFileId fileId)
 {
@@ -246,6 +249,7 @@ Thread::HasFile(OpenFileId fileId)
     return found;
 }
 
+/// Removes the file corresponding to the fileId.
 void
 Thread::RemoveFile(OpenFileId fileId)
 {
@@ -253,6 +257,7 @@ Thread::RemoveFile(OpenFileId fileId)
     delete removedFile;
 }
 
+/// Removes all open files.
 void
 Thread::RemoveAllFiles()
 {
@@ -261,6 +266,7 @@ Thread::RemoveAllFiles()
             RemoveFile(ind);
 }
 
+/// Returns the SpaceId of the current process
 SpaceId
 Thread::GetSpaceId()
 {
