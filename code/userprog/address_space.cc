@@ -228,3 +228,15 @@ AddressSpace::RestoreState()
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
 }
+
+
+TranslationEntry *
+AddressSpace::findContainingPage (unsigned vAddr)
+{
+    unsigned pageIndex = (unsigned) vAddr / PAGE_SIZE;
+    
+    if(pageIndex >= numPages)
+        return NULL;
+    
+    return &(pageTable[pageIndex]);    
+}

@@ -1,10 +1,6 @@
-PRACTICA 3
-GUIDIOS: Usamos threadTable para matar nachos cuando no queden running threads?
-
-EJERCICIO 3:
-- Parte a
-	--Dudas:
-	Qué hago si me quedo sin páginas de RAM en la carga de un programa? (Nos dijeron que no hay drama que explote con un assert. Hay formas de solucionarlo pero requieren rebuscársela mucho.
-
-- Parte b
-        (COMENTAR EN DOCUMENTACION EL TEMA DE SI LLAMAN CON -rs PORQUE SON UNOS INFELICES)
+PRACTICA 4
+Ejercicio 1
+  - Hacer un tlb_handler en Initialize
+  - Revisar que todo esto compile
+  - Hacer el handler de la otra excepción
+  - Cambiar las funciones de cambio de userState de AddressSpace

@@ -129,9 +129,9 @@ USERPROG_OBJ = address_space.o            \
                mmu.o                      \
                transfer.o
 
-VMEM_HDR =
-VMEM_SRC =
-VMEM_OBJ =
+VMEM_HDR = tlb_handler.hh
+VMEM_SRC = tlb_handler.cc
+VMEM_OBJ = tlb_handler.o
 
 FILESYS_HDR = ../filesys/directory.hh       \
               ../filesys/directory_entry.hh \

@@ -40,6 +40,8 @@ public:
 
     void SaveState();
     void RestoreState();
+    
+    TranslationEntry *findContainingPage(unsigned vAddr);
 
 private:
 

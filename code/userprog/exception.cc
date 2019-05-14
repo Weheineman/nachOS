@@ -78,6 +78,20 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+
+static void 
+PageFaultHandler(ExceptionType et)
+{
+    int vAddr = registers[BAD_VADDR_REG];
+
+    TranslationEntry *newPage = currentThread -> space -> findContainingPage(vAddr);
+
+    TranslationEntry *oldPage = tlb_handler -> findEntryToReplace();
+    
+    tlb_handler -> replaceTLBEntry(oldPage, newPage);
+
+}
+
 /// Handle a system call exception.
 ///
 /// * `et` is the kind of exception.  The list of possible exceptions is in
@@ -391,7 +405,7 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
