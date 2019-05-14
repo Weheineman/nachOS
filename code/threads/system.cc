@@ -47,6 +47,10 @@ Bitmap *pageMap;
 Table <Thread*> *threadTable;
 #endif
 
+#ifdef VMEM
+TLB_Handler *tlb_handler;
+#endif
+
 #ifdef NETWORK
 PostOffice *postOffice;
 #endif
@@ -192,6 +196,10 @@ Initialize(int argc, char **argv)
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
 
+	#ifdef VMEM
+		tlb_handler = new TLB_Handler;
+	#endif
+
     SetExceptionHandlers();
 #endif
 
@@ -226,6 +234,10 @@ Cleanup()
     delete pageMap;
     delete synchConsole;
     delete threadTable;
+#endif
+
+#ifdef VMEM
+	delete tlb_handler;
 #endif
 
 #ifdef FILESYS_NEEDED

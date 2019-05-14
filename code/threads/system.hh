@@ -43,6 +43,11 @@ extern Bitmap *pageMap;
 extern Table<Thread*> *threadTable; //Table used for deferencing SpaceIds
 #endif
 
+#ifdef VMEM
+#include "vmem/tlb_handler.hh"
+extern TLB_Handler *tlb_handler;
+#endif
+
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.
 #include "filesys/file_system.hh"
 extern FileSystem *fileSystem;
@@ -57,6 +62,7 @@ extern SynchDisk *synchDisk;
 #include "network/post.hh"
 extern PostOffice *postOffice;
 #endif
+
 
 
 #endif

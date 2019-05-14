@@ -1,6 +1,9 @@
 PRACTICA 4
 Ejercicio 1
-  - Hacer un tlb_handler en Initialize
   - Revisar que todo esto compile
-  - Hacer el handler de la otra excepción
   - Cambiar las funciones de cambio de userState de AddressSpace
+
+  Dudas:
+   - Cuando reemplazo la entry, copio todos los valores o alguno tiene valor constante / tengo que cambiarlo en la página física?
+   - ReadOnly, mando a dormir el Thread y listo?
+   - Problema con los Makefile, colisiona con filesys de una forma que no entiendo.

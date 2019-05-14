@@ -78,19 +78,25 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+#ifdef VMEM
 
 static void 
 PageFaultHandler(ExceptionType et)
 {
-    int vAddr = registers[BAD_VADDR_REG];
+    int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
     TranslationEntry *newPage = currentThread -> space -> findContainingPage(vAddr);
-
-    TranslationEntry *oldPage = tlb_handler -> findEntryToReplace();
     
-    tlb_handler -> replaceTLBEntry(oldPage, newPage);
-
+    tlb_handler -> replaceTLBEntry(newPage);
 }
+
+static void
+ReadOnlyHandler(ExceptionType et)
+{
+	currentThread -> Finish();
+}
+
+#endif
 
 /// Handle a system call exception.
 ///
@@ -403,12 +409,27 @@ SyscallHandler(ExceptionType _et)
 void
 SetExceptionHandlers()
 {
+	#ifdef VMEM
+	
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
     machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
+    machine->SetHandler(READ_ONLY_EXCEPTION,     &ReadOnlyHandler);
+    machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
+    machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
+    machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
+    machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);	
+	
+	#else
+
+    machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
+    machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
     machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
+    
+    #endif
 }

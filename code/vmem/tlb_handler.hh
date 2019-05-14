@@ -7,11 +7,14 @@ class TLB_Handler {
 public:
     TLB_Handler();
     ~TLB_Handler();
-    TranslationEntry* findEntryToReplace();
+    
+    void replaceTLBEntry(TranslationEntry *newPage);
 
 private:
     unsigned replaceIndex;
-}
+    
+    TranslationEntry* findEntryToReplace();
+};
 
 
 
