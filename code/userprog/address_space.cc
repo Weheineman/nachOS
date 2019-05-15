@@ -225,8 +225,18 @@ AddressSpace::SaveState()
 void
 AddressSpace::RestoreState()
 {
+	#ifdef USE_TLB
+    
+    TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
+	for(unsigned i = 0; i < TLB_SIZE; i++)
+		tlbRef[i].valid = false;
+
+    #else
+    
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
+    
+	#endif
 }
 
 

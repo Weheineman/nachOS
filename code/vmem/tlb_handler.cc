@@ -26,10 +26,5 @@ void
 TLB_Handler::replaceTLBEntry(TranslationEntry *newPage){
 	TranslationEntry *oldPage = findEntryToReplace();
 	
-	oldPage -> virtualPage = newPage -> virtualPage;
-	oldPage -> physicalPage = newPage -> physicalPage;
-	oldPage -> valid = newPage -> valid;
-	oldPage -> use = newPage -> use;
-	oldPage -> dirty = newPage -> dirty;
-	oldPage -> readOnly = newPage -> readOnly;
+	*oldPage = *newPage;
 }
