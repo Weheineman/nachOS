@@ -80,23 +80,22 @@ DefaultHandler(ExceptionType et)
 
 #ifdef VMEM
 
-static void 
+static void
 PageFaultHandler(ExceptionType et)
 {
     stats -> numPageFaults ++;
-    
+
     int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
     AddressSpace* currentSpace = currentThread -> space;
 
     unsigned newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
-    
+
     #ifdef DEMAND_LOADING
     if(currentSpace -> NotLoadedPage(newPageIndex))
        currentSpace -> LoadPage(newPageIndex);
-    
     #endif
-    
+
     tlb_handler -> ReplaceTLBEntry(newPageIndex);
 }
 
@@ -372,8 +371,6 @@ SyscallHandler(ExceptionType _et)
             else
                 newThread -> Fork(RunUserProgram, SaveArgs(argvAddr));
 
-            delete filePtr;
-
             machine -> WriteRegister(2, newSpaceId);
 
             break;
@@ -420,7 +417,7 @@ void
 SetExceptionHandlers()
 {
 	#ifdef VMEM
-	
+
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
     machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
@@ -428,8 +425,8 @@ SetExceptionHandlers()
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
-    machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);	
-	
+    machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
+
 	#else
 
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
@@ -440,6 +437,6 @@ SetExceptionHandlers()
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
     machine->SetHandler(OVERFLOW_EXCEPTION,      &DefaultHandler);
     machine->SetHandler(ILLEGAL_INSTR_EXCEPTION, &DefaultHandler);
-    
+
     #endif
 }

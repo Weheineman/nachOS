@@ -16,6 +16,7 @@
 
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
+#include "bin/noff.h"
 
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
@@ -40,13 +41,13 @@ public:
 
     void SaveState();
     void RestoreState();
-    
+
     unsigned FindContainingPageIndex(unsigned vAddr);
-    
+
     bool NotLoadedPage(unsigned pageIndex);
-    
+
     void LoadPage(unsigned pageIndex);
-    
+
     void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
 
 private:
@@ -57,6 +58,11 @@ private:
     /// Number of pages in the virtual address space.
     unsigned numPages;
 
+    /// Structure containing program segment information.
+    noffHeader ourNoffHeader;
+
+    /// Pointer to the executable file corresponding to this AddressSpace.
+    OpenFile *ourExecutable;
 };
 
 

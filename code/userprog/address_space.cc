@@ -17,7 +17,6 @@
 
 
 #include "address_space.hh"
-#include "bin/noff.h"
 #include "machine/endianness.hh"
 #include "threads/system.hh"
 #include "lib/utility.hh"
@@ -90,12 +89,18 @@ AddressSpace::AddressSpace(OpenFile *executable)
           numPages, size);
 
     pageTable = new TranslationEntry[numPages];
-    
+
+    // Store our noffHeader.
+    ourNoffHeader = noffH;
+
+    // Store the open file reference.
+    ourExecutable = executable;
+
     #ifndef DEMAND_LOADING
-    
+
     // First, set up the translation.
     char *mainMemory = machine->GetMMU()->mainMemory;
-    
+
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
 		pageTable[i].physicalPage = pageMap -> Find();
@@ -174,7 +179,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 	}
 
     #else
-    
+
     for (unsigned i = 0; i < numPages; i++) {
         ///Using an invalid value for virtual pages to know when
         /// a page has not yet been loaded.
@@ -185,9 +190,9 @@ AddressSpace::AddressSpace(OpenFile *executable)
         pageTable[i].dirty        = false;
         pageTable[i].readOnly     = false;
     }
-    
-    
-    
+
+
+
     #endif
 }
 
@@ -200,6 +205,7 @@ AddressSpace::~AddressSpace()
 		pageMap -> Clear(pageTable[i].physicalPage);
 
     delete [] pageTable;
+    delete ourExecutable;
 }
 
 /// Set the initial values for the user-level register set.
@@ -245,16 +251,16 @@ void
 AddressSpace::RestoreState()
 {
 	#ifdef USE_TLB
-    
+
     TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
 	for(unsigned i = 0; i < TLB_SIZE; i++)
 		tlbRef[i].valid = false;
 
     #else
-    
+
     machine->GetMMU()->pageTable     = pageTable;
     machine->GetMMU()->pageTableSize = numPages;
-    
+
 	#endif
 }
 
@@ -271,11 +277,57 @@ AddressSpace::NotLoadedPage (unsigned pageIndex)
     return pageTable[pageIndex].virtualPage != pageIndex;
 }
 
-void 
+void
 AddressSpace::LoadPage(unsigned pageIndex)
 {
     ASSERT(pageIndex < numPages);
-    //GUIDIOS: Completar esta función.
+
+    pageTable[pageIndex].virtualPage = pageIndex;
+
+    unsigned pageStart = pageIndex * PAGE_SIZE;
+    unsigned pageEnd = pageStart + PAGE_SIZE;
+    // Check for intersection with code segment.
+    unsigned codeStart = ourNoffHeader.code.virtualAddr;
+    unsigned codeEnd = codeStart + ourNoffHeader.code.size;
+    unsigned maxStart = maxx(pageStart, codeStart);
+    unsigned minEnd = minn(pageEnd, codeEnd);
+    char *mainMemory = machine -> GetMMU() -> mainMemory;
+
+    if(maxStart < minEnd){
+        // The intersection is [maxStart, minEnd).
+        // Calculate the starting position of the intersection in the file.
+        unsigned fileOffset = ourNoffHeader.code.inFileAddr
+                              + (maxStart - codeStart);
+
+        // Calculate the starting position of the intersection in the
+        // main memory.
+        unsigned memoryPosition = pageTable[pageIndex].physicalPage * PAGE_SIZE
+                                  + maxStart - pageStart;
+
+        ourExecutable -> ReadAt(&mainMemory[memoryPosition],
+                                minEnd - maxStart, fileOffset);
+    }
+
+    // Check for intersection with data segment.
+    unsigned dataStart = ourNoffHeader.initData.virtualAddr;
+    unsigned dataEnd = dataStart + ourNoffHeader.initData.size;
+    maxStart = maxx(pageStart, dataStart);
+    minEnd = minn(pageEnd, dataEnd);
+
+    if(maxStart < minEnd){
+        // The intersection is [maxStart, minEnd).
+        // Calculate the starting position of the intersection in the file.
+        unsigned fileOffset = ourNoffHeader.initData.inFileAddr
+                              + (maxStart - dataStart);
+
+        // Calculate the starting position of the intersection in the
+        // main memory.
+        unsigned memoryPosition = pageTable[pageIndex].physicalPage * PAGE_SIZE
+                                  + maxStart - pageStart;
+
+        ourExecutable -> ReadAt(&mainMemory[memoryPosition],
+                                minEnd - maxStart, fileOffset);
+    }
 }
 
 void

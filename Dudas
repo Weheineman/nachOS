@@ -15,3 +15,4 @@ Ejercicio 2
 
 Ejercicio 3
 	- Hicimos que Demand Loading sea un flag que se usa directamente en el makefile de VMEM. Dejamos esto o armamos un flag de ejecución?
+    - Deberiamos setear a 0 paginas reservadas pero no cargadas, como stack o initData?

@@ -14,11 +14,16 @@ code/network/Makefile.depends
 code/network/nachos
 code/network/switch.s
 code/network/*.o
+code/userland/cp
 code/userland/filetest
 code/userland/halt
 code/userland/matmult
+code/userland/matmult_halt
+code/userland/matmult_print
 code/userland/shell
 code/userland/sort
+code/userland/sort_print
+code/userland/sort_halt
 code/userland/tiny_shell
 code/userland/our_shell
 code/userland/echo
