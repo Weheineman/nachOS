@@ -41,7 +41,13 @@ public:
     void SaveState();
     void RestoreState();
     
-    TranslationEntry *findContainingPage(unsigned vAddr);
+    unsigned FindContainingPageIndex(unsigned vAddr);
+    
+    bool NotLoadedPage(unsigned pageIndex);
+    
+    void LoadPage(unsigned pageIndex);
+    
+    void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
 
 private:
 

@@ -10,7 +10,7 @@ TLB_Handler::~TLB_Handler()
 {}
 
 TranslationEntry * 
-TLB_Handler::findEntryToReplace(){
+TLB_Handler::FindEntryToReplace(){
     unsigned i;
     TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
     for(i = 0; i < TLB_SIZE; i++)
@@ -23,8 +23,8 @@ TLB_Handler::findEntryToReplace(){
 }
 
 void
-TLB_Handler::replaceTLBEntry(TranslationEntry *newPage){
-	TranslationEntry *oldPage = findEntryToReplace();
+TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
+	TranslationEntry *oldPage = FindEntryToReplace();
 	
-	*oldPage = *newPage;
+	currentThread -> space -> CopyPageContent(newPageIndex, oldPage);
 }

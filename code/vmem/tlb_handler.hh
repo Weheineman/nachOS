@@ -8,12 +8,12 @@ public:
     TLB_Handler();
     ~TLB_Handler();
     
-    void replaceTLBEntry(TranslationEntry *newPage);
+    void ReplaceTLBEntry(unsigned newPageIndex);
 
 private:
     unsigned replaceIndex;
     
-    TranslationEntry* findEntryToReplace();
+    TranslationEntry* FindEntryToReplace();
 };
 
 

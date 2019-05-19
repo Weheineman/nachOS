@@ -89,10 +89,13 @@ AddressSpace::AddressSpace(OpenFile *executable)
     DEBUG('a', "Initializing address space, num pages %u, size %u\n",
           numPages, size);
 
+    pageTable = new TranslationEntry[numPages];
+    
+    #ifndef DEMAND_LOADING
+    
     // First, set up the translation.
     char *mainMemory = machine->GetMMU()->mainMemory;
-
-    pageTable = new TranslationEntry[numPages];
+    
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
 		pageTable[i].physicalPage = pageMap -> Find();
@@ -170,6 +173,22 @@ AddressSpace::AddressSpace(OpenFile *executable)
 
 	}
 
+    #else
+    
+    for (unsigned i = 0; i < numPages; i++) {
+        ///Using an invalid value for virtual pages to know when
+        /// a page has not yet been loaded.
+        pageTable[i].virtualPage  = numPages;
+		pageTable[i].physicalPage = pageMap -> Find();
+        pageTable[i].valid        = true;
+        pageTable[i].use          = false;
+        pageTable[i].dirty        = false;
+        pageTable[i].readOnly     = false;
+    }
+    
+    
+    
+    #endif
 }
 
 /// Deallocate an address space.
@@ -240,13 +259,28 @@ AddressSpace::RestoreState()
 }
 
 
-TranslationEntry *
-AddressSpace::findContainingPage (unsigned vAddr)
+unsigned
+AddressSpace::FindContainingPageIndex (unsigned vAddr)
 {
-    unsigned pageIndex = (unsigned) vAddr / PAGE_SIZE;
-    
-    if(pageIndex >= numPages)
-        return NULL;
-    
-    return &(pageTable[pageIndex]);    
+    return vAddr / PAGE_SIZE;
+}
+
+bool
+AddressSpace::NotLoadedPage (unsigned pageIndex)
+{
+    return pageTable[pageIndex].virtualPage != pageIndex;
+}
+
+void 
+AddressSpace::LoadPage(unsigned pageIndex)
+{
+    ASSERT(pageIndex < numPages);
+    //GUIDIOS: Completar esta función.
+}
+
+void
+AddressSpace::CopyPageContent(unsigned pageIndex, TranslationEntry* destPage)
+{
+    ASSERT(pageIndex < numPages);
+    *destPage = pageTable[pageIndex];
 }

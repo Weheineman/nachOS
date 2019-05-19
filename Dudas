@@ -1,4 +1,7 @@
 PRACTICA 4
+
+Acordarse que quizas haya que hacer TryWriteMem en /userprog/transfer.cc
+
 Ejercicio 1
    - Cuando reemplazo la entry, copio todos los valores o alguno tiene valor constante / tengo que cambiarlo en la página física?
    - ReadOnly, mando a dormir el Thread y listo?

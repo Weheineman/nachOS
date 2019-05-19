@@ -87,9 +87,17 @@ PageFaultHandler(ExceptionType et)
     
     int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
-    TranslationEntry *newPage = currentThread -> space -> findContainingPage(vAddr);
+    AddressSpace* currentSpace = currentThread -> space;
+
+    unsigned newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
     
-    tlb_handler -> replaceTLBEntry(newPage);
+    #ifdef DEMAND_LOADING
+    if(currentSpace -> NotLoadedPage(newPageIndex))
+       currentSpace -> LoadPage(newPageIndex);
+    
+    #endif
+    
+    tlb_handler -> ReplaceTLBEntry(newPageIndex);
 }
 
 static void
