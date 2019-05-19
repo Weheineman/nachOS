@@ -2,6 +2,13 @@
 #include "lib/utility.hh"
 #include "threads/system.hh"
 
+bool tryReadMem(unsigned userAddress, unsigned size, int* buffer){
+    if(machine->ReadMem(userAddress, size, buffer))
+        return true;
+    
+    return machine->ReadMem(userAddress, size, buffer);
+}
+
 
 /// Copy a byte array from virtual machine to host.
 void ReadBufferFromUser(int userAddress, char *outBuffer,
@@ -13,7 +20,7 @@ void ReadBufferFromUser(int userAddress, char *outBuffer,
 
     for(unsigned count = 0; count < byteCount; count++, userAddress++){
         int temp;
-        ASSERT(machine->ReadMem(userAddress, 1, &temp));
+        ASSERT(tryReadMem(userAddress, 1, &temp));
         *outBuffer = (unsigned char) temp;
     }
 }
@@ -30,7 +37,7 @@ bool ReadStringFromUser(int userAddress, char *outString,
     do {
         int temp;
         count++;
-        ASSERT(machine->ReadMem(userAddress++, 1, &temp));
+        ASSERT(tryReadMem(userAddress++, 1, &temp));
         *outString = (unsigned char) temp;
     } while (*outString++ != '\0' && count < maxByteCount);
 

@@ -18,7 +18,7 @@ Statistics::Statistics()
     totalTicks = idleTicks = systemTicks = userTicks = 0;
     numDiskReads = numDiskWrites = 0;
     numConsoleCharsRead = numConsoleCharsWritten = 0;
-    numPageFaults = numPacketsSent = numPacketsRecvd = 0;
+    numMemoryReads = numPageFaults = numPacketsSent = numPacketsRecvd = 0;
 #ifdef DFS_TICKS_FIX
     tickResets = 0;
 #endif
@@ -40,7 +40,11 @@ Statistics::Print()
     printf("Disk I/O: reads %u, writes %u\n", numDiskReads, numDiskWrites);
     printf("Console I/O: reads %u, writes %u\n",
            numConsoleCharsRead, numConsoleCharsWritten);
-    printf("Paging: faults %u\n", numPageFaults);
+    if(numMemoryReads == 0)
+        printf("Virtual memory: no memory reads\n");
+    else
+        printf("Virtual memory: memory reads %u, page faults %u, hit ratio %.4f\n",
+        numMemoryReads, numPageFaults, (float) (numMemoryReads - numPageFaults) / numMemoryReads * 100);
     printf("Network I/O: packets received %u, sent %u\n",
            numPacketsRecvd, numPacketsSent);
 }

@@ -44,6 +44,9 @@ public:
     /// Number of characters written to the display.
     unsigned numConsoleCharsWritten;
 
+    ///Number of memory reads.
+    unsigned numMemoryReads;
+
     /// Number of virtual memory page faults.
     unsigned numPageFaults;
 

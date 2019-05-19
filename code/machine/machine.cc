@@ -91,6 +91,7 @@ Machine::WriteRegister(unsigned num, int value)
 bool
 Machine::ReadMem(unsigned addr, unsigned size, int *value)
 {
+    stats -> numMemoryReads ++;
     ExceptionType e = mmu.ReadMem(addr, size, value);
     if (e != NO_EXCEPTION) {
         RaiseException(e, addr);

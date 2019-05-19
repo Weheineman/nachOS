@@ -83,6 +83,8 @@ DefaultHandler(ExceptionType et)
 static void 
 PageFaultHandler(ExceptionType et)
 {
+    stats -> numPageFaults ++;
+    
     int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
     TranslationEntry *newPage = currentThread -> space -> findContainingPage(vAddr);

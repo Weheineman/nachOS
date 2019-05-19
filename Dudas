@@ -1,7 +1,14 @@
 PRACTICA 4
 Ejercicio 1
-  Dudas:
    - Cuando reemplazo la entry, copio todos los valores o alguno tiene valor constante / tengo que cambiarlo en la página física?
    - ReadOnly, mando a dormir el Thread y listo?
    - Es necesario chequear correctitud en AddressSpace :: findContainingPage?
    - No puedo testear código que use syscalls con las funciones de transfer. Como readMem devuelve false, explota.
+
+Ejercicio 2
+	- What the heck is the hit ratio?
+	- SI tuvimos un pageFault, con lo cual tenemos que volver a leer, cuenta como dos lecturas?
+	- Parecería estar bien. A qué llamamos "Razonablemente grande"?
+
+Ejercicio 3
+	- Hicimos que Demand Loading sea un flag que se usa directamente en el makefile de VMEM. Dejamos esto o armamos un flag de ejecución?
