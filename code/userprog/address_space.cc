@@ -282,7 +282,7 @@ AddressSpace::FindContainingPageIndex (int vAddr)
     
     int index = vAddr / PAGE_SIZE;
     
-    if(index >= numPages) 
+    if((unsigned) index >= numPages) 
         return -1;
     
     return index;

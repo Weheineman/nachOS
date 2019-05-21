@@ -62,7 +62,7 @@ void WriteBufferToUser(const char *buffer, int userAddress,
     ASSERT(byteCount != 0);
 
     for(unsigned count = 0; count < byteCount; count++, userAddress++, buffer++)
-        ASSERT(tryWriteMem(userAddres, 1, *buffer));
+        ASSERT(tryWriteMem(userAddress, 1, *buffer));
 }
 
 /// Copy a C string from host to virtual machine.
