@@ -82,11 +82,16 @@ AddressSpace::AddressSpace(OpenFile *executable)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
+
+
+
+    #ifndef DEMAND_LOADING
+    // Check we are not trying to run anything too big.
     ASSERT(numPages <= pageMap -> CountClear());
-      // Check we are not trying to run anything too big.
 
     DEBUG('a', "Initializing address space, num pages %u, size %u\n",
           numPages, size);
+    #endif
 
     pageTable = new TranslationEntry[numPages];
 
@@ -191,8 +196,6 @@ AddressSpace::AddressSpace(OpenFile *executable)
         pageTable[i].readOnly     = false;
     }
 
-
-
     #endif
 }
 
@@ -247,9 +250,9 @@ AddressSpace::SaveState()
             unsigned pageIndex = tlbRef[i].virtualPage;
             pageTable[pageIndex].use = tlbRef[i].use;
             pageTable[pageIndex].dirty = tlbRef[i].dirty;
-        }    
+        }
     }
-    #endif    
+    #endif
 }
 
 /// On a context switch, restore the machine state so that this address space
@@ -277,14 +280,14 @@ AddressSpace::RestoreState()
 int
 AddressSpace::FindContainingPageIndex (int vAddr)
 {
-    if(vAddr < 0) 
+    if(vAddr < 0)
         return -1;
-    
+
     int index = vAddr / PAGE_SIZE;
-    
-    if((unsigned) index >= numPages) 
+
+    if((unsigned) index >= numPages)
         return -1;
-    
+
     return index;
 }
 

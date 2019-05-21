@@ -74,6 +74,10 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
 
     // Add this thread to the userprog thread table (declared in system.cc)
     spaceId = threadTable -> Add(this);
+    #ifdef VMEM
+        swapFileName = nullptr;
+        swapFile = nullptr;
+    #endif
 #endif
 }
 
@@ -101,6 +105,13 @@ Thread::~Thread()
     #ifdef USER_PROGRAM
         RemoveAllFiles();
         delete fileTable;
+        delete space;
+    #endif
+
+    #ifdef VMEM
+        delete swapFile;
+        fileSystem -> Remove(swapFileName);
+        delete [] swapFileName;
     #endif
 
     delete [] name;
@@ -273,6 +284,26 @@ Thread::GetSpaceId()
     return spaceId;
 }
 
+AddressSpace*
+Thread::GetAddressSpace(){
+    return space;
+}
+
+void
+Thread::InitAddressSpace(OpenFile *filePtr) {
+    // GUIDIOS: Finish (copy what's in prog_test.cc, in StartProcess).
+
+    #ifdef VMEM
+        // Fits SWAP.asid where asid is a SpaceId of up to 10 digits.
+        swapFileName = new char [16];
+        snprintf(swapFileName, "SWAP.%d", spaceId);
+
+        // Create a swap file for this thread and store its OpenFile pointer in
+        // swapFile.
+        fileSystem -> Create(swapFileName, 0);
+        swapFile = fileSystem -> Open(swapFileName);
+    #endif
+}
 #endif
 
 /// Called by `ThreadRoot` when a thread is done executing the forked

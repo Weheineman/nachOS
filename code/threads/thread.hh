@@ -111,8 +111,7 @@ private:
     Port *joinPort;
     char *joinPortName;
 
-    #ifdef USER_PROGRAM
-
+#ifdef USER_PROGRAM
     // Table used to map the OpenFileIds (int) to OpenFile pointers
     // There are two reserved entries reserved for synchConsole
     // in the table, 0 and 1.
@@ -120,7 +119,14 @@ private:
     int maxFileTableInd;
     const int tableReserved = 2;
     SpaceId spaceId;
+    #ifdef  VMEM
+        char *swapFileName;
+        OpenFile *swapFile;
     #endif
+#endif
+
+    // User code this thread is running.
+    AddressSpace *space;
 
 public:
 
@@ -164,8 +170,7 @@ public:
     // Changes the priority of the thread to its original value
     void RestorePriority();
 
-    #ifdef USER_PROGRAM
-
+#ifdef USER_PROGRAM
     // Adds a OpenFile pointer to the table and returns the
     // index where it is stored, or -1 if not successful.
     int AddFile(OpenFile* filePtr);
@@ -184,7 +189,11 @@ public:
 
     // Returns the SpaceId of the current process
     SpaceId GetSpaceId();
-    #endif
+
+    AddressSpace* GetAddressSpace();
+
+    void InitAddressSpace(OpenFile *filePtr);
+#endif
 
     char *GetName();
 
@@ -193,6 +202,7 @@ public:
     const int GetPriority() const;
 
     void Print() const;
+
 
 private:
     // Some of the private data for this class is listed above.
@@ -226,8 +236,6 @@ public:
     // Restore user-level register state.
     void RestoreUserState();
 
-    // User code this thread is running.
-    AddressSpace *space;
 #endif
 };
 

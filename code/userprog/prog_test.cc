@@ -30,6 +30,7 @@ StartProcess(const char *filename)
         return;
     }
 
+    // GUIDIOS: Change this to use the new thread interface, InitAddressSpace.
     AddressSpace *space = new AddressSpace(executable);
     currentThread->space = space;
 

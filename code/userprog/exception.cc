@@ -28,6 +28,8 @@
 #include "threads/system.hh"
 #include "args.cc"
 
+
+    // GUIDIOS: Change this to use the new thread interface, GetAddressSpace.
 void RunUserProgram (void *argv_){
     currentThread -> space -> InitRegisters();  // Set the initial register values.
     currentThread -> space -> RestoreState();   // Load page table register.
@@ -44,6 +46,8 @@ void RunUserProgram (void *argv_){
     machine -> Run();  // Jump to the user program.
 }
 
+
+// GUIDIOS: Change this to use the new thread interface, GetAddressSpace.
 void RunSimpleUserProgram (void *argv_){
     currentThread -> space -> InitRegisters();  // Set the initial register values.
     currentThread -> space -> RestoreState();   // Load page table register.
@@ -90,7 +94,7 @@ PageFaultHandler(ExceptionType et)
     AddressSpace* currentSpace = currentThread -> space;
 
     int newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
-    
+
     if(newPageIndex < 0)
         currentThread -> Finish();
     else{
@@ -364,6 +368,8 @@ SyscallHandler(ExceptionType _et)
             // The joinable status depends on enableJoin.
             Thread *newThread = new Thread(filename, bool(enableJoin));
             SpaceId newSpaceId = newThread -> GetSpaceId();
+
+            // GUIDIOS: Change this to use the new thread interface, InitAddressSpace.
             AddressSpace *newAddressSpace = new AddressSpace(filePtr);
 
             // Set the new Address Space for the thread.
