@@ -42,7 +42,7 @@ public:
     void SaveState();
     void RestoreState();
 
-    unsigned FindContainingPageIndex(unsigned vAddr);
+    int FindContainingPageIndex(int vAddr);
 
     bool NotLoadedPage(unsigned pageIndex);
 

@@ -89,14 +89,18 @@ PageFaultHandler(ExceptionType et)
 
     AddressSpace* currentSpace = currentThread -> space;
 
-    unsigned newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
+    int newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
+    
+    if(newPageIndex < 0)
+        currentThread -> Finish();
+    else{
+        #ifdef DEMAND_LOADING
+        if(currentSpace -> NotLoadedPage(newPageIndex))
+           currentSpace -> LoadPage(newPageIndex);
+        #endif
 
-    #ifdef DEMAND_LOADING
-    if(currentSpace -> NotLoadedPage(newPageIndex))
-       currentSpace -> LoadPage(newPageIndex);
-    #endif
-
-    tlb_handler -> ReplaceTLBEntry(newPageIndex);
+        tlb_handler -> ReplaceTLBEntry(newPageIndex);
+    }
 }
 
 static void

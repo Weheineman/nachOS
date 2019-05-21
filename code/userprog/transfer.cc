@@ -3,10 +3,19 @@
 #include "threads/system.hh"
 
 bool tryReadMem(unsigned userAddress, unsigned size, int* buffer){
-    if(machine->ReadMem(userAddress, size, buffer))
-        return true;
+    for(unsigned i = 0; i < 3; i++)
+        if(machine->ReadMem(userAddress, size, buffer))
+            return true;
     
-    return machine->ReadMem(userAddress, size, buffer);
+    return false;
+}
+
+bool tryWriteMem(unsigned userAddress, unsigned size, int value){
+    for(unsigned i = 0; i < 3; i++)
+        if(machine->WriteMem(userAddress, size, value))
+            return true;
+        
+    return false;
 }
 
 
@@ -53,7 +62,7 @@ void WriteBufferToUser(const char *buffer, int userAddress,
     ASSERT(byteCount != 0);
 
     for(unsigned count = 0; count < byteCount; count++, userAddress++, buffer++)
-        ASSERT(machine->WriteMem(userAddress, 1, *buffer));
+        ASSERT(tryWriteMem(userAddres, 1, *buffer));
 }
 
 /// Copy a C string from host to virtual machine.
@@ -62,6 +71,6 @@ void WriteStringToUser(const char *string, int userAddress){
     ASSERT(string != nullptr);
 
     do {
-        ASSERT(machine->WriteMem(userAddress++, 1, *string));
+        ASSERT(tryWriteMem(userAddress++, 1, *string));
     } while (*string++ != '\0');
 }

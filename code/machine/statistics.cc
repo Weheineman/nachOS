@@ -40,11 +40,19 @@ Statistics::Print()
     printf("Disk I/O: reads %u, writes %u\n", numDiskReads, numDiskWrites);
     printf("Console I/O: reads %u, writes %u\n",
            numConsoleCharsRead, numConsoleCharsWritten);
+    
+    printf("Virtual memory: ");
     if(numMemoryReads == 0)
-        printf("Virtual memory: no memory reads\n");
-    else
-        printf("Virtual memory: memory reads %u, page faults %u, hit ratio %.4f\n",
-        numMemoryReads, numPageFaults, (float) (numMemoryReads - numPageFaults) / numMemoryReads * 100);
+        printf("no memory reads\n");
+    else{
+        if(numMemoryReads == numPageFaults)
+            printf("all %u memory reads failed\n", numMemoryReads);
+        else
+            printf("memory reads %u, successful reads %u, page faults %u, hit ratio %.4f\n",
+                   numMemoryReads, numMemoryReads - numPageFaults, numPageFaults, 
+                   (float) (numMemoryReads - 2 * numPageFaults) / (numMemoryReads - numPageFaults) * 100);
+    }
+    
     printf("Network I/O: packets received %u, sent %u\n",
            numPacketsRecvd, numPacketsSent);
 }

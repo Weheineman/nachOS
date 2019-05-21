@@ -237,11 +237,20 @@ AddressSpace::InitRegisters()
 
 /// On a context switch, save any machine state, specific to this address
 /// space, that needs saving.
-///
-/// For now, nothing!
 void
 AddressSpace::SaveState()
-{}
+{
+    #ifdef USE_TLB
+    TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
+	for(unsigned i = 0; i < TLB_SIZE; i++){
+        if(tlbRef[i].valid){
+            unsigned pageIndex = tlbRef[i].virtualPage;
+            pageTable[pageIndex].use = tlbRef[i].use;
+            pageTable[pageIndex].dirty = tlbRef[i].dirty;
+        }    
+    }
+    #endif    
+}
 
 /// On a context switch, restore the machine state so that this address space
 /// can run.
@@ -265,10 +274,18 @@ AddressSpace::RestoreState()
 }
 
 
-unsigned
-AddressSpace::FindContainingPageIndex (unsigned vAddr)
+int
+AddressSpace::FindContainingPageIndex (int vAddr)
 {
-    return vAddr / PAGE_SIZE;
+    if(vAddr < 0) 
+        return -1;
+    
+    int index = vAddr / PAGE_SIZE;
+    
+    if(index >= numPages) 
+        return -1;
+    
+    return index;
 }
 
 bool
