@@ -29,11 +29,7 @@
 #include "args.cc"
 
 
-    // GUIDIOS: Change this to use the new thread interface, GetAddressSpace.
 void RunUserProgram (void *argv_){
-    currentThread -> space -> InitRegisters();  // Set the initial register values.
-    currentThread -> space -> RestoreState();   // Load page table register.
-
     char **argv = (char**) argv_;
     int argc = WriteArgs(argv);
 
@@ -47,11 +43,7 @@ void RunUserProgram (void *argv_){
 }
 
 
-// GUIDIOS: Change this to use the new thread interface, GetAddressSpace.
 void RunSimpleUserProgram (void *argv_){
-    currentThread -> space -> InitRegisters();  // Set the initial register values.
-    currentThread -> space -> RestoreState();   // Load page table register.
-
     machine -> Run();  // Jump to the user program.
 }
 
@@ -91,7 +83,7 @@ PageFaultHandler(ExceptionType et)
 
     int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
-    AddressSpace* currentSpace = currentThread -> space;
+    AddressSpace* currentSpace = currentThread -> GetAddressSpace();
 
     int newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
 
@@ -369,11 +361,8 @@ SyscallHandler(ExceptionType _et)
             Thread *newThread = new Thread(filename, bool(enableJoin));
             SpaceId newSpaceId = newThread -> GetSpaceId();
 
-            // GUIDIOS: Change this to use the new thread interface, InitAddressSpace.
-            AddressSpace *newAddressSpace = new AddressSpace(filePtr);
-
             // Set the new Address Space for the thread.
-            newThread -> space = newAddressSpace;
+            newThread -> InitAddressSpace(filePtr);
 
             // Check if arguments are given and run the user program.
             if(argvAddr == 0)

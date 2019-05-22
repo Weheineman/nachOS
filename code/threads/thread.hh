@@ -112,6 +112,9 @@ private:
     char *joinPortName;
 
 #ifdef USER_PROGRAM
+    // Address Space of the thread.
+    AddressSpace *space;
+
     // Table used to map the OpenFileIds (int) to OpenFile pointers
     // There are two reserved entries reserved for synchConsole
     // in the table, 0 and 1.
@@ -119,14 +122,12 @@ private:
     int maxFileTableInd;
     const int tableReserved = 2;
     SpaceId spaceId;
+    
     #ifdef  VMEM
         char *swapFileName;
         OpenFile *swapFile;
     #endif
 #endif
-
-    // User code this thread is running.
-    AddressSpace *space;
 
 public:
 

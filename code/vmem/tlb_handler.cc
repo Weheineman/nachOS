@@ -3,28 +3,28 @@
 
 
 TLB_Handler::TLB_Handler(){
-    replaceIndex = 0;    
+    replaceIndex = 0;
 }
 
 TLB_Handler::~TLB_Handler()
 {}
 
-TranslationEntry * 
+TranslationEntry *
 TLB_Handler::FindEntryToReplace(){
     unsigned i;
     TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
     for(i = 0; i < TLB_SIZE; i++)
         if(!tlbRef[i].valid)
-            return &(tlbRef[i]);    
-        
+            return &(tlbRef[i]);
+
     unsigned returnIndex = replaceIndex;
     replaceIndex = (replaceIndex + 1) % TLB_SIZE;
-    return &(tlbRef[returnIndex]);    
+    return &(tlbRef[returnIndex]);
 }
 
 void
 TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
 	TranslationEntry *oldPage = FindEntryToReplace();
-	
-	currentThread -> space -> CopyPageContent(newPageIndex, oldPage);
+
+	currentThread -> GetAddressSpace() -> CopyPageContent(newPageIndex, oldPage);
 }

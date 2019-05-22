@@ -292,11 +292,15 @@ Thread::GetAddressSpace(){
 void
 Thread::InitAddressSpace(OpenFile *filePtr) {
     // GUIDIOS: Finish (copy what's in prog_test.cc, in StartProcess).
+    space = new AddressSpace(filePtr);
+
+    space -> InitRegisters();  // Set the initial register values.
+    space -> RestoreState();   // Load page table register.
 
     #ifdef VMEM
         // Fits SWAP.asid where asid is a SpaceId of up to 10 digits.
         swapFileName = new char [16];
-        snprintf(swapFileName, "SWAP.%d", spaceId);
+        snprintf(swapFileName, 16, "SWAP.%i", spaceId);
 
         // Create a swap file for this thread and store its OpenFile pointer in
         // swapFile.
