@@ -8,3 +8,8 @@ Ejercicio 2
 
 Ejercicio 3
     - Deberiamos setear a 0 paginas reservadas pero no cargadas, como stack o initData?
+
+todo
+GUIDIOS GUIDIOS GUIDIOS NOTICE ME SENPAI
+AddressSpace tiene que tener un metodo SwapPage(unsigned pageNum) que nismanee
+una pagina.

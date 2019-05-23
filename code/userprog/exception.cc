@@ -30,6 +30,9 @@
 
 
 void RunUserProgram (void *argv_){
+	currentThread -> GetAddressSpace() -> InitRegisters();  // Set the initial register values.
+    currentThread -> GetAddressSpace() -> RestoreState();   // Load page table register.
+    
     char **argv = (char**) argv_;
     int argc = WriteArgs(argv);
 
@@ -44,6 +47,9 @@ void RunUserProgram (void *argv_){
 
 
 void RunSimpleUserProgram (void *argv_){
+	currentThread -> GetAddressSpace() -> InitRegisters();  // Set the initial register values.
+    currentThread -> GetAddressSpace() -> RestoreState();   // Load page table register.
+    
     machine -> Run();  // Jump to the user program.
 }
 

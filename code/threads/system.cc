@@ -43,12 +43,17 @@ SynchDisk *synchDisk;
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole; ///< Console used in syscall testing
-Bitmap *pageMap;
 Table <Thread*> *threadTable;
-#endif
 
 #ifdef VMEM
 TLB_Handler *tlb_handler;
+
+#else
+  //~ GUIDIOS: si explota todo sacar del else
+Bitmap *pageMap;
+
+#endif
+
 #endif
 
 #ifdef NETWORK
@@ -191,13 +196,14 @@ Initialize(int argc, char **argv)
     Debugger *d = debugUserProg ? new Debugger : nullptr;
     machine = new Machine(d);  // This must come first.
 
-    pageMap = new Bitmap(NUM_PHYS_PAGES);
-
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
 
 	#ifdef VMEM
 		tlb_handler = new TLB_Handler;
+	#else
+		//~ GUIDIOS: si explota todo sacar del else
+		pageMap = new Bitmap(NUM_PHYS_PAGES);
 	#endif
 
     SetExceptionHandlers();

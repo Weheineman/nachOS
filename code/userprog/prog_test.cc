@@ -32,6 +32,9 @@ StartProcess(const char *filename)
 
     // Set the new Address Space for the thread.
     currentThread -> InitAddressSpace(executable);
+    
+    currentThread -> GetAddressSpace() -> InitRegisters();  // Set the initial register values.
+    currentThread -> GetAddressSpace() -> RestoreState();   // Load page table register.
 
     machine->Run();  // Jump to the user progam.
     ASSERT(false);   // `machine->Run` never returns; the address space

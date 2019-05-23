@@ -39,13 +39,18 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 #include "lib/bitmap.hh"
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *synchConsole; // Console used in syscall testing
-extern Bitmap *pageMap;
 extern Table<Thread*> *threadTable; //Table used for deferencing SpaceIds
-#endif
 
 #ifdef VMEM
+
 #include "vmem/tlb_handler.hh"
 extern TLB_Handler *tlb_handler;
+
+#else
+//~ GUIDIOS: si explota todo sacar del else
+extern Bitmap *pageMap;
+#endif
+
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.

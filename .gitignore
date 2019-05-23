@@ -4,6 +4,7 @@
 
 code/bin/coff2flat
 code/bin/coff2noff
+code/bin/readnoff
 code/bin/disassemble
 code/bin/*.o
 code/filesys/Makefile.depends
@@ -36,6 +37,7 @@ code/userland/*.coff
 code/userland/lib/
 code/userland/mips-dec-ultrix42/*
 code/userland/*.o
+code/userland/SWAP*
 code/threads/Makefile.depends
 code/threads/nachos
 code/threads/switch.s
