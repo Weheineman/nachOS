@@ -40,15 +40,12 @@ extern Timer *timer;                 ///< The hardware alarm clock.
 extern Machine *machine;  // User program memory and registers.
 extern SynchConsole *synchConsole; // Console used in syscall testing
 extern Table<Thread*> *threadTable; //Table used for deferencing SpaceIds
-
+extern Bitmap *pageMap;
 #ifdef VMEM
 
 #include "vmem/tlb_handler.hh"
 extern TLB_Handler *tlb_handler;
 
-#else
-//~ GUIDIOS: si explota todo sacar del else
-extern Bitmap *pageMap;
 #endif
 
 #endif

@@ -44,15 +44,13 @@ SynchDisk *synchDisk;
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synchConsole; ///< Console used in syscall testing
 Table <Thread*> *threadTable;
+Bitmap *pageMap;
 
 #ifdef VMEM
 TLB_Handler *tlb_handler;
 
-#else
-  //~ GUIDIOS: si explota todo sacar del else
-Bitmap *pageMap;
-
 #endif
+
 
 #endif
 
@@ -198,12 +196,12 @@ Initialize(int argc, char **argv)
 
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
+    
+    pageMap = new Bitmap(NUM_PHYS_PAGES);
 
 	#ifdef VMEM
 		tlb_handler = new TLB_Handler;
-	#else
-		//~ GUIDIOS: si explota todo sacar del else
-		pageMap = new Bitmap(NUM_PHYS_PAGES);
+		
 	#endif
 
     SetExceptionHandlers();
@@ -239,10 +237,9 @@ Cleanup()
     delete machine;
     delete synchConsole;
     delete threadTable;
+    delete pageMap;
     #ifdef VMEM
         delete tlb_handler;
-    #else
-        delete pageMap;
     #endif
 #endif
 
