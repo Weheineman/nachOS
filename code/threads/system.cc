@@ -237,14 +237,15 @@ Cleanup()
 
 #ifdef USER_PROGRAM
     delete machine;
-    delete pageMap;
     delete synchConsole;
     delete threadTable;
+    #ifdef VMEM
+        delete tlb_handler;
+    #else
+        delete pageMap;
+    #endif
 #endif
 
-#ifdef VMEM
-	delete tlb_handler;
-#endif
 
 #ifdef FILESYS_NEEDED
     delete fileSystem;

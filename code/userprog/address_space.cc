@@ -190,7 +190,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
         ///Using an invalid value for virtual pages to know when
         /// a page has not yet been loaded.
         pageTable[i].virtualPage  = numPages;
-		    pageTable[i].physicalPage = pageMap -> Find();
+		pageTable[i].physicalPage = pageMap -> Find();
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
