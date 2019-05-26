@@ -98,7 +98,7 @@ PageFaultHandler(ExceptionType et)
     else{
         #ifdef DEMAND_LOADING
         if(currentSpace -> NotLoadedPage(newPageIndex))
-           currentSpace -> LoadPage(newPageIndex);
+			currentSpace -> LoadPage(newPageIndex);
         #endif
 
         tlb_handler -> ReplaceTLBEntry(newPageIndex);

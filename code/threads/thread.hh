@@ -122,11 +122,7 @@ private:
     int maxFileTableInd;
     const int tableReserved = 2;
     SpaceId spaceId;
-    
-    #ifdef  VMEM
-        char *swapFileName;
-        OpenFile *swapFile;
-    #endif
+
 #endif
 
 public:
@@ -204,6 +200,13 @@ public:
 
     void Print() const;
 
+#ifdef DEMAND_LOADING
+    char *swapFileName;
+    OpenFile *swapFile;
+    // GUIDIOS: Bed england pls fix
+    // Saves a virtual page that is loaded in??? the main memory to the swap file.
+    void SwapPage(unsigned int pageIndex);
+#endif
 
 private:
     // Some of the private data for this class is listed above.

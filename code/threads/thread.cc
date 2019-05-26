@@ -74,7 +74,7 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
 
     // Add this thread to the userprog thread table (declared in system.cc)
     spaceId = threadTable -> Add(this);
-    #ifdef VMEM
+    #ifdef DEMAND_LOADING
         swapFileName = nullptr;
         swapFile = nullptr;
     #endif
@@ -108,7 +108,7 @@ Thread::~Thread()
         delete space;
     #endif
 
-    #ifdef VMEM
+    #ifdef DEMAND_LOADING
         delete swapFile;
         fileSystem -> Remove(swapFileName);
         delete [] swapFileName;
@@ -294,7 +294,7 @@ Thread::InitAddressSpace(OpenFile *filePtr) {
     // GUIDIOS: Finish (copy what's in prog_test.cc, in StartProcess).
     space = new AddressSpace(filePtr);
 
-    #ifdef VMEM
+    #ifdef DEMAND_LOADING
         // Fits SWAP.asid where asid is a SpaceId of up to 10 digits.
         swapFileName = new char [16];
         snprintf(swapFileName, 16, "SWAP.%i", spaceId);
@@ -305,6 +305,32 @@ Thread::InitAddressSpace(OpenFile *filePtr) {
         swapFile = fileSystem -> Open(swapFileName);
     #endif
 }
+
+#ifdef DEMAND_LOADING
+void
+Thread::SwapPage(unsigned int pageIndex)
+{
+    TranslationEntry *pageTable = space -> GetPageTable();
+    unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
+    char *mainMemory = machine -> GetMMU() -> mainMemory;
+    swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
+
+    // Update the pageTable.
+    // numPages + 1 means the page is currently in the swap file.
+    pageTable[pageIndex].virtualPage = space -> GetNumPages() + 1;
+
+    // Invalidate the corresponding tlb entry (if it exists).
+    if(currentThread == this){
+        unsigned int swappedInd = pageTable[pageIndex].physicalPage;
+        TranslationEntry *tlb = machine -> GetMMU() -> tlb;
+
+        for(unsigned int tlbInd = 0; tlbInd < TLB_SIZE; tlbInd++)
+            if(tlb[tlbInd].physicalPage == swappedInd)
+                tlb[tlbInd].valid = false;
+    }
+}
+#endif
+
 #endif
 
 /// Called by `ThreadRoot` when a thread is done executing the forked

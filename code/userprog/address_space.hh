@@ -46,13 +46,26 @@ public:
 
     bool NotLoadedPage(unsigned pageIndex);
 
+    // Loads a page to the main memory, iff it isn't already loaded.
+    // (if it is, it does nothing)
     void LoadPage(unsigned pageIndex);
 
     void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
 
+    // GUIDIOS: Sacar esto y poner SwapPage en AddressSpace??
+    // Returns the pageTable of the address space.
+    TranslationEntry* GetPageTable();
+
+    // Returns numPages.
+    unsigned GetNumPages();
+
 private:
 
     /// Assume linear page table translation for now!
+    // pageTable[i].virtualPage = numPages means the page i has never
+    // been loaded.
+    // pageTable[i].virtualPage = numPages + 1 means the page i is
+    // currently in the swap file.
     TranslationEntry *pageTable;
 
     /// Number of pages in the virtual address space.
@@ -63,6 +76,17 @@ private:
 
     /// Pointer to the executable file corresponding to this AddressSpace.
     OpenFile *ourExecutable;
+
+    /// Loads a page that was never loaded to memory before, to memory.
+    void LoadPageFirst(unsigned pageIndex, int physIndex);
+
+    /// Loads a page that is currently in the swap file to memory.
+    void LoadPageSwap(unsigned pageIndex, int physIndex);
+
+    #ifdef  DEMAND_LOADING
+        char *swapFileName;
+        OpenFile *swapFile;
+    #endif
 };
 
 

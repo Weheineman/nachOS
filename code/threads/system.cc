@@ -48,7 +48,9 @@ Bitmap *pageMap;
 
 #ifdef VMEM
 TLB_Handler *tlb_handler;
-CoreMap *coreMap;
+    #ifdef DEMAND_LOADING
+        CoreMap *coreMap;
+    #endif
 #endif
 
 
@@ -197,11 +199,15 @@ Initialize(int argc, char **argv)
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
 
-    pageMap = new Bitmap(NUM_PHYS_PAGES);
+    #ifndef DEMAND_LOADING
+        pageMap = new Bitmap(NUM_PHYS_PAGES);
+    #endif
 
 	#ifdef VMEM
 		tlb_handler = new TLB_Handler;
-		coreMap = new CoreMap;
+        #ifdef DEMAND_LOADING
+	       coreMap = new CoreMap;
+        #endif
 	#endif
 
     SetExceptionHandlers();
@@ -240,6 +246,9 @@ Cleanup()
     delete pageMap;
     #ifdef VMEM
         delete tlb_handler;
+        #ifdef DEMAND_LOADING
+            delete  coreMap;
+        #endif
     #endif
 #endif
 

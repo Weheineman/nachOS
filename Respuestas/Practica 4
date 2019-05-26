@@ -4,11 +4,14 @@ Cambiamos las funciones de userprog/transfer.cc ya que ahora Machine::ReadMem pu
 Ejercicio 2:
 Tomamos el hit ratio como la siguiente fórmula: successfulReads / totalReads
 Donde: - successfulReads es el número de lecturas a memoria exitosas (Hits).
-       - totalReads es el número de lecturas a memoria (Hits + Misses). 
+       - totalReads es el número de lecturas a memoria (Hits + Misses).
 
 En este caso, consideramos que una lectura fallida en la TLB seguida por un segundo intento exitoso sólo cuenta como una única lectura fallida. Es decir, en ese caso se tendría solamente un miss, no un hit y un miss.
-Como en nuestro código tenemos disponibles todas las lecturas en memoria (numMemoryReads) y la cantidad de fallas de página (pageFaults), y cada pageFault implica una lectura, tenemos que eliminar las lecturas repetidas que nos implica tener un miss seguido por el hit subsiguiente, pues queremos que eso cuente como una única lectura fallida y no como una exitosa y una fallida. 
+Como en nuestro código tenemos disponibles todas las lecturas en memoria (numMemoryReads) y la cantidad de fallas de página (pageFaults), y cada pageFault implica una lectura, tenemos que eliminar las lecturas repetidas que nos implica tener un miss seguido por el hit subsiguiente, pues queremos que eso cuente como una única lectura fallida y no como una exitosa y una fallida.
 Por lo tanto, la fórmula final sería: successfulReads / totalReads = (totalMemoryReads - pageFaults) / totalMemoryReads = ((numMemoryReads - pageFaults) - pageFaults) / (numMemoryReads - pageFaults)
 
 Ejercicio 3:
 Para utilizar Demand Loading, tiene que utilizarse la bandera DEMAND_LOADING, agregándola en el Makefile del directorio vmem.
+
+Ejercicio 4:
+Para preservar el codigo de ejercicios anteriores, en AddressSpace::LoadPage() physIndex vale un valor dado por el coreMap (implementacion nueva, ej4) o toma el valor antiguo (la pagina física reservada en el momento de creación, ej1).

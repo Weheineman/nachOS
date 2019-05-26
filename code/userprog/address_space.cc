@@ -19,6 +19,7 @@
 #include "address_space.hh"
 #include "machine/endianness.hh"
 #include "threads/system.hh"
+#include "vmem/coremap.hh"
 #include "lib/utility.hh"
 
 
@@ -109,7 +110,7 @@ AddressSpace::AddressSpace(OpenFile *executable)
 
     for (unsigned i = 0; i < numPages; i++) {
         pageTable[i].virtualPage  = i;
-		    pageTable[i].physicalPage = pageMap -> Find();
+		pageTable[i].physicalPage = pageMap -> Find();
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -298,9 +299,49 @@ AddressSpace::NotLoadedPage (unsigned pageIndex)
     return pageTable[pageIndex].virtualPage != pageIndex;
 }
 
-void
-AddressSpace::LoadPage(unsigned pageIndex)
+// GUIDIOS: Es muy chancho esto?
+TranslationEntry*
+AddressSpace::GetPageTable()
 {
+    return pageTable;
+}
+
+unsigned int
+AddressSpace::GetNumPages()
+{
+    return numPages;
+}
+
+void
+AddressSpace::LoadPage(unsigned int pageIndex) {
+    int physIndex;
+    #ifdef DEMAND_LOADING
+         physIndex = coreMap -> ReservePage(pageIndex);
+         pageTable[pageIndex].physicalPage = physIndex;
+    #else
+        // This happens only if demand loading is enabled and swap is disabled.
+        physIndex = pageTable[pageIndex].physicalPage;
+    #endif
+
+    // If the page was never loaded to memory.
+    if(pageTable[pageIndex].virtualPage == numPages)
+        LoadPageFirst(pageIndex, physIndex);
+    // If the page is in the swap file.
+    else if(pageTable[pageIndex].virtualPage == numPages + 1)
+        LoadPageSwap(pageIndex, physIndex);
+}
+
+void
+AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
+{
+    ASSERT(false);
+    return;
+}
+
+void
+AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
+{
+    // GUIDIOS: Hay que ver donde se carga, ahora no hay lugar reservado.
     ASSERT(pageIndex < numPages);
 
     pageTable[pageIndex].virtualPage = pageIndex;
@@ -322,7 +363,7 @@ AddressSpace::LoadPage(unsigned pageIndex)
 
         // Calculate the starting position of the intersection in the
         // main memory.
-        unsigned memoryPosition = pageTable[pageIndex].physicalPage * PAGE_SIZE
+        unsigned memoryPosition = physIndex * PAGE_SIZE
                                   + maxStart - pageStart;
 
         ourExecutable -> ReadAt(&mainMemory[memoryPosition],
@@ -343,7 +384,7 @@ AddressSpace::LoadPage(unsigned pageIndex)
 
         // Calculate the starting position of the intersection in the
         // main memory.
-        unsigned memoryPosition = pageTable[pageIndex].physicalPage * PAGE_SIZE
+        unsigned memoryPosition = physIndex * PAGE_SIZE
                                   + maxStart - pageStart;
 
         ourExecutable -> ReadAt(&mainMemory[memoryPosition],
