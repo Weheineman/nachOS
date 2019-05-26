@@ -316,7 +316,6 @@ AddressSpace::FindContainingPageIndex (int vAddr)
 void
 AddressSpace::SwapPage(unsigned int pageIndex)
 {
-    printf("LOOK MOM IM GOING TO THE HDD\n");
     unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
     char *mainMemory = machine -> GetMMU() -> mainMemory;
     swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
@@ -368,7 +367,6 @@ AddressSpace::LoadPage(unsigned int pageIndex) {
 void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
-    printf("LOOK MOM IM COMING BACK FROM THE HDD\n");
     char *mainMemory = machine -> GetMMU() -> mainMemory;
     unsigned memoryPosition = physIndex * PAGE_SIZE;
     unsigned fileOffset = pageIndex * PAGE_SIZE;
