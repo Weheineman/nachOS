@@ -73,11 +73,8 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     maxFileTableInd = 0;
 
     // Add this thread to the userprog thread table (declared in system.cc)
+    // GUIDIOS: Problema de concurrencia?
     spaceId = threadTable -> Add(this);
-    #ifdef DEMAND_LOADING
-        swapFileName = nullptr;
-        swapFile = nullptr;
-    #endif
 #endif
 }
 
@@ -106,12 +103,6 @@ Thread::~Thread()
         RemoveAllFiles();
         delete fileTable;
         delete space;
-    #endif
-
-    #ifdef DEMAND_LOADING
-        delete swapFile;
-        fileSystem -> Remove(swapFileName);
-        delete [] swapFileName;
     #endif
 
     delete [] name;
@@ -291,44 +282,8 @@ Thread::GetAddressSpace(){
 
 void
 Thread::InitAddressSpace(OpenFile *filePtr) {
-    space = new AddressSpace(filePtr);
-
-    #ifdef DEMAND_LOADING
-        // Fits SWAP.asid where asid is a SpaceId of up to 10 digits.
-        swapFileName = new char [16];
-        snprintf(swapFileName, 16, "SWAP.%i", spaceId);
-
-        // Create a swap file for this thread and store its OpenFile pointer in
-        // swapFile.
-        fileSystem -> Create(swapFileName, 0);
-        swapFile = fileSystem -> Open(swapFileName);
-    #endif
+    space = new AddressSpace(filePtr, spaceId);
 }
-
-#ifdef DEMAND_LOADING
-void
-Thread::SwapPage(unsigned int pageIndex)
-{
-    TranslationEntry *pageTable = space -> GetPageTable();
-    unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
-    char *mainMemory = machine -> GetMMU() -> mainMemory;
-    swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
-
-    // Update the pageTable.
-    // numPages + 1 means the page is currently in the swap file.
-    pageTable[pageIndex].virtualPage = space -> GetNumPages() + 1;
-
-    // Invalidate the corresponding tlb entry (if it exists).
-    if(currentThread == this){
-        unsigned int swappedInd = pageTable[pageIndex].physicalPage;
-        TranslationEntry *tlb = machine -> GetMMU() -> tlb;
-
-        for(unsigned int tlbInd = 0; tlbInd < TLB_SIZE; tlbInd++)
-            if(tlb[tlbInd].physicalPage == swappedInd)
-                tlb[tlbInd].valid = false;
-    }
-}
-#endif
 
 #endif
 

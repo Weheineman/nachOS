@@ -17,6 +17,7 @@
 #include "filesys/file_system.hh"
 #include "machine/translation_entry.hh"
 #include "bin/noff.h"
+#include "userprog/syscall.h"
 
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
@@ -29,7 +30,7 @@ public:
     /// the file `executable`.
     ///
     /// * `executable` is the open file that corresponds to the program.
-    AddressSpace(OpenFile *executable);
+    AddressSpace(OpenFile *executable, SpaceId spaceId_);
 
     /// De-allocate an address space.
     ~AddressSpace();
@@ -52,12 +53,9 @@ public:
 
     void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
 
-    // GUIDIOS: Sacar esto y poner SwapPage en AddressSpace??
-    // Returns the pageTable of the address space.
-    TranslationEntry* GetPageTable();
-
-    // Returns numPages.
-    unsigned GetNumPages();
+    #ifdef DEMAND_LOADING
+            void SwapPage(unsigned pageIndex);
+    #endif
 
 private:
 
@@ -77,16 +75,18 @@ private:
     /// Pointer to the executable file corresponding to this AddressSpace.
     OpenFile *ourExecutable;
 
+    SpaceId spaceId;
+
+    #ifdef DEMAND_LOADING
+        char *swapFileName;
+        OpenFile *swapFile;
+    #endif
+
     /// Loads a page that was never loaded to memory before, to memory.
     void LoadPageFirst(unsigned pageIndex, int physIndex);
 
     /// Loads a page that is currently in the swap file to memory.
     void LoadPageSwap(unsigned pageIndex, int physIndex);
-
-    #ifdef  DEMAND_LOADING
-        char *swapFileName;
-        OpenFile *swapFile;
-    #endif
 };
 
 

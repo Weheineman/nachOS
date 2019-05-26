@@ -64,9 +64,11 @@ uint32_t virtualPageOffset(uint32_t virtualAddress){
 ///
 /// * `executable` is the file containing the object code to load into
 ///   memory.
-AddressSpace::AddressSpace(OpenFile *executable)
+AddressSpace::AddressSpace(OpenFile *executable, SpaceId spaceId_)
 {
     ASSERT(executable != nullptr);
+
+    spaceId = spaceId_;
 
     noffHeader noffH;
     executable->ReadAt((char *) &noffH, sizeof noffH, 0);
@@ -187,6 +189,15 @@ AddressSpace::AddressSpace(OpenFile *executable)
 
     #else
 
+    // Fits SWAP.asid where asid is a SpaceId of up to 10 digits.
+    swapFileName = new char [16];
+    snprintf(swapFileName, 16, "SWAP.%i", spaceId);
+
+    // Create a swap file for this thread and store its OpenFile pointer in
+    // swapFile.
+    fileSystem -> Create(swapFileName, 0);
+    swapFile = fileSystem -> Open(swapFileName);
+
     for (unsigned i = 0; i < numPages; i++) {
         ///Using an invalid value for virtual pages to know when
         /// a page has not yet been loaded.
@@ -211,6 +222,12 @@ AddressSpace::~AddressSpace()
 	for(unsigned i = 0; i < numPages; i++)
 		pageMap -> Clear(pageTable[i].physicalPage);
 
+    #ifdef DEMAND_LOADING
+        delete swapFile;
+        fileSystem -> Remove(swapFileName);
+        delete [] swapFileName;
+    #endif
+    
     delete [] pageTable;
     delete ourExecutable;
 }
@@ -295,23 +312,34 @@ AddressSpace::FindContainingPageIndex (int vAddr)
     return index;
 }
 
+#ifdef DEMAND_LOADING
+void
+AddressSpace::SwapPage(unsigned int pageIndex)
+{
+    unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
+    char *mainMemory = machine -> GetMMU() -> mainMemory;
+    swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
+
+    // Update the pageTable.
+    // numPages + 1 means the page is currently in the swap file.
+    pageTable[pageIndex].virtualPage = numPages + 1;
+
+    // Invalidate the corresponding tlb entry (if it exists).
+    if(currentThread -> GetAddressSpace() == this){
+        unsigned int swappedInd = pageTable[pageIndex].physicalPage;
+        TranslationEntry *tlb = machine -> GetMMU() -> tlb;
+
+        for(unsigned int tlbInd = 0; tlbInd < TLB_SIZE; tlbInd++)
+            if(tlb[tlbInd].physicalPage == swappedInd)
+                tlb[tlbInd].valid = false;
+    }
+}
+#endif
+
 bool
 AddressSpace::NotLoadedPage (unsigned pageIndex)
 {
     return pageTable[pageIndex].virtualPage != pageIndex;
-}
-
-// GUIDIOS: Es muy chancho esto?
-TranslationEntry*
-AddressSpace::GetPageTable()
-{
-    return pageTable;
-}
-
-unsigned int
-AddressSpace::GetNumPages()
-{
-    return numPages;
 }
 
 void
@@ -337,7 +365,7 @@ void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
     // GUIDIOS: revisar valores de las flags de la pageTable.
-    return;
+
 }
 
 void

@@ -10,7 +10,7 @@
 class CoreMap{
 private:
     Bitmap  *pageMap;
-    Thread  **ownerThread;
+    AddressSpace  **ownerAddSp;
     unsigned int *virtualPageNum;
     // GUIDIOS:Plus possibly other flags, such as whether the page is
     // currently locked in memory for I/O purposes.
