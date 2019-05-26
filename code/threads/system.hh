@@ -16,6 +16,7 @@
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
 #include "userprog/synch_console.hh"
+#include "vmem/coremap.hh"
 
 
 /// Initialization and cleanup routines.
@@ -42,7 +43,7 @@ extern SynchConsole *synchConsole; // Console used in syscall testing
 extern Table<Thread*> *threadTable; //Table used for deferencing SpaceIds
 extern Bitmap *pageMap;
 #ifdef VMEM
-
+extern CoreMap *coreMap;
 #include "vmem/tlb_handler.hh"
 extern TLB_Handler *tlb_handler;
 

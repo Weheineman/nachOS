@@ -1,7 +1,5 @@
 #include "machine/mmu.hh"
 
-// GUIDIOS: Agregar coremap al contexto global
-
 class CoreMap{
 private:
     Bitmap  *pageMap;

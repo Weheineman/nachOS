@@ -48,7 +48,7 @@ Bitmap *pageMap;
 
 #ifdef VMEM
 TLB_Handler *tlb_handler;
-
+CoreMap *coreMap;
 #endif
 
 
@@ -196,12 +196,12 @@ Initialize(int argc, char **argv)
 
     if(!randomYield)
         timer = new Timer(TimerInterruptHandler, 0, false);
-    
+
     pageMap = new Bitmap(NUM_PHYS_PAGES);
 
 	#ifdef VMEM
 		tlb_handler = new TLB_Handler;
-		
+		coreMap = new CoreMap;
 	#endif
 
     SetExceptionHandlers();
