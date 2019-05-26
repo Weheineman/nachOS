@@ -227,7 +227,7 @@ AddressSpace::~AddressSpace()
         fileSystem -> Remove(swapFileName);
         delete [] swapFileName;
     #endif
-    
+
     delete [] pageTable;
     delete ourExecutable;
 }
@@ -316,6 +316,7 @@ AddressSpace::FindContainingPageIndex (int vAddr)
 void
 AddressSpace::SwapPage(unsigned int pageIndex)
 {
+    printf("LOOK MOM IM GOING TO THE HDD\n");
     unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
     char *mainMemory = machine -> GetMMU() -> mainMemory;
     swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
@@ -357,16 +358,33 @@ AddressSpace::LoadPage(unsigned int pageIndex) {
     if(pageTable[pageIndex].virtualPage == numPages)
         LoadPageFirst(pageIndex, physIndex);
     // If the page is in the swap file.
+    #ifdef DEMAND_LOADING
     else if(pageTable[pageIndex].virtualPage == numPages + 1)
         LoadPageSwap(pageIndex, physIndex);
+    #endif
 }
 
+#ifdef DEMAND_LOADING
 void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
-    // GUIDIOS: revisar valores de las flags de la pageTable.
+    printf("LOOK MOM IM COMING BACK FROM THE HDD\n");
+    char *mainMemory = machine -> GetMMU() -> mainMemory;
+    unsigned memoryPosition = physIndex * PAGE_SIZE;
+    unsigned fileOffset = pageIndex * PAGE_SIZE;
 
+    // Load the page onto memory.
+    swapFile -> ReadAt(&mainMemory[memoryPosition], PAGE_SIZE, fileOffset);
+
+    // Set the page as loaded.
+    pageTable[pageIndex].virtualPage = pageIndex;
+    pageTable[pageIndex].physicalPage = physIndex;
+    pageTable[pageIndex].valid = true;
+    pageTable[pageIndex].readOnly = false;
+    pageTable[pageIndex].use = false;
+    pageTable[pageIndex].dirty = false;
 }
+#endif
 
 void
 AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)

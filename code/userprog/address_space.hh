@@ -18,6 +18,7 @@
 #include "machine/translation_entry.hh"
 #include "bin/noff.h"
 #include "userprog/syscall.h"
+#include "filesys/open_file.hh"
 
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
