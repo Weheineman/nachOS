@@ -29,10 +29,9 @@ StartProcess(const char *filename)
         printf("Unable to open file %s\n", filename);
         return;
     }
-
     // Set the new Address Space for the thread.
     currentThread -> InitAddressSpace(executable);
-    
+
     currentThread -> GetAddressSpace() -> InitRegisters();  // Set the initial register values.
     currentThread -> GetAddressSpace() -> RestoreState();   // Load page table register.
 

@@ -6,7 +6,6 @@
 #include "machine/mmu.hh"
 #include "lib/bitmap.hh"
 #include "threads/thread.hh"
-#include "threads/system.hh"
 
 class CoreMap{
 private:

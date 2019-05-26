@@ -25,6 +25,7 @@ TLB_Handler::FindEntryToReplace(){
 void
 TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
 	TranslationEntry *oldPage = FindEntryToReplace();
-
+    // GUIDIOS: Cuando sacamos una entrada valida, hay que actualizar los campos
+    // de la pageTable.
 	currentThread -> GetAddressSpace() -> CopyPageContent(newPageIndex, oldPage);
 }

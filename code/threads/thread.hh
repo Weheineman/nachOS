@@ -203,8 +203,7 @@ public:
 #ifdef DEMAND_LOADING
     char *swapFileName;
     OpenFile *swapFile;
-    // GUIDIOS: Bed england pls fix
-    // Saves a virtual page that is loaded in??? the main memory to the swap file.
+    // Saves a virtual page that is loaded in the main memory to the swap file.
     void SwapPage(unsigned int pageIndex);
 #endif
 

@@ -291,7 +291,6 @@ Thread::GetAddressSpace(){
 
 void
 Thread::InitAddressSpace(OpenFile *filePtr) {
-    // GUIDIOS: Finish (copy what's in prog_test.cc, in StartProcess).
     space = new AddressSpace(filePtr);
 
     #ifdef DEMAND_LOADING

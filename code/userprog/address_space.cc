@@ -191,7 +191,9 @@ AddressSpace::AddressSpace(OpenFile *executable)
         ///Using an invalid value for virtual pages to know when
         /// a page has not yet been loaded.
         pageTable[i].virtualPage  = numPages;
-		pageTable[i].physicalPage = pageMap -> Find();
+        // The pages have to be loaded first (and that is checked
+        // using virtualPage), so the initial value doesn't matter.
+        pageTable[i].physicalPage = 0;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -334,14 +336,13 @@ AddressSpace::LoadPage(unsigned int pageIndex) {
 void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
-    ASSERT(false);
+    // GUIDIOS: revisar valores de las flags de la pageTable.
     return;
 }
 
 void
 AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
 {
-    // GUIDIOS: Hay que ver donde se carga, ahora no hay lugar reservado.
     ASSERT(pageIndex < numPages);
 
     pageTable[pageIndex].virtualPage = pageIndex;

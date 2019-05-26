@@ -9,7 +9,5 @@ Ejercicio 2
 Ejercicio 3
     - Deberiamos setear a 0 paginas reservadas pero no cargadas, como stack o initData?
 
-todo
-GUIDIOS GUIDIOS GUIDIOS NOTICE ME SENPAI
-AddressSpace tiene que tener un metodo SwapPage(unsigned pageNum) que nismanee
-una pagina.
+Ejercicio 4
+    - Es muy chancho agregar metodos a AddSpace para obtener la pageTable y numPages? Lo hicimos para hacer SwapPage en thread. La otra opcion es agregar campos a AddSpace y hacer todo ahi.

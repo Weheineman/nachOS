@@ -1,6 +1,7 @@
 #ifdef DEMAND_LOADING
 
 #include "coremap.hh"
+#include "threads/system.hh"
 
 CoreMap::CoreMap(){
     nextNisman = 0;
