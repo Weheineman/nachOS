@@ -15,8 +15,14 @@ private:
     // GUIDIOS:Plus possibly other flags, such as whether the page is
     // currently locked in memory for I/O purposes.
 
-    // GUIDIOS: Nismanear y usar algo mejor el proximo ejercicio :)
-    unsigned int nextNisman;
+    #ifdef LRU
+        // idleCounter[i] counts the amount times there was a memory access not
+        // involving the physical page i. The last accessed page has value 0.
+        unsigned int *idleCounter;
+    #else
+        // Used for FIFO.
+        unsigned int nextRemoved;
+    #endif
 
 public:
     CoreMap();
@@ -24,8 +30,16 @@ public:
     ~CoreMap();
 
     unsigned int ReservePage(unsigned int virtualPage);
-    
+
     void ReleasePages(AddressSpace* currentSpace);
+
+    #ifdef LRU
+        // Sets idleCounter to 0 at the given index and increases the rest by 1.
+        void UpdateIdleCounter(unsigned int loadedIndex);
+
+        // Finds the index with the highest idleCounter.
+        unsigned int FindLRU();
+    #endif
 };
 
 #endif

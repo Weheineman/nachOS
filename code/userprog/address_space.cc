@@ -85,7 +85,7 @@ AddressSpace::AddressSpace(OpenFile *executable, SpaceId spaceId_)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-	
+
 	DEBUG('a', "Initializing address space, num pages %u, size %u\n",
           numPages, size);
 
@@ -221,7 +221,7 @@ AddressSpace::~AddressSpace()
     #ifndef DEMAND_LOADING
 	for(unsigned i = 0; i < numPages; i++)
 		pageMap -> Clear(pageTable[i].physicalPage);
-    
+
     #else
         coreMap -> ReleasePages(this);
         delete swapFile;
@@ -442,4 +442,15 @@ AddressSpace::CopyPageContent(unsigned pageIndex, TranslationEntry* destPage)
 {
     ASSERT(pageIndex < numPages);
     *destPage = pageTable[pageIndex];
+}
+
+int
+AddressSpace::GetPhysicalPage(unsigned pageIndex)
+{
+    // Return -1 if the page is not loaded.
+    if(pageTable[pageIndex].virtualPage >= numPages)
+        return -1;
+
+    // Otherwise, return the physical address.
+    return pageTable[pageIndex].physicalPage;
 }

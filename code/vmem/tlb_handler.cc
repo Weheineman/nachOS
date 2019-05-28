@@ -25,7 +25,21 @@ TLB_Handler::FindEntryToReplace(){
 void
 TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
 	TranslationEntry *oldPage = FindEntryToReplace();
+
     // GUIDIOS: Cuando sacamos una entrada valida, hay que actualizar los campos
     // de la pageTable.
-	currentThread -> GetAddressSpace() -> CopyPageContent(newPageIndex, oldPage);
+
+    AddressSpace *currentSpace = currentThread -> GetAddressSpace();
+
+    #ifdef LRU
+        int physIndex = currentSpace -> GetPhysicalPage(newPageIndex);
+
+        // Check that GetPhysicalPage returned successfully.
+        ASSERT(physIndex >= 0);
+
+        // Update the physical page usage table.
+        coreMap -> UpdateIdleCounter(physIndex);
+    #endif
+
+	currentSpace -> CopyPageContent(newPageIndex, oldPage);
 }

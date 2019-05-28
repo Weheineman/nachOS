@@ -49,10 +49,15 @@ public:
     bool NotLoadedPage(unsigned pageIndex);
 
     // Loads a page to the main memory, iff it isn't already loaded.
-    // (if it is, it does nothing)
+    // (if it is, it does nothing).
     void LoadPage(unsigned pageIndex);
 
     void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
+
+    // Returns the frame index of a given virtual page that is loaded in memory.
+    // If the page corresponding to pageIndex is not loaded, the function
+    // returns -1.
+    int GetPhysicalPage(unsigned int pageIndex);
 
     #ifdef DEMAND_LOADING
             void SwapPage(unsigned pageIndex);

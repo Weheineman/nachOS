@@ -15,3 +15,6 @@ Para utilizar Demand Loading, tiene que utilizarse la bandera DEMAND_LOADING, ag
 
 Ejercicio 4:
 Para preservar el codigo de ejercicios anteriores, en AddressSpace::LoadPage() physIndex vale un valor dado por el coreMap (implementacion nueva, ej4) o toma el valor antiguo (la pagina física reservada en el momento de creación, ej1).
+
+Ejercicio 5:
+Se agregó una nueva flag de compilación, LRU. De estar en el Makefile, Nachos utiliza LRU para elegir qué página física enviar a la swap. De no estar definida, utiliza FIFO.
