@@ -30,6 +30,7 @@
 
 #include "mmu.hh"
 #include "endianness.hh"
+#include "threads/system.hh"
 
 
 MMU::MMU()
@@ -173,6 +174,11 @@ MMU::RetrievePageEntry(unsigned vpn, TranslationEntry **entry) const
         unsigned i;
         for (i = 0; i < TLB_SIZE; i++)
             if (tlb[i].valid && tlb[i].virtualPage == vpn) {
+                #ifdef LRU
+                    // Update the physical page usage table.
+                    coreMap -> UpdateIdleCounter(tlb[i].physicalPage);
+                #endif
+
                 *entry = &tlb[i];  // FOUND!
                 return NO_EXCEPTION;
             }
