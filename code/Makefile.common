@@ -132,9 +132,11 @@ USERPROG_OBJ = address_space.o            \
 VMEM_HDR = ../vmem/tlb_handler.hh   \
            ../vmem/coremap.hh
 VMEM_SRC = ../vmem/tlb_handler.cc   \
-           ../vmem/coremap.cc
+           ../vmem/coremap.cc       \
+           ../vmem/vmem_test.cc
 VMEM_OBJ = tlb_handler.o            \
-           coremap.o
+           coremap.o                \
+           vmem_test.o
 
 FILESYS_HDR = ../filesys/directory.hh       \
               ../filesys/directory_entry.hh \

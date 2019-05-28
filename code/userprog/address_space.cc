@@ -85,16 +85,15 @@ AddressSpace::AddressSpace(OpenFile *executable, SpaceId spaceId_)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-
-
+	
+	DEBUG('a', "Initializing address space, num pages %u, size %u\n",
+          numPages, size);
 
     #ifndef DEMAND_LOADING
     // GUIDIOS: Revisar toda la funcion cuando tengamos coremap.
     // Check we are not trying to run anything too big.
     ASSERT(numPages <= pageMap -> CountClear());
 
-    DEBUG('a', "Initializing address space, num pages %u, size %u\n",
-          numPages, size);
     #endif
 
     pageTable = new TranslationEntry[numPages];

@@ -78,6 +78,8 @@ void StartProcess(const char *file);
 void ConsoleTest(const char *in, const char *out);
 void SynchConsoleTest(const char *in, const char *out);
 void MailTest(int networkID);
+void TestSequentialProcesses(int processAmount);
+void TestConcurrentProcesses(int processAmount);
 
 static inline void
 PrintVersion()
@@ -145,6 +147,28 @@ main(int argc, char **argv)
                                 // will loop forever waiting for console
                                 // input.
         }
+#ifdef DEMAND_LOADING
+	if (!strcmp(*argv, "-tsp")) { // Run a test with sequential processes.			
+			//Synch Console setup here and not in Initialize to avoid 
+			//issues with any of the console tests.
+			synchConsole = new SynchConsole(NULL, NULL);
+            
+            ASSERT(argc > 1);
+            TestSequentialProcesses(atoi(*(argv + 1)));
+            argCount = 2;
+    } else if(!strcmp(*argv, "-tcp")){ // Run a test with concurrent processes.
+			//Synch Console setup here and not in Initialize to avoid 
+			//issues with any of the console tests.
+			synchConsole = new SynchConsole(NULL, NULL);
+            
+            ASSERT(argc > 1);
+            TestConcurrentProcesses(atoi(*(argv + 1)));
+            argCount = 2;
+	}
+#endif
+
+
+
 #endif
 #ifdef FILESYS
         if (!strcmp(*argv, "-cp")) {         // Copy from UNIX to Nachos.
