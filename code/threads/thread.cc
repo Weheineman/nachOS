@@ -42,12 +42,12 @@ IsThreadStatus(ThreadStatus s)
 Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
 {
     name       = new char [64];
-    strcpy(name, threadName);
+    strncpy(name, threadName, 64);
     enableJoin = enableJoin_;
     joinPort   = nullptr;
 
     // Check that the priority is valid
-    ASSERT(priority >= 0 and priority < scheduler->GetPriorityAmount());
+    ASSERT(priority_ >= 0 and priority_ < scheduler->GetPriorityAmount());
     priority   = priority_;
     oldPriority = priority_;
 

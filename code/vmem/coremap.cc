@@ -33,4 +33,11 @@ CoreMap::ReservePage(unsigned int virtualPage){
     return index;
 }
 
+void 
+CoreMap::ReleasePages(AddressSpace* currentSpace){
+    for(unsigned i = 0; i < NUM_PHYS_PAGES; i++)
+        if(ownerAddSp[i] == currentSpace)
+            pageMap -> Clear(i);    
+}
+
 #endif

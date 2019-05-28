@@ -23,12 +23,17 @@ void SequentialSetup(void *filename_){
 
 void TestSequentialProcesses(int processAmount){
 	char name[64];
-	char processName[] = "../userland/matmult";
+	char processName1[] = "../userland/sort";
+    char processName2[] = "../userland/matmult";
 	for(int processNum = 1; processNum <= processAmount; processNum++){
 		snprintf(name, 64, "%s%d", "Number ", processNum);
 		Thread *newThread = new Thread(name, true, 0);
 		DEBUG('v', "About to fork Process %s\n", name);
-		newThread->Fork(SequentialSetup, processName);
+        if(processNum % 2)
+		    newThread->Fork(SequentialSetup, processName1);
+        else
+            newThread->Fork(SequentialSetup, processName2);
+            
 		DEBUG('v', "About to join Process %s\n", name);
 		int status = newThread->Join();
 		DEBUG('v', "Process %s returned: %d\n", name, status);
@@ -38,13 +43,18 @@ void TestSequentialProcesses(int processAmount){
 
 void TestConcurrentProcesses(int processAmount){
 	char name[64];
-	char processName[] = "../userland/matmult";
+	char processName1[] = "../userland/sort";
+    char processName2[] = "../userland/matmult";
 	Thread* sons[processAmount];
 	for(int processNum = 1; processNum <= processAmount; processNum++){
 		snprintf(name, 64, "%s%d", "Number ", processNum);
 		sons[processNum - 1] = new Thread(name, true, 0);
 		DEBUG('v', "About to fork Process %s\n", name);
-		sons[processNum - 1]->Fork(SequentialSetup, processName);
+        
+        if(processNum % 2)        
+		    sons[processNum - 1]->Fork(SequentialSetup, processName1);
+        else
+            sons[processNum - 1]->Fork(SequentialSetup, processName2);
 	}
 	for(int processNum = 1; processNum <= processAmount; processNum++){
 		DEBUG('v', "About to join Process %d\n", processNum);

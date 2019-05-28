@@ -12,3 +12,6 @@ Ejercicio 3
 Ejercicio 4
     - Concurrencia en threadTable (en el constructor de thread)?
     - No se deletean las swap files al terminar la ejecucion... que ondis?
+    - Agregar comentarios sobre cómo correr los tests.
+
+GUIDIOS: Usar "this" en vez de currentThread -> GetAddressSpace(), bugs potenciales involucrados con eso.

@@ -24,6 +24,8 @@ public:
     ~CoreMap();
 
     unsigned int ReservePage(unsigned int virtualPage);
+    
+    void ReleasePages(AddressSpace* currentSpace);
 };
 
 #endif

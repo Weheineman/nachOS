@@ -218,15 +218,16 @@ AddressSpace::AddressSpace(OpenFile *executable, SpaceId spaceId_)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    #ifndef DEMAND_LOADING
 	for(unsigned i = 0; i < numPages; i++)
 		pageMap -> Clear(pageTable[i].physicalPage);
-
-    #ifdef DEMAND_LOADING
+    
+    #else
+        coreMap -> ReleasePages(this);
         delete swapFile;
         fileSystem -> Remove(swapFileName);
         delete [] swapFileName;
     #endif
-
     delete [] pageTable;
     delete ourExecutable;
 }
@@ -317,7 +318,7 @@ AddressSpace::SwapPage(unsigned int pageIndex)
 {
     unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
     char *mainMemory = machine -> GetMMU() -> mainMemory;
-    swapFile -> WriteAt(mainMemory + physStart, PAGE_SIZE, pageIndex*PAGE_SIZE);
+    swapFile -> WriteAt(&mainMemory[physStart], PAGE_SIZE, pageIndex*PAGE_SIZE);
 
     // Update the pageTable.
     // numPages + 1 means the page is currently in the swap file.
