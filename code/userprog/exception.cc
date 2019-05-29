@@ -162,9 +162,6 @@ SyscallHandler(ExceptionType _et)
 
             int success = fileSystem -> Create(filename, 0);
 
-			// GUIDIOS: The next two lines can be used to test the new WriteAt.
-			// OpenFile *writeTest = fileSystem -> Open(filename);
-			// writeTest -> WriteAt("pepe", 4, 10);
 
 			machine -> WriteRegister(2, success);
             DEBUG('a', "Attempted to create file `%s`.\n", filename);
