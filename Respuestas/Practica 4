@@ -29,13 +29,17 @@ sort_halt pageFaults: TLB de 4 páginas = 2639153
 
 Si bien a primera vista parece que aumentar el tamaño de TLB es lo más deseable, esto provocaría que el sistema se ralentice. Cada vez que ocurre un cambio de contexto, las entradas de la tlb se anulan y vuelven a escribir, por lo que a mayor tamaño, mayor tiempo se pierde en el proceso. En el caso de busqueda infructuosa, el tiempo que se pierde entre una TLB de tamaño 32 y una TLB de tamaño 64 es del doble.
 Visto y considerando que la diferencia en Hit Ratio y pageFault en una TLB de 32 a 64 páginas no es relevante, lo óptimo sería escoger un tamaño de 32 páginas.
-En general, consideramos que la mejor estrategia es optar por un tamaño intermedio. Lo suficientemente grande como para obtener un buen Hit Ratio y una baja cantidad de pageFaults, sin sacrificar mucho tiempo de cómputo. En particular, creemos que 16 páginas es un buen valor de referencia.
+En general, consideramos que la mejor estrategia es optar por un tamaño intermedio. Lo suficientemente grande como para obtener un buen Hit Ratio y una baja cantidad de pageFaults, sin sacrificar mucho tiempo de cómputo. En particular, creemos que un valor estimativo que lograría esto estaría cerca de 16 páginas.
 
 Ejercicio 3:
 Para utilizar Demand Loading, tiene que utilizarse la bandera DEMAND_LOADING, agregándola en el Makefile del directorio vmem.
 
 Ejercicio 4:
 Para preservar el codigo de ejercicios anteriores, en AddressSpace::LoadPage() physIndex vale un valor dado por el coreMap (implementacion nueva, ej4) o toma el valor antiguo (la pagina física reservada en el momento de creación, ej1).
+Para este ejercicio se extendieron las posibilidades de testing con el archivo vmem_test.cc . Para ejecutar las pruebas, se pueden usar las siguientes banderas con el nachos de vmem:
+$ nachos -tsp N
+$ nachos -tcp N
+En el primero, se lanzarán N procesos secuencialmente (recomendamos para ambos casos un N <= 19 para no desbordar la tabla de procesos), alternando entre ejecuciones de sort y matmult. En el segundo, se lanzarán N procesos de manera concurrente, también alternando como en el caso anterior. Con esta última bandera también puede usarse -rs para evaluar comportamientos ante Yields al azar. Se recomienda utilizar la bandera de depuración "-d v" para ver las impresiones del progreso de las pruebas, pues en caso contrario no se sabrá qué ocurrió durante la ejecución.
 
 Ejercicio 5:
 Se agregó una nueva flag de compilación, LRU. De estar en el Makefile, Nachos utiliza LRU para elegir qué página física enviar a la swap. De no estar definida, utiliza FIFO.
