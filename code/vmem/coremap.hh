@@ -9,11 +9,12 @@
 
 class CoreMap{
 private:
+    // Used to manage availability of the physical pages.
     Bitmap  *pageMap;
+
+    // Information on the assigned physical pages.
     AddressSpace  **ownerAddSp;
     unsigned int *virtualPageNum;
-    // GUIDIOS:Plus possibly other flags, such as whether the page is
-    // currently locked in memory for I/O purposes.
 
     #ifdef LRU
         // idleCounter[i] counts the amount times there was a memory access not
@@ -29,8 +30,13 @@ public:
 
     ~CoreMap();
 
+    // Reserves a physical page and returns the index. If all pages are already
+    // assigned, it chooses one to send to the swap file. The method used for
+    // this is LRU if the LRU compilation flag is defined. Otherwise, it uses
+    // FIFO.
     unsigned int ReservePage(unsigned int virtualPage);
 
+    // Makes all previously reserved pages of a given Address Space available.
     void ReleasePages(AddressSpace* currentSpace);
 
     #ifdef LRU

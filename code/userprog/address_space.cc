@@ -90,10 +90,8 @@ AddressSpace::AddressSpace(OpenFile *executable, SpaceId spaceId_)
           numPages, size);
 
     #ifndef DEMAND_LOADING
-    // GUIDIOS: Revisar toda la funcion cuando tengamos coremap.
-    // Check we are not trying to run anything too big.
-    ASSERT(numPages <= pageMap -> CountClear());
-
+        // Check we are not trying to run anything too big.
+        ASSERT(numPages <= pageMap -> CountClear());
     #endif
 
     pageTable = new TranslationEntry[numPages];
@@ -284,11 +282,10 @@ void
 AddressSpace::RestoreState()
 {
 	#ifdef USE_TLB
-
-    TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
-	for(unsigned i = 0; i < TLB_SIZE; i++)
-		tlbRef[i].valid = false;
-
+        // Invalidate previous TLB entries.
+        TranslationEntry *tlbRef = machine -> GetMMU() -> tlb;
+    	for(unsigned i = 0; i < TLB_SIZE; i++)
+    		tlbRef[i].valid = false;
     #else
 
     machine->GetMMU()->pageTable     = pageTable;
@@ -298,6 +295,8 @@ AddressSpace::RestoreState()
 }
 
 
+// Returns the virtual page number of a given virtual address, or -1 if
+// the address is invalid.
 int
 AddressSpace::FindContainingPageIndex (int vAddr)
 {
@@ -313,18 +312,25 @@ AddressSpace::FindContainingPageIndex (int vAddr)
 }
 
 #ifdef DEMAND_LOADING
+
+// Stores the page in the swap file.
 void
 AddressSpace::SwapPage(unsigned int pageIndex)
 {
+    // Write the page to the swap file.
     unsigned int physStart = pageTable[pageIndex].physicalPage * PAGE_SIZE;
     char *mainMemory = machine -> GetMMU() -> mainMemory;
     swapFile -> WriteAt(&mainMemory[physStart], PAGE_SIZE, pageIndex*PAGE_SIZE);
+
+    // Zero out the page in memory.
+    memset(&mainMemory[physStart], 0, PAGE_SIZE);
 
     // Update the pageTable.
     // numPages + 1 means the page is currently in the swap file.
     pageTable[pageIndex].virtualPage = numPages + 1;
 
-    // Invalidate the corresponding tlb entry (if it exists).
+    // Invalidate the corresponding tlb entry (if it exists). This only happens
+    // if the page belongs to the current thread.
     if(currentThread -> GetAddressSpace() == this){
         unsigned int swappedInd = pageTable[pageIndex].physicalPage;
         TranslationEntry *tlb = machine -> GetMMU() -> tlb;
@@ -336,16 +342,22 @@ AddressSpace::SwapPage(unsigned int pageIndex)
 }
 #endif
 
+// Returns true if the page was never loaded to memory, and false otherwise.
+// This means that a pageIndex of a page that is currently stored in the
+// swap file would cause NotLoadedPage to return false.
 bool
 AddressSpace::NotLoadedPage (unsigned pageIndex)
 {
     return pageTable[pageIndex].virtualPage != pageIndex;
 }
 
+// Loads a page to the main memory, iff it isn't already loaded.
+// (if it is, it does nothing).
 void
 AddressSpace::LoadPage(unsigned int pageIndex) {
     int physIndex;
     #ifdef DEMAND_LOADING
+         // Reserve a physical page using coreMap.
          physIndex = coreMap -> ReservePage(pageIndex);
          pageTable[pageIndex].physicalPage = physIndex;
     #else
@@ -364,6 +376,7 @@ AddressSpace::LoadPage(unsigned int pageIndex) {
 }
 
 #ifdef DEMAND_LOADING
+/// Loads a page that is currently in the swap file to memory.
 void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
@@ -385,7 +398,7 @@ AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
     pageTable[pageIndex].dirty = false;
 }
 #endif
-
+/// Loads a page that was never loaded to memory before, to memory.
 void
 AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
 {
@@ -393,9 +406,13 @@ AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
 
     pageTable[pageIndex].virtualPage = pageIndex;
 
+    // Start and end adresses of the page.
+    // [pageStart, pageEnd)
     unsigned pageStart = pageIndex * PAGE_SIZE;
     unsigned pageEnd = pageStart + PAGE_SIZE;
+
     // Check for intersection with code segment.
+    // [codeStart, codeEnd)
     unsigned codeStart = ourNoffHeader.code.virtualAddr;
     unsigned codeEnd = codeStart + ourNoffHeader.code.size;
     unsigned maxStart = maxx(pageStart, codeStart);
@@ -413,11 +430,13 @@ AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
         unsigned memoryPosition = physIndex * PAGE_SIZE
                                   + maxStart - pageStart;
 
+        // Load the intersection from the file onto memory.
         ourExecutable -> ReadAt(&mainMemory[memoryPosition],
                                 minEnd - maxStart, fileOffset);
     }
 
     // Check for intersection with data segment.
+    // [dataStart, dataEnd)
     unsigned dataStart = ourNoffHeader.initData.virtualAddr;
     unsigned dataEnd = dataStart + ourNoffHeader.initData.size;
     maxStart = maxx(pageStart, dataStart);
@@ -434,11 +453,13 @@ AddressSpace::LoadPageFirst(unsigned int pageIndex, int physIndex)
         unsigned memoryPosition = physIndex * PAGE_SIZE
                                   + maxStart - pageStart;
 
+        // Load the intersection from the file onto memory.
         ourExecutable -> ReadAt(&mainMemory[memoryPosition],
                                 minEnd - maxStart, fileOffset);
     }
 }
 
+// Copies the information from the pageTable at index pageIndex to destPage.
 void
 AddressSpace::CopyPageContent(unsigned pageIndex, TranslationEntry* destPage)
 {
@@ -446,6 +467,9 @@ AddressSpace::CopyPageContent(unsigned pageIndex, TranslationEntry* destPage)
     *destPage = pageTable[pageIndex];
 }
 
+// Returns the frame index of a given virtual page that is loaded in memory.
+// If the page corresponding to pageIndex is not loaded, the function
+// returns -1.
 int
 AddressSpace::GetPhysicalPage(unsigned pageIndex)
 {

@@ -40,18 +40,23 @@ public:
     void InitRegisters();
 
     /// Save/restore address space-specific info on a context switch.
-
     void SaveState();
     void RestoreState();
 
+    // Returns the virtual page number of a given virtual address, or -1 if
+    // the address is invalid.
     int FindContainingPageIndex(int vAddr);
 
+    // Returns true if the page was never loaded to memory, and false otherwise.
+    // This means that a pageIndex of a page that is currently stored in the
+    // swap file would cause NotLoadedPage to return false.
     bool NotLoadedPage(unsigned pageIndex);
 
     // Loads a page to the main memory, iff it isn't already loaded.
     // (if it is, it does nothing).
     void LoadPage(unsigned pageIndex);
 
+    // Copies the information from the pageTable at index pageIndex to destPage.
     void CopyPageContent(unsigned pageIndex, TranslationEntry* destPage);
 
     // Returns the frame index of a given virtual page that is loaded in memory.
@@ -60,12 +65,12 @@ public:
     int GetPhysicalPage(unsigned int pageIndex);
 
     #ifdef DEMAND_LOADING
-            void SwapPage(unsigned pageIndex);
+        // Stores the page in the swap file.
+        void SwapPage(unsigned pageIndex);
     #endif
 
 private:
 
-    /// Assume linear page table translation for now!
     // pageTable[i].virtualPage = numPages means the page i has never
     // been loaded.
     // pageTable[i].virtualPage = numPages + 1 means the page i is
@@ -81,9 +86,11 @@ private:
     /// Pointer to the executable file corresponding to this AddressSpace.
     OpenFile *ourExecutable;
 
+    // User space to which this Address Space belongs.
     SpaceId spaceId;
 
     #ifdef DEMAND_LOADING
+        // Swap file information.
         char *swapFileName;
         OpenFile *swapFile;
     #endif

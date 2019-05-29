@@ -24,6 +24,11 @@ CoreMap::~CoreMap(){
     delete [] virtualPageNum;
 }
 
+
+// Reserves a physical page and returns the index. If all pages are already
+// assigned, it chooses one to send to the swap file. The method used for
+// this is LRU if the LRU compilation flag is defined. Otherwise, it uses
+// FIFO.
 unsigned int
 CoreMap::ReservePage(unsigned int virtualPage){
     int index = pageMap -> Find();
@@ -43,12 +48,15 @@ CoreMap::ReservePage(unsigned int virtualPage){
         ownerAddSp[index] -> SwapPage(virtualPageNum[index]);
     }
 
+    // Store the values of the page to be stored.
     ownerAddSp[index] = currentThread -> GetAddressSpace();
     virtualPageNum[index] = virtualPage;
 
     return index;
 }
 
+
+// Makes all previously reserved pages of a given Address Space available.
 void
 CoreMap::ReleasePages(AddressSpace* currentSpace){
     for(unsigned i = 0; i < NUM_PHYS_PAGES; i++)
@@ -58,6 +66,7 @@ CoreMap::ReleasePages(AddressSpace* currentSpace){
 
 #ifdef LRU
 
+// Sets idleCounter to 0 at the given index and increases the rest by 1.
 void
 CoreMap::UpdateIdleCounter(unsigned int loadedIndex){
     for(unsigned int ind = 0; ind < NUM_PHYS_PAGES; ind++)
@@ -67,6 +76,7 @@ CoreMap::UpdateIdleCounter(unsigned int loadedIndex){
             idleCounter[ind]++;
 }
 
+// Finds the index with the highest idleCounter.
 unsigned int
 CoreMap::FindLRU(){
     unsigned int lru = 0;
