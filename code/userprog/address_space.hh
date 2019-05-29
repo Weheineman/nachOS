@@ -63,6 +63,9 @@ public:
     // If the page corresponding to pageIndex is not loaded, the function
     // returns -1.
     int GetPhysicalPage(unsigned int pageIndex);
+    
+    // Sets the use and dirty flags in the pageTable entry referenced by pageIndex.
+    void SetPageFlags(unsigned pageIndex, bool use, bool dirty);
 
     #ifdef DEMAND_LOADING
         // Stores the page in the swap file.

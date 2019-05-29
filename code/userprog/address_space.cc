@@ -480,3 +480,10 @@ AddressSpace::GetPhysicalPage(unsigned pageIndex)
     // Otherwise, return the physical address.
     return pageTable[pageIndex].physicalPage;
 }
+
+void
+AddressSpace::SetPageFlags(unsigned pageIndex, bool use, bool dirty){
+	pageTable[pageIndex].use = use;
+	pageTable[pageIndex].dirty = dirty;
+}
+

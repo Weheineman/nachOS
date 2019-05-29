@@ -26,11 +26,15 @@ void
 TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
 	TranslationEntry *oldPage = FindEntryToReplace();
 
-    // GUIDIOS: Cuando sacamos una entrada valida, hay que actualizar los campos
-    // de la pageTable.
-
     AddressSpace *currentSpace = currentThread -> GetAddressSpace();
 
+	// If the page that is going to be removed is valid (so it maps a frame from the current 
+	// process), then copy its flags to the corresponding pageTable entry.
+	if(oldPage->valid)
+		currentSpace -> SetPageFlags(oldPage -> virtualPage,
+		                             oldPage -> use,
+		                             oldPage -> dirty);
+		                             
     #ifdef LRU
         int physIndex = currentSpace -> GetPhysicalPage(newPageIndex);
 
@@ -41,5 +45,6 @@ TLB_Handler::ReplaceTLBEntry(unsigned newPageIndex){
         coreMap -> UpdateIdleCounter(physIndex);
     #endif
 
+	// Copy the content from the new page into the corresponding TLB entry.
 	currentSpace -> CopyPageContent(newPageIndex, oldPage);
 }

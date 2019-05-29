@@ -73,7 +73,6 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     maxFileTableInd = 0;
 
     // Add this thread to the userprog thread table (declared in system.cc)
-    // GUIDIOS: Problema de concurrencia?
     spaceId = threadTable -> Add(this);
 #endif
 }

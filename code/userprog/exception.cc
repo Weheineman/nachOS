@@ -85,22 +85,31 @@ DefaultHandler(ExceptionType et)
 static void
 PageFaultHandler(ExceptionType et)
 {
+	// Add a page fault to the counter.
     stats -> numPageFaults ++;
 
+	// Find the virtual address that caused the fault.
     int vAddr = machine -> ReadRegister(BAD_VADDR_REG);
 
     AddressSpace* currentSpace = currentThread -> GetAddressSpace();
 
+	// Then get the virtual page that includes that address.
     int newPageIndex = currentSpace -> FindContainingPageIndex(vAddr);
 
+	// If the address was invalid, then we finish the thread execution,
+	// as if it caused a Segmentation Fault.
     if(newPageIndex < 0)
         currentThread -> Finish();
     else{
         #ifdef DEMAND_LOADING
+        // If the frame corresponding to the virtual page is not loaded into memory
+        // (either because it hasn't been loaded yet or because it is in the swap file),
+        // then load it first.
         if(currentSpace -> NotLoadedPage(newPageIndex))
 			currentSpace -> LoadPage(newPageIndex);
         #endif
 
+		// Replace a TLB entry with the data corresponding to the virtual page.
         tlb_handler -> ReplaceTLBEntry(newPageIndex);
     }
 }
@@ -108,6 +117,8 @@ PageFaultHandler(ExceptionType et)
 static void
 ReadOnlyHandler(ExceptionType et)
 {
+	// If the program tried to write into read only memory, finish its execution
+	// as if it caused a Segmentation Fault.
 	currentThread -> Finish();
 }
 
