@@ -39,3 +39,15 @@ Para preservar el codigo de ejercicios anteriores, en AddressSpace::LoadPage() p
 
 Ejercicio 5:
 Se agregó una nueva flag de compilación, LRU. De estar en el Makefile, Nachos utiliza LRU para elegir qué página física enviar a la swap. De no estar definida, utiliza FIFO.
+Para probar su efectividad, se contaron la cantidad de veces que una página se carga desde la swap a la memoria. Se agregó una nueva bandera de debugging para esto: 'w' (en honor al sistema operativo privativo favorito de Mariano Street).
+Se corrieron los comandos desde code/vmem: ./nachos -d w -x ../userland/matmult_halt
+                                           ./nachos -d w -x ../userland/sort_halt
+Cada uno se corrió dos veces, una vez compilando nachos con la bandera LRU y la otra sin.
+
+Con LRU:
+    matmult_halt:   5513 loads de swap a memoria
+    sort_halt:     16847 loads de swap a memoria
+
+Con FIFO:
+    matmult_halt:  23240 loads de swap a memoria
+    sort_halt:     30338 loads de swap a memoria

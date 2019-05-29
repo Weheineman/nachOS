@@ -45,6 +45,7 @@ extern Bitmap *pageMap;
     #ifdef DEMAND_LOADING
     #include "vmem/coremap.hh"
     extern CoreMap *coreMap;
+    extern unsigned int swapCount;
     #endif
 #include "vmem/tlb_handler.hh"
 extern TLB_Handler *tlb_handler;

@@ -34,6 +34,7 @@ code/userland/exectest
 code/userland/spaceIdTest
 code/userland/AuxTest
 code/userland/WriteAtTest
+code/userland/LRUWorstCase.c
 code/userland/hello_world
 code/userland/*.coff
 code/userland/lib/

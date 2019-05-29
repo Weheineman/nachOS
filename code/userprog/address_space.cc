@@ -367,6 +367,8 @@ AddressSpace::LoadPage(unsigned int pageIndex) {
 void
 AddressSpace::LoadPageSwap(unsigned int pageIndex, int physIndex)
 {
+    DEBUG('w', "Loading page from swap for the %dth time\n", swapCount++);
+
     char *mainMemory = machine -> GetMMU() -> mainMemory;
     unsigned memoryPosition = physIndex * PAGE_SIZE;
     unsigned fileOffset = pageIndex * PAGE_SIZE;

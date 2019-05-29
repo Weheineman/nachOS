@@ -28,6 +28,7 @@ Statistics *stats;            ///< Performance metrics.
 Timer *timer;                 ///< The hardware timer device, for invoking
                               ///< context switches.
 
+
 // 2007, Jose Miguel Santos Espino
 PreemptiveScheduler *preemptiveScheduler = nullptr;
 const long long DEFAULT_TIME_SLICE = 50000;
@@ -50,6 +51,7 @@ Bitmap *pageMap;
 TLB_Handler *tlb_handler;
     #ifdef DEMAND_LOADING
         CoreMap *coreMap;
+        unsigned int swapCount;
     #endif
 #endif
 
