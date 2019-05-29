@@ -10,6 +10,27 @@ En este caso, consideramos que una lectura fallida en la TLB seguida por un segu
 Como en nuestro código tenemos disponibles todas las lecturas en memoria (numMemoryReads) y la cantidad de fallas de página (pageFaults), y cada pageFault implica una lectura, tenemos que eliminar las lecturas repetidas que nos implica tener un miss seguido por el hit subsiguiente, pues queremos que eso cuente como una única lectura fallida y no como una exitosa y una fallida.
 Por lo tanto, la fórmula final sería: successfulReads / totalReads = (totalMemoryReads - pageFaults) / totalMemoryReads = ((numMemoryReads - pageFaults) - pageFaults) / (numMemoryReads - pageFaults)
 
+Luego, los valores obtenidos al ejecutar los programas matmult_halt y sort_halt son:
+matmult_halt Hit Ratio: TLB de 4 páginas = 88.6001
+                        TLB de 32 páginas = 99.9818
+                        TLB de 64 páginas = 99.9909
+sort_halt Hit Ratio: TLB de 4 páginas = 93.8467
+                     TLB de 32 páginas = 99.9885
+                     TLB de 64 páginas = 99.9999
+
+Es importante notar que los resultados no son demasiado distantes entre sí, al pasar de 32 a 64 páginas. La diferencia es apenas del 0.01%.
+Además, aumentar la cantidad de páginas reduce notoriamente la cantidad de pageFaults obtenidos:
+matmult_halt pageFaults: TLB de 4 páginas = 83381
+                        TLB de 32 páginas = 126
+                        TLB de 64 páginas = 63
+sort_halt pageFaults: TLB de 4 páginas = 2639153
+                      TLB de 32 páginas = 4883
+                      TLB de 64 páginas = 56
+
+Si bien a primera vista parece que aumentar el tamaño de TLB es lo más deseable, esto provocaría que el sistema se ralentice. Cada vez que ocurre un cambio de contexto, las entradas de la tlb se anulan y vuelven a escribir, por lo que a mayor tamaño, mayor tiempo se pierde en el proceso. En el caso de busqueda infructuosa, el tiempo que se pierde entre una TLB de tamaño 32 y una TLB de tamaño 64 es del doble.
+Visto y considerando que la diferencia en Hit Ratio y pageFault en una TLB de 32 a 64 páginas no es relevante, lo óptimo sería escoger un tamaño de 32 páginas.
+En general, consideramos que la mejor estrategia es optar por un tamaño intermedio. Lo suficientemente grande como para obtener un buen Hit Ratio y una baja cantidad de pageFaults, sin sacrificar mucho tiempo de cómputo. En particular, creemos que 16 páginas es un buen valor de referencia.
+
 Ejercicio 3:
 Para utilizar Demand Loading, tiene que utilizarse la bandera DEMAND_LOADING, agregándola en el Makefile del directorio vmem.
 
