@@ -146,23 +146,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength){
-        // Fill with fillChar.
-        char fillChar = '0';
-
-        // 1 has to be added because after this operation, fileLength has to
-        // be strictly greater than position.
-        int fillLength = position - fileLength + 1;
-
-        // Set up the string to be written.
-        char *auxBuffer = new char [fillLength];
-        memset(auxBuffer, fillChar, fillLength);
-
-        // fileLength - 1 is the last position of the file that can be written.
-        WriteAt(auxBuffer, fillLength, fileLength - 1);
-
-        delete auxBuffer;
-    }
+    if (position >= fileLength)
+        return 0;   //Check request.
+    
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
