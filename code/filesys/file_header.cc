@@ -39,12 +39,43 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     ASSERT(freeMap != nullptr);
 
     raw.numBytes = fileSize;
-    raw.numSectors = DivRoundUp(fileSize, SECTOR_SIZE);
-    if (freeMap->CountClear() < raw.numSectors)
+    unsigned dataSectorCount = DataSectorCount();
+    unsigned indirectionSectorCount = IndirectionSectorCount();
+    raw.numSectors = dataSectorCount + indirectionSectorCount;
+    indirTable = vector<FileHeader*>(indirectionSectorCount);
+
+    if (freeMap->CountClear() < raw.numSectors or INDIR_MAX_FILE_SIZE < fileSize)
         return false;  // Not enough space.
 
-    for (unsigned i = 0; i < raw.numSectors; i++)
-        raw.dataSectors[i] = freeMap->Find();
+    if(not UsesDoubleIndirection())
+        for (unsigned i = 0; i < raw.numSectors; i++)
+            raw.dataSectors[i] = freeMap -> Find();
+    else{
+        // Amount of bytes that still have to be allocated.
+        unsigned remainingBytes = raw.numBytes;
+
+        // Allocate the header tables.
+        for(unsigned i = 0; i < indirectionSectorCount; i++){
+            raw.dataSectors[i] = freeMap -> Find();
+            FileHeader *dataHeader = new FileHeader;
+
+            // nextBlock is the amount of bytes the current FileHeader will
+            // store.
+            unsigned nextBlock;
+            if(remainingBytes <= MAX_FILE_SIZE)
+                nextBlock = remainingBytes;
+            else{
+                // Allocate as many bytes as possible.
+                nextBlock = MAX_FILE_SIZE;
+                remainingBytes -= MAX_FILE_SIZE;
+            }
+
+            dataHeader -> Allocate(freeMap, nextBlock);
+            // Save the new FileHeader to the indirTable
+            indirTable[i] = dataHeader;
+        }
+    }
+
     return true;
 }
 
@@ -56,9 +87,24 @@ FileHeader::Deallocate(Bitmap *freeMap)
 {
     ASSERT(freeMap != nullptr);
 
-    for (unsigned i = 0; i < raw.numSectors; i++) {
-        ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
-        freeMap->Clear(raw.dataSectors[i]);
+    // Free all the sectors corresponding to the first level
+    // of indirection, if there are two levels of indirection.
+    for(FileHeader* fh : indirTable){
+        fh -> Deallocate(freeMap);
+        delete fh;
+    }
+    indirTable.clear();
+
+    // Free all the sectors in the current level of indirection.
+    unsigned sectorLimit;
+    if(UsesDoubleIndirection())
+        sectorLimit = IndirectionSectorCount();
+    else
+        sectorLimit = raw.numSectors;
+
+    for (unsigned i = 0; i < sectorLimit; i++) {
+            ASSERT(freeMap->Test(raw.dataSectors[i]));  // ought to be marked!
+            freeMap->Clear(raw.dataSectors[i]);
     }
 }
 
@@ -68,7 +114,19 @@ FileHeader::Deallocate(Bitmap *freeMap)
 void
 FileHeader::FetchFrom(unsigned sector)
 {
-    synchDisk->ReadSector(sector, (char *) this);
+    // Fetch the RawFileHeader of the current level of indirection.
+    synchDisk -> ReadSector(sector, (char *) &raw);
+
+    unsigned indirectionSectorCount = IndirectionSectorCount();
+    indirTable = vector<FileHeader*>(indirectionSectorCount);
+
+    // Fetch all the RawFileHeaders of the next level of indirection
+    // and store them into the indirTable.
+    for(unsigned i = 0; i < indirectionSectorCount; i++){
+        FileHeader* dataHeader = new FileHeader;
+        dataHeader -> FetchFrom(raw.dataSectors[i]);
+        indirTable[i] = dataHeader;
+    }
 }
 
 /// Write the modified contents of the file header back to disk.
@@ -77,7 +135,12 @@ FileHeader::FetchFrom(unsigned sector)
 void
 FileHeader::WriteBack(unsigned sector)
 {
-    synchDisk->WriteSector(sector, (char *) this);
+    // Store the RawFileHeader of the current level of indirection.
+    synchDisk -> WriteSector(sector, (char *) &raw);
+
+    // Store all the headers of the next level of indirection.
+    for(unsigned i = 0; i < indirTable.size(); i++)
+        indirTable[i] -> WriteBack(raw.dataSectors[i]);
 }
 
 /// Return which disk sector is storing a particular byte within the file.
@@ -89,7 +152,12 @@ FileHeader::WriteBack(unsigned sector)
 unsigned
 FileHeader::ByteToSector(unsigned offset)
 {
-    return raw.dataSectors[offset / SECTOR_SIZE];
+    // GUIDIOS: Cambiar si es para n.
+    if(UsesDoubleIndirection()){
+        unsigned index = offset/MAX_FILE_SIZE;
+        return indirTable[index] -> ByteToSector(offset % MAX_FILE_SIZE);
+    }else
+        return raw.dataSectors[offset/SECTOR_SIZE];
 }
 
 /// Return the number of bytes in the file.
@@ -104,30 +172,59 @@ FileHeader::FileLength() const
 void
 FileHeader::Print()
 {
-    char *data = new char [SECTOR_SIZE];
+    // GUIDIOS: Pls decime que esto no hay que cambiarlo :)
+    //          Casi que anda para n.
+    if(UsesDoubleIndirection()){
+        printf("This print was made by the double indirection gang.\n");
+        for(FileHeader *fh : indirTable)
+            fh -> Print();
+    }else{
+        char *data = new char [SECTOR_SIZE];
 
-    printf("FileHeader contents.\n"
-           "    Size: %u bytes\n"
-           "    Block numbers: ",
-           raw.numBytes);
-    for (unsigned i = 0; i < raw.numSectors; i++)
-        printf("%u ", raw.dataSectors[i]);
-    printf("\n    Contents:\n");
-    for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
-        synchDisk->ReadSector(raw.dataSectors[i], data);
-        for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
-            if ('\040' <= data[j] && data[j] <= '\176')  // isprint(data[j])
-                printf("%c", data[j]);
-            else
-                printf("\\%X", (unsigned char) data[j]);
+        printf("FileHeader contents.\n"
+               "    Size: %u bytes\n"
+               "    Block numbers: ",
+               raw.numBytes);
+        for (unsigned i = 0; i < raw.numSectors; i++)
+            printf("%u ", raw.dataSectors[i]);
+        printf("\n    Contents:\n");
+        for (unsigned i = 0, k = 0; i < raw.numSectors; i++) {
+            synchDisk->ReadSector(raw.dataSectors[i], data);
+            for (unsigned j = 0; j < SECTOR_SIZE && k < raw.numBytes; j++, k++) {
+                if ('\040' <= data[j] && data[j] <= '\176')  // isprint(data[j])
+                    printf("%c", data[j]);
+                else
+                    printf("\\%X", (unsigned char) data[j]);
+            }
+            printf("\n");
         }
-        printf("\n");
+        delete [] data;
     }
-    delete [] data;
 }
 
 const RawFileHeader *
 FileHeader::GetRaw() const
 {
     return &raw;
+}
+
+
+bool
+FileHeader::UsesDoubleIndirection() const
+{
+    return raw.numBytes > MAX_FILE_SIZE;
+}
+
+unsigned
+FileHeader::DataSectorCount() const{
+    return DivRoundUp(raw.numBytes, SECTOR_SIZE);
+}
+
+unsigned
+FileHeader::IndirectionSectorCount() const{
+    if(not UsesDoubleIndirection())
+        return 0;
+
+    unsigned dataSectorCount = DataSectorCount();
+    return DivRoundUp(dataSectorCount, NUM_DIRECT);
 }

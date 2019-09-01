@@ -45,3 +45,4 @@ print:
 	                 machine/*.hh machine/*.cc                         \
 	                 bin/noff.h bin/coff.h bin/coff2noff.c             \
 	                 userland/*.h userland/*.c userland/*.s'
+# DO NOT DELETE

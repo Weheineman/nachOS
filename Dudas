@@ -1,17 +1,7 @@
-PRACTICA 4
+PRACTICA 5
 
-COMENTÁ LAS COSAS, TOMY
+Tiene sentido usar un pointer a un vector?
 
 Ejercicio 2
-    - FALTA HACER LOS CÁLCULOS QUE PIDE EL ENUNCIADO.
-    - Revisar redacción de la explicación de la fórmula.
-
-Ejercicio 3
-    - Deberiamos setear a 0 paginas reservadas pero no cargadas, como stack o initData?
-
-Ejercicio 4
-    - Concurrencia en threadTable (en el constructor de thread)?
-    - No se deletean las swap files al terminar la ejecucion... que ondis?
-    - Agregar comentarios sobre cómo correr los tests.
-
-GUIDIOS: Usar "this" en vez de currentThread -> GetAddressSpace(), bugs potenciales involucrados con eso.
+La cuentita nos da 115.2 KiB... esta bien de todas formas?
+Hace falta rehacer FileHeader::Print?
