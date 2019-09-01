@@ -510,3 +510,19 @@ FileSystem::Print()
     delete freeMap;
     delete directory;
 }
+
+
+Bitmap *
+FileSystem::getFreeMap()
+{
+    Bitmap* freeMap = new Bitmap(NUM_SECTORS);
+    freeMap -> FetchFrom(freeMapFile);
+    return freeMap;
+}
+
+// Updates the freeMap and stores it to disk.
+void
+FileSystem::updateFreeMap(Bitmap *freeMap)
+{
+    freeMap -> WriteBack(freeMapFile);
+}

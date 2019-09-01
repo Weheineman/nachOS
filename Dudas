@@ -5,3 +5,11 @@ Tiene sentido usar un pointer a un vector?
 Ejercicio 2
 La cuentita nos da 115.2 KiB... esta bien de todas formas?
 Hace falta rehacer FileHeader::Print?
+
+Ejercicio 3
+Dejamos que nos escriban en un lseek position mayor a el filesize?
+Que ondis el retrieval del bitMap al hacer Extend dentro de WriteAt?
+Si quiero extender 5 bytes pero en disco me quedan 2, que hago? Nosotros querriamos que no escriba nada :)
+const GetRaw ahora es GetRaw. Cuan mal esta esto? O:)
+I am become Rossi, destroyer of const
+Cuando necesitamos pedir más sectores, deberíamos hacer el writeBack directamente en wirteAt? Creemos que si

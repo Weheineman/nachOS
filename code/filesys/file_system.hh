@@ -37,6 +37,7 @@
 
 
 #include "open_file.hh"
+#include "lib/bitmap.hh"
 
 
 #ifdef FILESYS_STUB  // Temporarily implement file system calls as calls to
@@ -79,6 +80,7 @@ public:
 };
 
 #else  // FILESYS
+
 class FileSystem {
 public:
 
@@ -108,6 +110,13 @@ public:
 
     /// List all the files and their contents.
     void Print();
+
+    // GUIDIOS: Esto es legal?
+    // Does what it says on the tin.
+    Bitmap* getFreeMap();
+
+    // Updates the freeMap and stores it to disk.
+    void updateFreeMap(Bitmap *freeMap);
 
 private:
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a

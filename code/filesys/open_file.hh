@@ -91,7 +91,7 @@ class OpenFile {
 public:
 
     /// Open a file whose header is located at `sector` on the disk.
-    OpenFile(int sector);
+    OpenFile(int sector_);
 
     /// Close the file.
     ~OpenFile();
@@ -117,6 +117,7 @@ public:
   private:
     FileHeader *hdr;  ///< Header for this file.
     unsigned seekPosition;  ///< Current position within the file.
+    unsigned sector; ///< Sector where the header is located. 
 };
 
 #endif

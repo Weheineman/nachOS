@@ -41,6 +41,9 @@ public:
     /// file data.
     bool Allocate(Bitmap *bitMap, unsigned fileSize);
 
+    /// Increase the current file size by extendSize bytes.
+    bool Extend(Bitmap *bitMap, unsigned extendSize);
+
     /// De-allocate this file's data blocks.
     void Deallocate(Bitmap *bitMap);
 
@@ -64,7 +67,7 @@ public:
     ///
     /// NOTE: this should only be used by routines that operating on the file
     /// system at a low level.
-    const RawFileHeader *GetRaw() const;
+    RawFileHeader *GetRaw();
 
 private:
     RawFileHeader raw;

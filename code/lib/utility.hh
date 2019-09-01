@@ -41,7 +41,13 @@ template <typename T>
 inline T
 DivRoundUp(T n, T s)
 {
-    return n / s + (n % s > 0 ? 1 : 0);
+    return (n + s - 1) / s;
+}
+
+inline unsigned
+UnsignedDiff(unsigned a, unsigned b)
+{
+    return b > a ? 0 : a-b;
 }
 
 /// This declares the type `VoidFunctionPtr` to be a “pointer to a

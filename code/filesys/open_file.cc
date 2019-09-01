@@ -20,8 +20,9 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector)
+OpenFile::OpenFile(int sector_)
 {
+    sector = sector_;
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
     seekPosition = 0;
@@ -119,6 +120,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     DEBUG('f', "Reading %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 
+    // The byte interval is [position, position+numBytes)
+    // The sector interval is [firstSector, lastSector]
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);
     numSectors = 1 + lastSector - firstSector;
@@ -146,10 +149,24 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position >= fileLength)
+    if (position > fileLength)
         return 0;   //Check request.
-    
-    if (position + numBytes > fileLength)
+
+    if (position + numBytes > fileLength){
+        // GUIDIOS: PEDILE MAS ESPACIO AL FILEHEADER LALALA
+        unsigned extendSize = fileLength - (position + numBytes);
+
+        Bitmap *freeMap = fileSystem -> getFreeMap();
+        if (not hdr -> Extend(freeMap, extendSize))
+            return 0;
+
+        // WRITEBACKEAR TODO, TODO.
+        // ESO IMPLICA EL FILE HEADER Y EL FREEMAP Y QUIZAS ALGO MAS
+        hdr -> WriteBack(sector);
+        fileSystem -> updateFreeMap(freeMap);
+
+        delete freeMap;
+    }
         numBytes = fileLength - position;
     DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
@@ -164,9 +181,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     lastAligned  = position + numBytes == (lastSector + 1) * SECTOR_SIZE;
 
     // Read in first and last sector, if they are to be partially modified.
-    if (!firstAligned)
+    if (not firstAligned)
         ReadAt(buf, SECTOR_SIZE, firstSector * SECTOR_SIZE);
-    if (!lastAligned && (firstSector != lastSector || firstAligned))
+    if (not lastAligned and (firstSector != lastSector or firstAligned))
         ReadAt(&buf[(lastSector - firstSector) * SECTOR_SIZE],
                SECTOR_SIZE, lastSector * SECTOR_SIZE);
 
