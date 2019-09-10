@@ -13,3 +13,12 @@ Si quiero extender 5 bytes pero en disco me quedan 2, que hago? Nosotros querria
 const GetRaw ahora es GetRaw. Cuan mal esta esto? O:)
 I am become Rossi, destroyer of const
 Cuando necesitamos pedir más sectores, deberíamos hacer el writeBack directamente en wirteAt? Creemos que si
+
+
+COMENTARIOS EJERCICIO 1
+A nivel de FileSystem, hay una tabla de archivos abierto. A cada archivo abierto le corresponde un lock.
+Cada OpenFile está asociado a un archivo, y puede consultar el lock correspondiente. Necesita tener el lock para hacer ciertas operaciones.
+Desde el nivel de FS también pueden checkearse las peticiones de delete and stuff.
+
+EJERCICIO 5
+Pedir explicación de enunciados. No entendemos si los comandos que tenemos que implementar son a nivel de thread o QUÉ.
