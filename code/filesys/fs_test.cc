@@ -106,41 +106,42 @@ Print(const char *name)
 /// * `FileRead` -- read the file.
 /// * `PerformanceTest` -- overall control, and print out performance #'s.
 
-static const char FILE_NAME[] = "TestFile";
+//static const char FILE_NAME[] = "TestFile2";
 static const char CONTENTS[] = "1234567890";
 static const unsigned CONTENT_SIZE = sizeof CONTENTS - 1;
-static const unsigned FILE_SIZE = CONTENT_SIZE * 5000;
+static const unsigned FILE_SIZE = CONTENT_SIZE * 1000;
 
 static void
-FileWrite()
+FileWrite(const char FILE_NAME[])
 {
     printf("Sequential write of %u byte file, in %u byte chunks\n",
            FILE_SIZE, CONTENT_SIZE);
 
-    if (!fileSystem->Create(FILE_NAME, 0)) {
+    if (!fileSystem->Create(FILE_NAME, FILE_SIZE / 2 + 1647)) {
         fprintf(stderr, "Perf test: cannot create %s\n", FILE_NAME);
         return;
     }
-
+    printf("Creation successful\n");
     OpenFile *openFile = fileSystem->Open(FILE_NAME);
     if (openFile == nullptr) {
         fprintf(stderr, "Perf test: unable to open %s\n", FILE_NAME);
         return;
     }
-
+    printf("Opening successful\n");
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
-        int numBytes = openFile->Write(CONTENTS, CONTENT_SIZE);
-        if (numBytes < 10) {
+        unsigned numBytes = openFile->Write(CONTENTS, CONTENT_SIZE);
+
+        if (numBytes < CONTENT_SIZE) {
             fprintf(stderr, "Perf test: unable to write %s\n", FILE_NAME);
             break;
         }
     }
-
+    printf("Writing successful\n");
     delete openFile;
 }
 
 static void
-FileRead()
+FileRead(const char FILE_NAME[])
 {
     printf("Sequential read of %u byte file, in %u byte chunks\n",
            FILE_SIZE, CONTENT_SIZE);
@@ -153,13 +154,13 @@ FileRead()
 
     char *buffer = new char [CONTENT_SIZE];
     for (unsigned i = 0; i < FILE_SIZE; i += CONTENT_SIZE) {
-        int numBytes = openFile->Read(buffer, CONTENT_SIZE);
-        if (numBytes < 10 || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
+        unsigned numBytes = openFile->Read(buffer, CONTENT_SIZE);
+        if (numBytes < CONTENT_SIZE || strncmp(buffer, CONTENTS, CONTENT_SIZE)) {
             printf("Perf test: unable to read %s\n", FILE_NAME);
             break;
         }
     }
-
+    printf("Reading succesful\n");
     delete [] buffer;
     delete openFile;
 }
@@ -168,12 +169,13 @@ void
 PerformanceTest()
 {
     printf("Starting file system performance test:\n");
-    stats->Print();
-    FileWrite();
-    FileRead();
-    if (!fileSystem->Remove(FILE_NAME)) {
-        printf("Perf test: unable to remove %s\n", FILE_NAME);
+    //stats->Print();
+    const char Name1[] = "TestFile";
+    FileWrite(Name1);
+    FileRead(Name1);
+     if (!fileSystem->Remove(Name1)) {
+        printf("Perf test: unable to remove %s\n", Name1);
         return;
     }
-    stats->Print();
+    //stats->Print();
 }

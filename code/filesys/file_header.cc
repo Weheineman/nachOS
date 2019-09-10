@@ -37,7 +37,6 @@ bool
 FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
 {
     ASSERT(freeMap != nullptr);
-
     raw.numBytes = fileSize;
     unsigned dataSectorCount = DataSectorCount();
     unsigned indirectionSectorCount = IndirectionSectorCount();
@@ -258,10 +257,11 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize) {
     unsigned remainingBytes = extendSize;
 
     if(not oldDoubleIndirection){
-        // The amount of free bytes in the last occupied sector.
-        unsigned freeLastSector = SECTOR_SIZE - (oldNumBytes % SECTOR_SIZE);
-
-        remainingBytes = UnsignedDiff(remainingBytes, freeLastSector);
+        if(oldNumBytes % SECTOR_SIZE){
+            // The amount of free bytes in the last occupied sector.
+            unsigned freeLastSector = SECTOR_SIZE - (oldNumBytes % SECTOR_SIZE);
+            remainingBytes = UnsignedDiff(remainingBytes, freeLastSector);
+        }
 
         // Fill the first level of indirection.
         for(unsigned i = oldNumSectors;
@@ -278,6 +278,7 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize) {
             *rfh = raw;
             rfh -> numBytes = MAX_FILE_SIZE;
             rfh -> numSectors = NUM_DIRECT;
+            raw.dataSectors[0] = freeMap -> Find();
 
             indirTable.push_back(fh);
         }
@@ -313,7 +314,7 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize) {
 
             dataHeader -> Allocate(freeMap, nextBlock);
             // Save the new FileHeader to the indirTable
-            indirTable[i] = dataHeader;
+            indirTable.push_back(dataHeader);
         }
     }
 

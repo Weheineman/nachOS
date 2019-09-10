@@ -117,8 +117,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
         return 0;  // Check request.
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
-    DEBUG('f', "Reading %u bytes at %u, from file of length %u.\n",
-          numBytes, position, fileLength);
+    DEBUG('f', "Reading %u bytes at %u, from file of length %u, which starts at sector %u.\n",
+          numBytes, position, fileLength, sector);
 
     // The byte interval is [position, position+numBytes)
     // The sector interval is [firstSector, lastSector]
@@ -152,13 +152,15 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     if (position > fileLength)
         return 0;   //Check request.
 
+
     if (position + numBytes > fileLength){
-        // GUIDIOS: PEDILE MAS ESPACIO AL FILEHEADER LALALA
-        unsigned extendSize = fileLength - (position + numBytes);
+        unsigned extendSize = position + numBytes - fileLength;
 
         Bitmap *freeMap = fileSystem -> getFreeMap();
         if (not hdr -> Extend(freeMap, extendSize))
             return 0;
+
+        fileLength = hdr -> FileLength();
 
         // WRITEBACKEAR TODO, TODO.
         // ESO IMPLICA EL FILE HEADER Y EL FREEMAP Y QUIZAS ALGO MAS
@@ -167,8 +169,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
         delete freeMap;
     }
-        numBytes = fileLength - position;
-    DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
+
+    //numBytes = fileLength - position;
+    DEBUG('f', "HELLO! Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
