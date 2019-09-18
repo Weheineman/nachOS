@@ -31,6 +31,7 @@ OpenFile::OpenFile(int sector_)
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
+    // GUIDIOS CLOSE FILE LIST
     delete hdr;
 }
 
@@ -152,7 +153,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     if (position > fileLength)
         return 0;   //Check request.
 
-
+    // Extend the file to fit the write operation size requirement.
     if (position + numBytes > fileLength){
         unsigned extendSize = position + numBytes - fileLength;
 
@@ -162,8 +163,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
         fileLength = hdr -> FileLength();
 
-        // WRITEBACKEAR TODO, TODO.
-        // ESO IMPLICA EL FILE HEADER Y EL FREEMAP Y QUIZAS ALGO MAS
+        // Write back the changes to disk.
         hdr -> WriteBack(sector);
         fileSystem -> updateFreeMap(freeMap);
 

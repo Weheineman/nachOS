@@ -236,6 +236,9 @@ FileSystem::Open(const char *name)
     sector = directory->Find(name);
     if (sector >= 0)
         openFile = new OpenFile(sector);  // `name` was found in directory.
+
+    // GUIDIOS ADD TO OPEN FILE LIST
+
     delete directory;
     return openFile;  // Return null if not found.
 }
