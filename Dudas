@@ -1,24 +1,15 @@
 PRACTICA 5
 
-Tiene sentido usar un pointer a un vector?
-
 Ejercicio 2
-La cuentita nos da 115.2 KiB... esta bien de todas formas?
-Hace falta rehacer FileHeader::Print?
-
-Ejercicio 3
-Dejamos que nos escriban en un lseek position mayor a el filesize?
-Que ondis el retrieval del bitMap al hacer Extend dentro de WriteAt?
-Si quiero extender 5 bytes pero en disco me quedan 2, que hago? Nosotros querriamos que no escriba nada :)
-const GetRaw ahora es GetRaw. Cuan mal esta esto? O:)
-I am become Rossi, destroyer of const
-Cuando necesitamos pedir más sectores, deberíamos hacer el writeBack directamente en wirteAt? Creemos que si
-
+Si tenemos ganas, rehacer FileHeader::Print.
 
 COMENTARIOS EJERCICIO 1
 A nivel de FileSystem, hay una tabla de archivos abierto. A cada archivo abierto le corresponde un lock.
 Cada OpenFile está asociado a un archivo, y puede consultar el lock correspondiente. Necesita tener el lock para hacer ciertas operaciones.
 Desde el nivel de FS también pueden checkearse las peticiones de delete and stuff.
+Problemón: Bitmap y Directory. Alguna operación utiliza el bitmap para sólo lectura? - Si no, usamos un lock en la interfaz de FileSystem y listo.
+                                                                                     - Si sí, habrá que implementar modos de apertura.
 
 EJERCICIO 5
 Pedir explicación de enunciados. No entendemos si los comandos que tenemos que implementar son a nivel de thread o QUÉ.
+Confirmado, son a nivel de Thread >:(
