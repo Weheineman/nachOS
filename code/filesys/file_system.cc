@@ -124,12 +124,12 @@ FileSystem::FileSystem(bool format)
         if (debug.IsEnabled('f')) {
             freeMap->Print();
             directory->Print();
-
-            delete freeMap;
-            delete directory;
-            delete mapHeader;
-            delete dirHeader;
         }
+
+        delete freeMap;
+        delete directory;
+        delete mapHeader;
+        delete dirHeader;
     } else {
         // If we are not formatting the disk, just open the files
         // representing the bitmap and directory; these are left open while
@@ -137,12 +137,18 @@ FileSystem::FileSystem(bool format)
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
     }
+
+    openFileList = new OpenFileList;
+    freeMapLock = new ReaderWriter;
+    directoryLock = new ReaderWriter;
 }
 
 FileSystem::~FileSystem()
 {
     delete freeMapFile;
     delete directoryFile;
+    delete openFileList;
+    delete freeMapLock;
 }
 
 /// Create a file in the Nachos file system (similar to UNIX `create`).
@@ -189,8 +195,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
     if (directory->Find(name) != -1)
         success = false;  // File is already in directory.
     else {
-        freeMap = new Bitmap(NUM_SECTORS);
-        freeMap->FetchFrom(freeMapFile);
+        freeMap = AcquireFreeMap(true);
         sector = freeMap->Find();  // Find a sector to hold the file header.
         if (sector == -1)
             success = false;  // No free block for file header.
@@ -205,11 +210,10 @@ FileSystem::Create(const char *name, unsigned initialSize)
                 // Everthing worked, flush all changes back to disk.
                 header->WriteBack(sector);
                 directory->WriteBack(directoryFile);
-                freeMap->WriteBack(freeMapFile);
+                ReleaseFreeMap(freeMap, true);
             }
             delete header;
         }
-        delete freeMap;
     }
     delete directory;
     return success;
@@ -234,10 +238,12 @@ FileSystem::Open(const char *name)
     DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom(directoryFile);
     sector = directory->Find(name);
-    if (sector >= 0)
-        openFile = new OpenFile(sector);  // `name` was found in directory.
+    if (sector >= 0){
+        ReaderWriter* newFileRW = openFileList -> AddOpenFile(name);
+        if(newFileRW)
+            openFile = new OpenFile(sector, name, newFileRW);  // `name` was found in directory.
 
-    // GUIDIOS ADD TO OPEN FILE LIST
+    }
 
     delete directory;
     return openFile;  // Return null if not found.
@@ -260,6 +266,24 @@ FileSystem::Remove(const char *name)
 {
     ASSERT(name != nullptr);
 
+    // If the file is open, we set its pendingRemove flag.
+    // If not, we search for it in the file system and remove it.
+    if(not openFileList -> SetUpRemoval(name)){
+        // Stop other processes from opening the file that will be deleted.
+        listLock -> Acquire();
+
+        bool result = DeleteFromDisk(name);
+
+        listLock -> Release();
+        return result;
+    }
+
+    return true;
+
+}
+
+bool
+FileSystem::DeleteFromDisk(const char *name){
     Directory  *directory;
     Bitmap     *freeMap;
     FileHeader *fileHeader;
@@ -275,18 +299,16 @@ FileSystem::Remove(const char *name)
     fileHeader = new FileHeader;
     fileHeader->FetchFrom(sector);
 
-    freeMap = new Bitmap(NUM_SECTORS);
-    freeMap->FetchFrom(freeMapFile);
+    freeMap = AcquireFreeMap(true);
 
     fileHeader->Deallocate(freeMap);  // Remove data blocks.
     freeMap->Clear(sector);           // Remove header block.
     directory->Remove(name);
 
-    freeMap->WriteBack(freeMapFile);      // Flush to disk.
+    ReleaseFreeMap(freeMap, true);      // Flush to disk.
     directory->WriteBack(directoryFile);  // Flush to disk.
     delete fileHeader;
     delete directory;
-    delete freeMap;
     return true;
 }
 
@@ -455,8 +477,7 @@ FileSystem::Check()
     error |= CheckFileHeader(dirRH, DIRECTORY_SECTOR, shadowMap);
     delete dirH;
 
-    Bitmap *freeMap = new Bitmap(NUM_SECTORS);
-    freeMap->FetchFrom(freeMapFile);
+    Bitmap *freeMap = AcquireFreeMap(false);
     Directory *dir = new Directory(NUM_DIR_ENTRIES);
     const RawDirectory *rdir = dir->GetRaw();
     dir->FetchFrom(directoryFile);
@@ -467,7 +488,7 @@ FileSystem::Check()
     DEBUG('f', "Checking bitmap consistency.\n");
     error |= CheckBitmaps(freeMap, shadowMap);
     delete shadowMap;
-    delete freeMap;
+    ReleaseFreeMap(freeMap, false);
 
     DEBUG('f', error ? "Filesystem check succeeded.\n"
                      : "Filesystem check failed.\n");
@@ -486,7 +507,7 @@ FileSystem::Print()
 {
     FileHeader *bitHeader = new FileHeader;
     FileHeader *dirHeader = new FileHeader;
-    Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
+    Bitmap     *freeMap   = AcquireFreeMap(false);
     Directory  *directory = new Directory(NUM_DIR_ENTRIES);
 
     printf("--------------------------------\n"
@@ -500,7 +521,6 @@ FileSystem::Print()
     dirHeader->Print();
 
     printf("--------------------------------\n");
-    freeMap->FetchFrom(freeMapFile);
     freeMap->Print();
 
     printf("--------------------------------\n");
@@ -510,22 +530,42 @@ FileSystem::Print()
 
     delete bitHeader;
     delete dirHeader;
-    delete freeMap;
+    ReleaseFreeMap(freeMap, false);
     delete directory;
 }
 
-
+/// Returns the bitmap of free sectors on the disk granting reading or
+/// writing exclusivity.
 Bitmap *
-FileSystem::getFreeMap()
+FileSystem::AcquireFreeMap(bool writeAccess)
 {
+    if(writeAccess)
+        freeMapLock -> AcquireWrite();
+    else
+        freeMapLock -> AcquireRead();
+
     Bitmap* freeMap = new Bitmap(NUM_SECTORS);
     freeMap -> FetchFrom(freeMapFile);
     return freeMap;
 }
 
-// Updates the freeMap and stores it to disk.
+/// Marks the end of the freeMap usage. The lock is released and the
+/// memory is freed. If write access was granted, the changes are saved
+/// to disk
 void
-FileSystem::updateFreeMap(Bitmap *freeMap)
+FileSystem::ReleaseFreeMap(Bitmap *freeMap, bool writeAccess)
 {
-    freeMap -> WriteBack(freeMapFile);
+    if(writeAccess){
+        freeMap -> WriteBack(freeMapFile);
+        freeMapLock -> ReleaseWrite();
+    }else
+        freeMapLock -> ReleaseRead();
+
+    delete freeMap;
+}
+
+void
+FileSystem::CloseFile(const char *name)
+{
+    openFileList -> CloseOpenFile(name);
 }

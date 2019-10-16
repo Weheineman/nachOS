@@ -151,7 +151,6 @@ FileHeader::WriteBack(unsigned sector)
 unsigned
 FileHeader::ByteToSector(unsigned offset)
 {
-    // GUIDIOS: Cambiar si es para n.
     if(UsesDoubleIndirection()){
         unsigned index = offset/MAX_FILE_SIZE;
         return indirTable[index] -> ByteToSector(offset % MAX_FILE_SIZE);
@@ -171,10 +170,7 @@ FileHeader::FileLength() const
 void
 FileHeader::Print()
 {
-    // GUIDIOS: Pls decime que esto no hay que cambiarlo :)
-    //          Casi que anda para n.
     if(UsesDoubleIndirection()){
-        printf("This print was made by the double indirection gang.\n");
         for(FileHeader *fh : indirTable)
             fh -> Print();
     }else{

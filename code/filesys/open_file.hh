@@ -91,7 +91,7 @@ class OpenFile {
 public:
 
     /// Open a file whose header is located at `sector` on the disk.
-    OpenFile(int sector_);
+    OpenFile(int sector_, const char *name = nullptr, ReaderWriter* rw = nullptr);
 
     /// Close the file.
     ~OpenFile();
@@ -115,9 +115,11 @@ public:
     unsigned Length() const;
 
   private:
+    char *fileName; ///< Name of the file.
+    ReaderWriter *fileLock;
     FileHeader *hdr;  ///< Header for this file.
     unsigned seekPosition;  ///< Current position within the file.
-    unsigned sector; ///< Sector where the header is located. 
+    unsigned sector; ///< Sector where the header is located.
 };
 
 #endif

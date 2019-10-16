@@ -1,0 +1,20 @@
+EJERCICIO 1
+Test cases:
+	- Ver que muchos archivos puedan leer al mismo tiempo.
+	- Ver que archivos que lean y escriban funcionen bien entre ellos.
+	Posiblemente para tests anteriores haya que meter random breaks y algunos controlados como ya hemos hecho. A lo sumo chusmear los test cases de thread_test
+	- Interrumpir lecturas y escrituras?
+	- Casos que involucren eliminar un archivo:
+		- Eliminar uno no abierto.
+		- Eliminar uno abierto, modificarlo mientras esté en pendingQueue, luego todos salen.
+		- Eliminar uno abierto, tratar de abrirlo y que no nos deje, salir y que se cierre.
+		- Eliminarlo múltiples veces.
+
+
+EJERCICIO 5
+Vamos a tener que implementarnos vectors propios. Vamos a necesitar eso para la tabla de Directory, que ahora tiene que ser extensible (Gracias C++ por no tener un resize de new y delete).
+La estructura de directorios para soporte de concurrencia parece bastante similar a los archivos abiertos:
+	- Cada thread aporta un incremento al contador de un directorio
+	- Para realizar operaciones de directorios (crear, eliminar, moverse) se necesita un acceso a la lista de directorios.
+	- Hay algunos caveats a las operaciones. Por ejemplo: Para eliminar un directorio no basta con que ese directorio esté abierto, sino también no tiene que estar abierto ninguno de sus hijos.
+Cosas a implementar como mínimo: mkdir, rmdir, cd. Para cada directorio vamos a necesitar saber su daddy para poder movernos para arriba. Probablemente varias operaciones de OpenFile ahora necesiten saber la posición en el árbol de directorios :)

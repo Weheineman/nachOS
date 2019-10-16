@@ -146,21 +146,24 @@ FILESYS_HDR = ../filesys/directory.hh       \
               ../filesys/raw_directory.hh   \
               ../filesys/raw_file_header.hh \
               ../filesys/synch_disk.hh      \
-              ../machine/disk.hh
-FILESYS_SRC = ../filesys/directory.cc   \
-              ../filesys/file_header.cc \
-              ../filesys/file_system.cc \
-              ../filesys/fs_test.cc     \
-              ../filesys/open_file.cc   \
-              ../filesys/synch_disk.cc  \
-              ../machine/disk.cc
-FILESYS_OBJ = directory.o   \
-              file_header.o \
-              file_system.o \
-              fs_test.o     \
-              open_file.o   \
-              synch_disk.o  \
-              disk.o
+              ../machine/disk.hh            \
+              ../filesys/reader_writer.hh
+FILESYS_SRC = ../filesys/directory.cc     \
+              ../filesys/file_header.cc   \
+              ../filesys/file_system.cc   \
+              ../filesys/fs_test.cc       \
+              ../filesys/open_file.cc     \
+              ../filesys/synch_disk.cc    \
+              ../machine/disk.cc          \
+              ../filesys/reader_writer.cc
+FILESYS_OBJ = directory.o     \
+              file_header.o   \
+              file_system.o   \
+              fs_test.o       \
+              open_file.o     \
+              synch_disk.o    \
+              disk.o          \
+              reader_writer.o
 
 NETWORK_HDR = ../network/post.hh \
               ../machine/network.hh

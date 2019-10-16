@@ -1,7 +1,38 @@
-PRACTICA 5
+HAY QUE COMENTAR CODIGO DEL EJERCICIO 1 :^)
 
-Ejercicio 2
-Si tenemos ganas, rehacer FileHeader::Print.
+EN QUE ANDAMOS
+Agregamos reader/writer a freeMap en file_system. Falta:
+    Cambiar todos los accesos a freemap por llamadas a acquireFreeMap y releaseFreeMap
+    Hacer algo similar con directory que con freeMap, es decir, acquireDirectory
+y releaseDirectory
+
+Update 09/10
+Reader/Writer ya en el Makefile.
+Cambiamos Reader/Writer ft. Grinblat.
+Cambiamos el Reader/Writer de la OpenFileList por un Lock.
+Agregamos la referencia al FileLock en los OpenFile. Por ahora permitimos que haya fileLock nulo, revisar esto.
+    Opciones para manejar Bitmap y Directory como archivos:
+        - Tenerlos como archivos normales: tienen su entry en la lista y se manejan como un archivo normal. El problema con esto es que probablemente haya algún tema de tomar dos veces el Lock (por ejemplo, si un thread quiere crear un archivo nuevo o algo así)
+ESTA -> - Tienen tratamiento especial dentro de OpenFile cuando al pasarle name y rw como nullptr
+        - Que el SO los abra cuando inicializa y solamente él tenga acceso. Esta opción probablemente involucre toquetear mucho código.
+Existe la posibilidad que no hayamos comentado una mierda. Woops. Update 16/10: No me digas.
+- Revisar que el file system interactúe con el Bitmap a partir de los métodos que definimos.
+
+UPDATE 10/10
+- Arreglamos el comportamiento de los OpenFile.
+- Resolvimos el problema de ReadAt/WriteAt porque somos muy inteligentes.
+- Creamos el método privado DeleteFromDisk del FileSystem, para eso hicimos que sea bestu con la OpenFileList.
+- CUANDO FUNCIONE, PARA OPTIMIZAR: AcquireFreeMap hace una copia del freeMap. Si el freeMap lo gestionamos nosotros en filesystem, por que no mantener un puntero y devolver solo el puntero (en vez de alocar memoria cada vez)?
+- TODO: Hacer que todos los accesos a freeMap sean a traves de AcquireFreeMap y ReleaseFreeMap
+
+NOTAS PARA TUTTURU DEL FUTURO
+OJO OJO OJO OJO!!! directory->add() NOOO tiene que tomar locks del freeMap. Mirar fileSystem -> create() si no me crees.
+Pasa lo mismo con directory->remove() en DeleteFromDisk()
+OJO (de nuevo). WriteAt pide el freeMap. Esto NO genera una dependencia circular con freeMap, porque freeMap nunca se extiende.
+Si Directory se extendiera en algun momento, SI habria una dependencia circular. OJO.
+
+
+PRACTICA 5
 
 COMENTARIOS EJERCICIO 1
 A nivel de FileSystem, hay una tabla de archivos abierto. A cada archivo abierto le corresponde un lock.

@@ -20,18 +20,30 @@
 /// memory while the file is open.
 ///
 /// * `sector` is the location on disk of the file header for this file.
-OpenFile::OpenFile(int sector_)
+OpenFile::OpenFile(int sector_, const char *name, ReaderWriter* rw)
 {
     sector = sector_;
+    fileLock = rw;
     hdr = new FileHeader;
     hdr->FetchFrom(sector);
     seekPosition = 0;
+
+    if(name == nullptr)
+        fileName = nullptr;
+    else{
+        fileName = new char[FILE_NAME_MAX_LEN + 1];
+        strncpy(fileName, name, FILE_NAME_MAX_LEN + 1);
+    }
 }
 
 /// Close a Nachos file, de-allocating any in-memory data structures.
 OpenFile::~OpenFile()
 {
-    // GUIDIOS CLOSE FILE LIST
+    if(fileName != nullptr){
+        fileSystem -> CloseFile(fileName);
+        delete fileName;
+    }
+
     delete hdr;
 }
 
@@ -110,12 +122,20 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     ASSERT(into != nullptr);
     ASSERT(numBytes > 0);
 
+    if(fileLock != nullptr)
+        fileLock -> AcquireRead();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     char *buf;
 
-    if (position >= fileLength)
+    if (position >= fileLength){
+        if(fileLock != nullptr)
+            fileLock -> ReleaseRead();
+
         return 0;  // Check request.
+    }
+
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
     DEBUG('f', "Reading %u bytes at %u, from file of length %u, which starts at sector %u.\n",
@@ -136,6 +156,10 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
     // Copy the part we want.
     memcpy(into, &buf[position - firstSector * SECTOR_SIZE], numBytes);
     delete [] buf;
+
+    if(fileLock != nullptr)
+        fileLock -> ReleaseRead();
+
     return numBytes;
 }
 
@@ -145,29 +169,39 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
 
+    if(fileLock != nullptr)
+        fileLock -> AcquireWrite();
+
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
     char *buf;
 
-    if (position > fileLength)
+    if (position > fileLength){
+        if(fileLock != nullptr)
+            fileLock -> ReleaseWrite();
+
         return 0;   //Check request.
+    }
 
     // Extend the file to fit the write operation size requirement.
     if (position + numBytes > fileLength){
         unsigned extendSize = position + numBytes - fileLength;
 
-        Bitmap *freeMap = fileSystem -> getFreeMap();
-        if (not hdr -> Extend(freeMap, extendSize))
+        Bitmap *freeMap = fileSystem -> AcquireFreeMap(true);
+        if (not hdr -> Extend(freeMap, extendSize)){
+            if(fileLock != nullptr)
+                fileLock -> ReleaseWrite();
+
             return 0;
+        }
 
         fileLength = hdr -> FileLength();
 
         // Write back the changes to disk.
         hdr -> WriteBack(sector);
-        fileSystem -> updateFreeMap(freeMap);
-
-        delete freeMap;
+        fileSystem -> ReleaseFreeMap(freeMap, true);
+        
     }
 
     //numBytes = fileLength - position;
@@ -198,6 +232,10 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
                                &buf[(i - firstSector) * SECTOR_SIZE]);
     delete [] buf;
+
+    if(fileLock != nullptr)
+        fileLock -> ReleaseWrite();
+
     return numBytes;
 }
 

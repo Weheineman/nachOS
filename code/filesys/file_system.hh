@@ -82,6 +82,8 @@ public:
 #else  // FILESYS
 
 class FileSystem {
+    //We know how to code properly, we swear.
+    friend class OpenFileList;
 public:
 
     /// Initialize the file system.  Must be called *after* `synchDisk` has
@@ -111,18 +113,31 @@ public:
     /// List all the files and their contents.
     void Print();
 
-    // GUIDIOS: Esto es legal?
-    // Does what it says on the tin.
-    Bitmap* getFreeMap();
+    /// Returns the bitmap of free sectors on the disk granting reading or
+    /// writing exclusivity.
+    Bitmap* AcquireFreeMap(bool writeAccess);
 
-    // Updates the freeMap and stores it to disk.
-    void updateFreeMap(Bitmap *freeMap);
+    /// Marks the end of the freeMap usage. The lock is released and the
+    /// memory is freed. If write access was granted, the changes are saved
+    /// to disk.
+    void ReleaseFreeMap(Bitmap *freeMap, bool writeAccess);
+
+    void CloseFile(const char *name);
 
 private:
+
+    /// Removes the given file from the disk.
+    /// This is called after checking the given file is not open
+    /// and assumes the lock from the OpenFileList is previously acquired.
+    bool DeleteFromDisk(const char *name);
+
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
     OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
                               ///< represented as a file.
+    OpenFileList *openFileList; ///< Structure containing metadata about the
+                                ///< open files
+    ReaderWriter *freeMapLock, *directoryLock;
 };
 
 #endif
