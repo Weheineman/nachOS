@@ -16,5 +16,33 @@ Vamos a tener que implementarnos vectors propios. Vamos a necesitar eso para la 
 La estructura de directorios para soporte de concurrencia parece bastante similar a los archivos abiertos:
 	- Cada thread aporta un incremento al contador de un directorio
 	- Para realizar operaciones de directorios (crear, eliminar, moverse) se necesita un acceso a la lista de directorios.
-	- Hay algunos caveats a las operaciones. Por ejemplo: Para eliminar un directorio no basta con que ese directorio esté abierto, sino también no tiene que estar abierto ninguno de sus hijos.
+	- Hay algunos caveats a las operaciones. Por ejemplo: Para eliminar un directorio no basta con que ese directorio no esté abierto, sino también no tiene que estar abierto ninguno de sus hijos.
 Cosas a implementar como mínimo: mkdir, rmdir, cd. Para cada directorio vamos a necesitar saber su daddy para poder movernos para arriba. Probablemente varias operaciones de OpenFile ahora necesiten saber la posición en el árbol de directorios :)
+
+
+Roadmap
+
+ - Thread debe conocer su path y tener una interfaz para consultar y modificarlo.
+
+ - exception.cc tiene la implementacion de las syscalls. Hay que modificar dichas
+ implementaciones para que no solo pasen el nombre del archivo como argumento a
+ las llamadas fileSys, sino que la ruta completa (strconcat?).
+
+ - fileSys ahora tiene una interfaz similar a freeMap pero con nuestra nueva
+ estructura cool de directorios (DirectoryTree?).
+   Ademas hay que cambiar todas las creaciones y llamadas de Directory por
+nuestra interfaz que provee a DirectoryTree y metodos de DirectoryTree.
+
+  - Hay que hacer una estructura DirectoryTree que reemplace completamente a
+Directory. No hay problema porque Directory solo se llama desde fileSys.
+    Tiene que proveer create, find, delete, list. Y concurrencia.
+	Seria bueno modificar directory_entry para que almacene informacion como
+si la entrada es un archivo o un directorio
+	Seria bueno dejar de trabajar con arrays estaticos en raw_directory porque
+no se prestan como estructura de datos extensible. Lista enlazada?
+
+
+  - Tener en cuenta que no se rompa freeMap, ojo con los deadlocks, ver ojo arriba.
+Seguramente sea bueno garantizar que al modificar directory siempre se tenga
+acceso a freeMap previamente y modificar writeAt para que no pida el freeMap en
+este caso.

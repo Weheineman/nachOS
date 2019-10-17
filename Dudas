@@ -22,8 +22,7 @@ UPDATE 10/10
 - Arreglamos el comportamiento de los OpenFile.
 - Resolvimos el problema de ReadAt/WriteAt porque somos muy inteligentes.
 - Creamos el método privado DeleteFromDisk del FileSystem, para eso hicimos que sea bestu con la OpenFileList.
-- CUANDO FUNCIONE, PARA OPTIMIZAR: AcquireFreeMap hace una copia del freeMap. Si el freeMap lo gestionamos nosotros en filesystem, por que no mantener un puntero y devolver solo el puntero (en vez de alocar memoria cada vez)?
-- TODO: Hacer que todos los accesos a freeMap sean a traves de AcquireFreeMap y ReleaseFreeMap
+- CUANDO FUNCIONE, PARA OPTIMIZAR: AcquireFreeMap hace una copia del freeMap. Si el freeMap lo gestionamos nosotros en filesystem, por que no mantener un puntero y devolver solo el puntero (en vez de alocar memoria cada vez)
 
 NOTAS PARA TUTTURU DEL FUTURO
 OJO OJO OJO OJO!!! directory->add() NOOO tiene que tomar locks del freeMap. Mirar fileSystem -> create() si no me crees.

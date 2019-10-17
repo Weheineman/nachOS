@@ -11,8 +11,7 @@
 ///
 /// Also, this implementation has the restriction that the size of the
 /// directory cannot expand.  In other words, once all the entries in the
-/// directory are used, no more files can be created.  Fixing this is one of
-/// the parts to the assignment.
+/// directory are used, no more files can be created.
 ///
 /// Copyright (c) 1992-1993 The Regents of the University of California.
 ///               2016-2018 Docentes de la Universidad Nacional de Rosario.
@@ -64,6 +63,8 @@ void
 Directory::WriteBack(OpenFile *file)
 {
     ASSERT(file != nullptr);
+    // GUIDIOS: Si fuera necesario extender el archivo aca, tener cuidado
+    // con tomar el freeMap dentro de WriteAt
     file->WriteAt((char *) raw.table,
                   raw.tableSize * sizeof (DirectoryEntry), 0);
 }
@@ -79,7 +80,7 @@ Directory::FindIndex(const char *name)
 
     for (unsigned i = 0; i < raw.tableSize; i++)
         if (raw.table[i].inUse
-              && !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN))
+              and !strncmp(raw.table[i].name, name, FILE_NAME_MAX_LEN))
             return i;
     return -1;  // name not in directory
 }
@@ -115,7 +116,7 @@ Directory::Add(const char *name, int newSector)
         return false;
 
     for (unsigned i = 0; i < raw.tableSize; i++)
-        if (!raw.table[i].inUse) {
+        if (not raw.table[i].inUse) {
             raw.table[i].inUse = true;
             strncpy(raw.table[i].name, name, FILE_NAME_MAX_LEN);
             raw.table[i].sector = newSector;
