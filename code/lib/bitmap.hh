@@ -21,6 +21,7 @@
 #include "utility.hh"
 #include "filesys/open_file.hh"
 
+class OpenFile;
 
 /// Definitions helpful for representing a bitmap as an array of integers.
 

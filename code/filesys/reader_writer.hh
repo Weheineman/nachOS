@@ -3,6 +3,9 @@
 
 #include "threads/synch.hh"
 
+class Lock;
+class Condition;
+
 class ReaderWriter {
 public:
     ReaderWriter();
@@ -13,7 +16,7 @@ public:
     void ReleaseWrite();
 private:
     Lock *RWLock, *ReadCounterLock;
-    Condition NoReaders;
+    Condition *NoReaders;
     int readCounter;
 };
 

@@ -138,7 +138,7 @@ FileSystem::FileSystem(bool format)
         directoryFile = new OpenFile(DIRECTORY_SECTOR);
     }
 
-    openFileList = new OpenFileList;
+    openFileList = new OpenFileList(this);
     freeMapLock = new ReaderWriter;
     directoryLock = new ReaderWriter;
 }
@@ -266,19 +266,17 @@ FileSystem::Remove(const char *name)
 {
     ASSERT(name != nullptr);
 
+    bool result = true;
+    openFileList -> AcquireListLock();
+    
     // If the file is open, we set its pendingRemove flag.
     // If not, we search for it in the file system and remove it.
-    if(not openFileList -> SetUpRemoval(name)){
+    if(not openFileList -> SetUpRemoval(name))
         // Stop other processes from opening the file that will be deleted.
-        listLock -> Acquire();
-
-        bool result = DeleteFromDisk(name);
-
-        listLock -> Release();
-        return result;
-    }
-
-    return true;
+        result = DeleteFromDisk(name);    
+    
+    openFileList -> ReleaseListLock();
+    return result;
 
 }
 

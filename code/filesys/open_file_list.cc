@@ -1,9 +1,10 @@
 #include "open_file_list.hh"
 
-OpenFileList::OpenFileList()
+OpenFileList::OpenFileList(FileSystem *myFileSystem_)
 {
-    listLock = new Lock;
+    listLock = new Lock("OpenFileList Lock");
     first = last = nullptr;
+    myFileSystem = myFileSystem_;
 }
 
 OpenFileList::~OpenFileList()
@@ -28,7 +29,7 @@ ReaderWriter*
 OpenFileList::AddOpenFile(const char *fileName){
     listLock -> Acquire();
 
-	ReaderWriter fileRW = nullptr;
+	ReaderWriter* fileRW = nullptr;
 
 	FileMetadataNode* node = FindOpenFile(fileName);
 	if(node != nullptr){
@@ -45,7 +46,7 @@ OpenFileList::AddOpenFile(const char *fileName){
 			last = last -> next;
 		}
 
-        fileRW = last -> node;
+        fileRW = last -> lock;
 	}
 
     listLock -> Release();
@@ -72,9 +73,9 @@ OpenFileList::CloseOpenFile(const char *fileName){
 // Returns true if the file is currently open, in which case
 // SetUpRemoval sets pendingRemove to true atomically.
 // If the file is not open, it just returns false.
-bool SetUpRemoval(const char *fileName){
-    listLock -> Acquire();
-
+// Assumes the fileListLock is already taken by the file system.
+bool 
+OpenFileList::SetUpRemoval(const char *fileName){
     bool fileIsOpen;
     FileMetadataNode* node = FindOpenFile(fileName);
 	if(node != nullptr){
@@ -83,9 +84,21 @@ bool SetUpRemoval(const char *fileName){
    }else
         fileIsOpen = false;
 
-    listLock -> Release();
     return fileIsOpen;
 }
+
+// Allows the file system to acquire the list's lock.
+void
+OpenFileList::AcquireListLock(){
+    listLock -> Acquire();    
+}
+
+// Allows the file system to release the list's lock.
+void 
+OpenFileList::ReleaseListLock(){
+    listLock -> Release();
+}
+
 
 FileMetadataNode*
 OpenFileList::FindOpenFile(const char *fileName){
@@ -134,10 +147,10 @@ OpenFileList::DeleteNode(FileMetadataNode* target){
 
 
     if(target -> pendingRemove)
-        fileSystem -> DeleteFromDisk(target -> name);
+        myFileSystem -> DeleteFromDisk(target -> name);
     
 
 	delete [] target -> name;
 	delete target -> lock;
-	delete -> target;
+	delete target;
 }

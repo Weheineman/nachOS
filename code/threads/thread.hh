@@ -48,6 +48,9 @@
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
+
+class AddressSpace;
+class OpenFile;
 #endif
 
 /// To avoid mutual includes involving this file and synch.hh

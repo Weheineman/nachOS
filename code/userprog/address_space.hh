@@ -20,6 +20,7 @@
 #include "userprog/syscall.h"
 #include "filesys/open_file.hh"
 
+class OpenFile;
 
 const unsigned USER_STACK_SIZE = 1024;  ///< Increase this as necessary!
 

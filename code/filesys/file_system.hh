@@ -81,6 +81,12 @@ public:
 
 #else  // FILESYS
 
+#include "open_file_list.hh"
+
+class OpenFile;
+class Bitmap;
+class OpenFileList;
+
 class FileSystem {
     //We know how to code properly, we swear.
     friend class OpenFileList;

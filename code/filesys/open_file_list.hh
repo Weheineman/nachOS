@@ -1,4 +1,14 @@
+#ifndef NACHOS_FILESYS_OPENFILE_LIST__HH
+#define NACHOS_FILESYS_OPENFILE_LIST__HH
+
 #include "reader_writer.hh"
+#include "threads/synch.hh"
+#include "file_system.hh"
+
+class Lock;
+class ReaderWriter;
+class FileSystem;
+
 
 struct FileMetadataNode{
     // Name of the file
@@ -16,7 +26,7 @@ struct FileMetadataNode{
 // All public methods of the OpenFileList class are atomic.
 class OpenFileList {
     public:
-        OpenFileList();
+        OpenFileList(FileSystem *);
 
         ~OpenFileList();
 
@@ -24,7 +34,7 @@ class OpenFileList {
         // If the file is already open:
         //      and is pending removal, it does nothing.
         //      else it increases openInstances by 1.
-        bool AddOpenFile(const char *fileName);
+        ReaderWriter* AddOpenFile(const char *fileName);
 
         // Decreases the openInstances by 1. If no open instances remain,
         // the file is removed from the list.
@@ -33,7 +43,15 @@ class OpenFileList {
         // Returns true if the file is currently open, in which case
         // SetUpRemoval sets pendingRemove to true atomically.
         // If the file is not open, it just returns false.
+        // Assumes the fileListLock is already taken by the file system.
         bool SetUpRemoval(const char *fileName);
+        
+        // Allows the file system to acquire the list's lock.
+        void AcquireListLock();
+        
+        // Allows the file system to release the list's lock.
+        void ReleaseListLock();
+        
 
     private:
         FileMetadataNode* FindOpenFile(const char *fileName);
@@ -43,4 +61,9 @@ class OpenFileList {
 
         Lock *listLock;
         FileMetadataNode *first, *last;
+        
+        FileSystem* myFileSystem;
 };
+
+
+#endif

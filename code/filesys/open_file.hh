@@ -19,8 +19,10 @@
 #ifndef NACHOS_FILESYS_OPENFILE__HH
 #define NACHOS_FILESYS_OPENFILE__HH
 
-
 #include "lib/utility.hh"
+
+/// For simplicity, we assume file names are <= 32 characters long.
+const unsigned FILE_NAME_MAX_LEN = 32;
 
 
 #ifdef FILESYS_STUB  // Temporarily implement calls to Nachos file system as
@@ -85,7 +87,10 @@ private:
 };
 
 #else // FILESYS
+#include "reader_writer.hh"
+
 class FileHeader;
+class ReaderWriter;
 
 class OpenFile {
 public:
