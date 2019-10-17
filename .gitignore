@@ -11,6 +11,7 @@ code/filesys/Makefile.depends
 code/filesys/nachos
 code/filesys/switch.s
 code/filesys/*.o
+code/filesys/DISK
 code/network/Makefile.depends
 code/network/nachos
 code/network/switch.s
