@@ -136,8 +136,8 @@ FileWrite(const char FILE_NAME[])
             break;
         }
     }
-    printf("Writing successful\n");
     delete openFile;
+    printf("Writing successful\n");
 }
 
 static void
@@ -160,9 +160,10 @@ FileRead(const char FILE_NAME[])
             break;
         }
     }
-    printf("Reading succesful\n");
+    
     delete [] buffer;
     delete openFile;
+    printf("Reading succesful\n");
 }
 
 void

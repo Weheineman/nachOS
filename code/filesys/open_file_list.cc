@@ -104,7 +104,7 @@ FileMetadataNode*
 OpenFileList::FindOpenFile(const char *fileName){
 	FileMetadataNode* aux;
 	for(aux = first;
-	    aux != nullptr and not strncmp(aux -> name, fileName, FILE_NAME_MAX_LEN);
+	    aux != nullptr and strncmp(aux -> name, fileName, FILE_NAME_MAX_LEN + 1);
 	    aux = aux -> next);
 
 	return aux;
@@ -146,8 +146,8 @@ OpenFileList::DeleteNode(FileMetadataNode* target){
 		last = aux;
 
 
-    if(target -> pendingRemove)
-        myFileSystem -> DeleteFromDisk(target -> name);
+  if(target -> pendingRemove)
+    myFileSystem -> DeleteFromDisk(target -> name);
     
 
 	delete [] target -> name;
