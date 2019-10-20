@@ -7,7 +7,6 @@ code/bin/coff2noff
 code/bin/readnoff
 code/bin/disassemble
 code/bin/*.o
-code/filesys/Makefile.depends
 code/filesys/nachos
 code/filesys/switch.s
 code/filesys/*.o
