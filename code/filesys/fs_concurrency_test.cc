@@ -121,7 +121,6 @@ void TestMultipleReaders(){
     delete threadArgs;
 }
 
-
 void MultipleWriterThread(void* threadArgs_){
 	MultipleWriterArg *threadArgs = (MultipleWriterArg *) threadArgs_;
 
@@ -168,6 +167,34 @@ void MultipleWriterThread(void* threadArgs_){
 	finishCheck -> V();
 }
 
+bool CheckMultipleWriters(char *testFileName, unsigned contentSize, unsigned count, unsigned threadAmount){
+	OpenFile *openFile = fileSystem->Open(testFileName);
+	if(openFile == nullptr) {
+			printf("Checker was unable to open test file %s\n", testFileName);
+			return false;
+	}
+
+	char *buffer = new char[contentSize + 1];
+	unsigned read;
+	for(read = 0; read < count * threadAmount; read++){
+		unsigned numBytes = openFile -> Read(buffer, contentSize);
+		if(numBytes < contentSize){
+			printf("Checker failed to read test file %s on interation %d\n", testFileName, read);
+			printf("Expected read size %d. Found %d\n", contentSize, numBytes);
+			break;
+		}
+		if((unsigned) atoi(buffer) != read % threadAmount){
+			printf("Checker failed to read test file %s on interation %d\n", testFileName, read);
+			printf("Expected value %d. Found %s\n", read % threadAmount, buffer);
+			break;
+		}
+	}
+
+	delete [] buffer;
+	delete openFile;
+	return read == count * threadAmount;
+}
+
 void TestMultipleWriters(){
 	char testFileName[] = "MultipleWriters";
 	unsigned repetitionCount = 100;
@@ -199,20 +226,21 @@ void TestMultipleWriters(){
 	for(unsigned i = 0; i < threadAmount; i++)
 		finishCheck -> P();
 
+  if(CheckMultipleWriters(testFileName, writeSize, repetitionCount, threadAmount)){
+		if (not fileSystem->Remove(testFileName))
+					printf("Test finished but failed to remove test file %s\n", testFileName);
 
-	// Check that it was well written.
-
-
-	//~ if (not fileSystem->Remove(testFileName))
-        //~ printf("Test finished but failed to remove test file %s\n", testFileName);
-
-    printf("-- TestMultipleWriters successful!\n\n\n");
+		printf("-- TestMultipleWriters successful!\n\n\n");
+	}
+	else
+  	printf("!!!! TestMultipleWriters unsuccessful: Writers failed to write correctly.\n\n\n");
 
     delete threadName;
     delete threadArgs;
 }
 
 void FileSysConcurrencyTests(){
-	//~ TestMultipleReaders();
+	TestMultipleReaders();
 	TestMultipleWriters();
+	// TestReadersWriters();
 }

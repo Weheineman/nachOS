@@ -1,7 +1,9 @@
 EJERCICIO 1
+-- Preguntar como estructurar lindo los test cases.
 Test cases:
 	- Ver que muchos archivos puedan leer al mismo tiempo.
 	- Ver que archivos que lean y escriban funcionen bien entre ellos.
+  - Ver que varios threads que accedan en simultaneo a distintos archivos no se molesten.
 	Posiblemente para tests anteriores haya que meter random breaks y algunos controlados como ya hemos hecho. A lo sumo chusmear los test cases de thread_test
 	- Interrumpir lecturas y escrituras?
 	- Casos que involucren eliminar un archivo:
