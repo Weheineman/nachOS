@@ -14,6 +14,11 @@ struct MultipleReaderArg{
 	Semaphore *finishCheck;
 };
 
+struct MultipleWriterArg{
+	char *fileName;
+	unsigned writeSize, count, threadAmount;
+	Semaphore *finishCheck;
+};
 
 bool writeTestFile(char name[], char contents[], unsigned size, unsigned count){
 	if(not fileSystem->Create(name, size * count)) {
@@ -81,12 +86,12 @@ void TestMultipleReaders(){
 	unsigned testContentSize = sizeof testContents - 1;
 	unsigned repetitionCount = 1000;
 	
+	unsigned threadAmount = 10;
+	
 	if(not writeTestFile(testFileName, testContents, testContentSize, repetitionCount)){
-		printf("Failed to create test file\n");
+		printf("Failed to create test file %s\n", testFileName);
 		return;
 	}
-		
-	int threadAmount = 10;
 	
 	Semaphore* finishCheck = new Semaphore("TestMultipleReaders", 0);
 	MultipleReaderArg* threadArgs = new MultipleReaderArg;
@@ -98,26 +103,116 @@ void TestMultipleReaders(){
 		
 	
 	char *threadName = new char [64];
-	for(int threadNum = 1; threadNum <= threadAmount; threadNum ++){
+	for(unsigned threadNum = 0; threadNum < threadAmount; threadNum ++){
 		snprintf(threadName, 64, "%s%d", "Number ", threadNum);
 		Thread *newThread = new Thread(threadName);
 		newThread->Fork(MultipleReaderThread, (void*) threadArgs);
 	}
 	
-	for(int i = 0; i < threadAmount; i++) 
+	for(unsigned i = 0; i < threadAmount; i++) 
 		finishCheck -> P();
 		
 	
 	if (not fileSystem->Remove(testFileName))
         printf("Test finished but failed to remove test file %s\n", testFileName);
         
-    printf("-- TestMultipleReaders successful!\n");
+    printf("-- TestMultipleReaders successful!\n\n\n");
         
     delete threadName;    
     delete threadArgs;
 }
 
 
+void MultipleWriterThread(void* threadArgs_){
+	MultipleWriterArg *threadArgs = (MultipleWriterArg *) threadArgs_;
+	
+	char* fileName = threadArgs -> fileName;
+	unsigned writeSize = threadArgs -> writeSize;
+	unsigned count = threadArgs -> count;
+	unsigned threadAmount = threadArgs -> threadAmount;
+	Semaphore *finishCheck = threadArgs -> finishCheck;
+	
+	
+	OpenFile *openFile = fileSystem->Open(fileName);
+    if (openFile == nullptr) {
+        printf("Thread %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
+        return;
+    }
+	
+	char* threadName = currentThread -> GetName();
+	int threadNum = atoi(threadName);
+	
+	char* buffer = new char[writeSize + 1];
+	unsigned i;
+	for(i = 0; i < writeSize - strlen(threadName); i++)
+		buffer[i] = '0';
+	strncpy(buffer + i, threadName, writeSize - i);
+	buffer[writeSize] = '\0';
+	
+	unsigned write;
+	for(write = 0; write < count; write++){
+		unsigned offset = writeSize * threadNum + write * writeSize * threadAmount;
+		printf("Thread %s writing in offset %d on iteration %d\n", threadName, offset, write);
+		unsigned numBytes = openFile -> WriteAt(buffer, writeSize, offset);
+        if (numBytes < writeSize) {
+            printf("Thread %s failed to write test file %s on interation %d\n", threadName, fileName, write);
+            break;
+        }
+	}
+	delete openFile;
+	delete [] buffer;
+	
+	if(write == count)
+		printf("Thread %s finished writing successfully!\n", threadName);
+		
+	finishCheck -> V();
+}
+
+void TestMultipleWriters(){
+	char testFileName[] = "MultipleWriters";
+	unsigned repetitionCount = 50;
+	unsigned writeSize = 5;
+	
+	unsigned threadAmount = 10;
+	
+	if(not fileSystem -> Create(testFileName, repetitionCount * writeSize * threadAmount)){
+		printf("Failed to create test file %s\n", testFileName);
+		return;
+	}
+		
+	Semaphore* finishCheck = new Semaphore("TestMultipleWriters", 0);
+	MultipleWriterArg* threadArgs = new MultipleWriterArg;
+	threadArgs -> fileName = testFileName;
+	threadArgs -> writeSize = writeSize;
+	threadArgs -> count = repetitionCount;
+	threadArgs -> threadAmount = threadAmount;
+	threadArgs -> finishCheck = finishCheck;
+		
+	
+	char *threadName = new char [64];
+	for(unsigned threadNum = 0; threadNum < threadAmount; threadNum ++){
+		snprintf(threadName, 64, "%d", threadNum);
+		Thread *newThread = new Thread(threadName);
+		newThread->Fork(MultipleWriterThread, (void*) threadArgs);
+	}
+	
+	for(unsigned i = 0; i < threadAmount; i++) 
+		finishCheck -> P();
+		
+		
+	// Check that it was well written.	
+		
+	
+	//~ if (not fileSystem->Remove(testFileName))
+        //~ printf("Test finished but failed to remove test file %s\n", testFileName);
+        
+    printf("-- TestMultipleWriters successful!\n\n\n");
+        
+    delete threadName;    
+    delete threadArgs;
+}
+
 void FileSysConcurrencyTests(){
-	TestMultipleReaders();
+	//~ TestMultipleReaders();
+	TestMultipleWriters();
 }
