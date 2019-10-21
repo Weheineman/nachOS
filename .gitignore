@@ -11,7 +11,6 @@ code/filesys/nachos
 code/filesys/switch.s
 code/filesys/*.o
 code/filesys/DISK
-code/network/Makefile.depends
 code/network/nachos
 code/network/switch.s
 code/network/*.o
@@ -44,15 +43,12 @@ code/userland/SWAP.*
 code/userprog/SWAP.*
 code/vmem/SWAP.*
 code/SWAP.*
-code/threads/Makefile.depends
 code/threads/nachos
 code/threads/switch.s
 code/threads/*.o
-code/userprog/Makefile.depends
 code/userprog/nachos
 code/userprog/switch.s
 code/userprog/*.o
-code/vmem/Makefile.depends
 code/vmem/nachos
 code/vmem/switch.s
 code/vmem/*.o

@@ -12,12 +12,13 @@ OpenFileList::~OpenFileList()
     FileMetadataNode* aux;
 
     while(first != nullptr){
-		aux = first -> next;
-		delete first -> name;
-		delete first -> lock;
-		delete first;
-		first = aux;
-	}
+  		aux = first -> next;
+  		delete [] first -> name;
+  		delete first -> lock;
+  		delete first;
+  		first = aux;
+	  }
+
     delete listLock;
 }
 
@@ -27,17 +28,16 @@ OpenFileList::~OpenFileList()
 //      else it increases openInstances by 1.
 ReaderWriter*
 OpenFileList::AddOpenFile(const char *fileName){
-    listLock -> Acquire();
+  listLock -> Acquire();
 
 	ReaderWriter* fileRW = nullptr;
 
 	FileMetadataNode* node = FindOpenFile(fileName);
 	if(node != nullptr){
 		if(not node -> pendingRemove){
-			node -> openInstances++;
-            fileRW = node -> lock;
-        }
-
+			  node -> openInstances++;
+        fileRW = node -> lock;
+    }
 	}else{
 		if(IsEmpty())
 			first = last = CreateNode(fileName);
@@ -46,10 +46,10 @@ OpenFileList::AddOpenFile(const char *fileName){
 			last = last -> next;
 		}
 
-        fileRW = last -> lock;
+    fileRW = last -> lock;
 	}
 
-    listLock -> Release();
+  listLock -> Release();
 	return fileRW;
 }
 
@@ -74,7 +74,7 @@ OpenFileList::CloseOpenFile(const char *fileName){
 // SetUpRemoval sets pendingRemove to true atomically.
 // If the file is not open, it just returns false.
 // Assumes the fileListLock is already taken by the file system.
-bool 
+bool
 OpenFileList::SetUpRemoval(const char *fileName){
     bool fileIsOpen;
     FileMetadataNode* node = FindOpenFile(fileName);
@@ -90,11 +90,11 @@ OpenFileList::SetUpRemoval(const char *fileName){
 // Allows the file system to acquire the list's lock.
 void
 OpenFileList::AcquireListLock(){
-    listLock -> Acquire();    
+    listLock -> Acquire();
 }
 
 // Allows the file system to release the list's lock.
-void 
+void
 OpenFileList::ReleaseListLock(){
     listLock -> Release();
 }
@@ -123,6 +123,7 @@ OpenFileList::CreateNode(const char* fileName){
 	node -> lock = new ReaderWriter();
 	node -> openInstances = 1;
 	node -> pendingRemove = false;
+  node -> next = nullptr;
 
 	return node;
 }
@@ -148,9 +149,9 @@ OpenFileList::DeleteNode(FileMetadataNode* target){
 
   if(target -> pendingRemove)
     myFileSystem -> DeleteFromDisk(target -> name);
-    
 
-	delete [] target -> name;
-	delete target -> lock;
+
+  delete target -> lock;
+  delete [] target -> name;
 	delete target;
 }

@@ -41,7 +41,7 @@ OpenFile::~OpenFile()
 {
     if(fileName != nullptr){
         fileSystem -> CloseFile(fileName);
-        delete fileName;
+        delete [] fileName;
     }
 
     delete hdr;
@@ -193,6 +193,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
             if(fileLock != nullptr)
                 fileLock -> ReleaseWrite();
 
+            fileSystem -> ReleaseFreeMap(freeMap, true);
             return 0;
         }
 
@@ -201,7 +202,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
         // Write back the changes to disk.
         hdr -> WriteBack(sector);
         fileSystem -> ReleaseFreeMap(freeMap, true);
-        
+
     }
 
     //numBytes = fileLength - position;
