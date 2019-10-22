@@ -1,5 +1,6 @@
 EJERCICIO 1
 -- Preguntar como estructurar lindo los test cases.
+-- Preguntar sobre cómo no hacer que starveen los writers en RWTest.
 Test cases:
 	- Ver que muchos archivos puedan leer al mismo tiempo.
 	- Ver que archivos que lean y escriban funcionen bien entre ellos.

@@ -20,7 +20,13 @@ struct MultipleWriterArg{
 	Semaphore *finishCheck;
 };
 
-bool WriteTestFile(char name[], char contents[], unsigned size, unsigned count){
+struct RWReaderArg{
+	char *fileName;
+	unsigned start, end;
+	Semaphore *finishCheck;
+};
+
+bool WriteTestFile(char *name, char *contents, unsigned size, unsigned count){
 	if(not fileSystem->Create(name, size * count)) {
         printf("Cannot create test file %s\n", name);
         return false;
@@ -57,7 +63,7 @@ void MultipleReaderThread(void* threadArgs_){
 
 	OpenFile *openFile = fileSystem->Open(fileName);
     if (openFile == nullptr) {
-        printf("Thread %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
+        printf("Reader %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
         return;
     }
 
@@ -66,7 +72,7 @@ void MultipleReaderThread(void* threadArgs_){
 	for(read = 0; read < count; read++){
 		unsigned numBytes = openFile -> Read(buffer, contentSize);
         if (numBytes < contentSize || strncmp(buffer, contents, contentSize)) {
-            printf("Thread %s failed to read test file %s on interation %d\n", currentThread -> GetName(), fileName, read);
+            printf("Reader %s failed to read test file %s on interation %d\n", currentThread -> GetName(), fileName, read);
             break;
         }
 	}
@@ -75,7 +81,7 @@ void MultipleReaderThread(void* threadArgs_){
 	delete openFile;
 
 	if(read == count)
-		printf("Thread %s finished reading successfully!\n", currentThread -> GetName());
+		printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
 
 	finishCheck -> V();
 }
@@ -133,7 +139,7 @@ void MultipleWriterThread(void* threadArgs_){
 
 	OpenFile *openFile = fileSystem->Open(fileName);
     if (openFile == nullptr) {
-        printf("Thread %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
+        printf("Writer %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
         return;
     }
 
@@ -153,7 +159,7 @@ void MultipleWriterThread(void* threadArgs_){
 		// printf("Thread %s writing in offset %d on iteration %d\n", threadName, offset, write);
 		unsigned numBytes = openFile -> WriteAt(buffer, writeSize, offset);
         if (numBytes < writeSize) {
-            printf("Thread %s failed to write test file %s on interation %d\n", threadName, fileName, write);
+            printf("Writer %s failed to write test file %s on interation %d\n", threadName, fileName, write);
             break;
         }
 	}
@@ -162,7 +168,7 @@ void MultipleWriterThread(void* threadArgs_){
 	delete openFile;
 
 	if(write == count)
-		printf("Thread %s finished writing successfully!\n", threadName);
+		printf("Writer %s finished writing successfully!\n", threadName);
 
 	finishCheck -> V();
 }
@@ -239,8 +245,107 @@ void TestMultipleWriters(){
     delete threadArgs;
 }
 
+void RWReaderThread(void* threadArgs_){
+	RWReaderArg *threadArgs = (RWReaderArg *) threadArgs_;
+
+	char* fileName = threadArgs -> fileName;
+	unsigned start = threadArgs -> start;
+	unsigned end = threadArgs -> end;
+	Semaphore *finishCheck = threadArgs -> finishCheck;
+
+	OpenFile *openFile = fileSystem->Open(fileName);
+    if (openFile == nullptr) {
+        printf("Reader %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
+        return;
+    }
+
+	char buffer;
+	unsigned read;
+	for(read = start; read < end; read++){
+		unsigned numBytes = openFile -> ReadAt(&buffer, 1, read);
+		while(numBytes == 1 and buffer == '-'){
+			currentThread -> Yield();
+			numBytes = openFile -> ReadAt(&buffer, 1, read);			
+		}
+		if(numBytes < 1){
+			printf("Reader %s failed to read test file %s on interation %d\n", currentThread -> GetName(), fileName, read - start);
+			break;
+		}
+	}
+
+	delete openFile;
+
+	if(read == end)
+		printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
+
+	finishCheck -> V();
+}
+
+void TestReadersWriters(){
+	char testFileName[] = "ReadersWriters";
+	char contents[] = "-";
+	unsigned repetitionCount = 100;
+	unsigned writeSize = 5;
+
+	unsigned readerAmount = 10;
+	unsigned writerAmount = 10;
+
+	unsigned fileSize = repetitionCount * writeSize * writerAmount;
+
+	if(not WriteTestFile(testFileName, contents, 1, fileSize)){
+		printf("Failed to create test file %s\n", testFileName);
+		return;
+	}
+
+	Semaphore* finishCheck = new Semaphore("TestReadersWriters", 0);
+
+	char *threadName = new char [64];
+	MultipleWriterArg* writerArgs = new MultipleWriterArg;
+	writerArgs -> fileName = testFileName;
+	writerArgs -> writeSize = writeSize;
+	writerArgs -> count = repetitionCount;
+	writerArgs -> threadAmount = writerAmount;
+	writerArgs -> finishCheck = finishCheck;
+	
+	for(unsigned threadNum = 0; threadNum < writerAmount; threadNum++){
+		snprintf(threadName, 64, "%d", threadNum);
+		Thread *newThread = new Thread(threadName);
+		newThread->Fork(MultipleWriterThread, (void*) writerArgs);
+	}
+	
+	
+	RWReaderArg *readerArgs = new RWReaderArg[readerAmount];
+	unsigned readSize = DivRoundUp(fileSize, readerAmount);
+	for(unsigned threadNum = 0; threadNum < readerAmount; threadNum++){
+		readerArgs[threadNum].fileName = testFileName;
+		readerArgs[threadNum].start = readSize * threadNum;
+		readerArgs[threadNum].end = minn((readSize + 1) * threadNum, fileSize);
+		readerArgs[threadNum].finishCheck = finishCheck;
+		
+		snprintf(threadName, 64, "%d", threadNum);
+		Thread *newThread = new Thread(threadName);
+		newThread->Fork(RWReaderThread, (void*) (readerArgs + threadNum));
+	}
+	
+	for(unsigned i = 0; i < readerAmount + writerAmount; i++)
+		finishCheck -> P();
+
+	if(CheckMultipleWriters(testFileName, writeSize, repetitionCount, writerAmount)){
+		if (not fileSystem->Remove(testFileName))
+			printf("Test finished but failed to remove test file %s\n", testFileName);
+
+		printf("-- TestReadersWriters successful!\n\n\n");
+	}
+	else
+		printf("!!!! TestReadersWriters unsuccessful: Writers failed to write correctly.\n\n\n");
+
+    delete threadName;
+    delete writerArgs;
+    delete [] readerArgs;
+}
+
 void FileSysConcurrencyTests(){
-	TestMultipleReaders();
-	TestMultipleWriters();
-	// TestReadersWriters();
+	//~ TestMultipleReaders();
+	//~ TestMultipleWriters();
+	TestReadersWriters();
 }
