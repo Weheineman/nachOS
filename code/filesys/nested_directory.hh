@@ -59,11 +59,14 @@ public:
     /// and their contents.
     void Print() const;
 
-    /// Get the raw directory structure.
-    ///
-    /// NOTE: this should only be used by routines that operating on the file
-    /// system at a low level.
-    const RawDirectory *GetRaw() const;
+    // Interface for the ReaderWriter lock
+    void AcquireRead();
+
+    void AcquireWrite();
+
+    void ReleaseRead();
+
+    void ReleaseWrite();
 
 private:
     /// The directory directly above the current level.
@@ -75,6 +78,12 @@ private:
     DirectoryEntry *first, *last;
 
     ReaderWriter *lock;
+
+    // Size of the linked list.
+    unsigned directorySize;
+
+    // Returns true iff the current directory is empty.
+    bool IsEmpty();
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Find the sector number of the `FileHeader` for file in the given path.
@@ -100,6 +109,23 @@ private:
     /// current level.
     /// If there isn't one, it returns a nullptr.
     DirectoryEntry* LockedFindCurrent(const char *name);
+
+    // Removes '/' from the first position in the string.
+    // Returns true if successful.
+    // Returns false if there was no '/' at the first position.
+    bool RemoveFirstSlash(char *path);
+
+    // Returns true iff the path does not have more than one level:
+    //     "knuth" returns true
+    //     "knuth/books" returns false
+    bool IsBottomLevel(char *path);
+
+    // Returns the top level file name of the path and removes it from the path:
+    //     "knuth/books" returns "knuth" and changes path to "books"
+    char* SplitCurrentLevel(char *path);
+
+    // GUIDIOS: Unix solo deja borrar directorios vacios.
+    // Hace falta hacer las dos funciones que siguen?
 
     /// Acquires writing permission of the current directory and all its
     /// descendants.

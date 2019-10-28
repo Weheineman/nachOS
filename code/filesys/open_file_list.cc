@@ -17,7 +17,7 @@ OpenFileList::~OpenFileList()
   		delete first -> lock;
   		delete first;
   		first = aux;
-	  }
+	}
 
     delete listLock;
 }
@@ -123,7 +123,7 @@ OpenFileList::CreateNode(const char* fileName){
 	node -> lock = new ReaderWriter();
 	node -> openInstances = 1;
 	node -> pendingRemove = false;
-  node -> next = nullptr;
+    node -> next = nullptr;
 
 	return node;
 }
