@@ -251,6 +251,10 @@ Directory::IsEmpty()
 /// Find the sector number of the `FileHeader` for file in the given path.
 int LockedFind(const char *path){
 
+    if(Nested())
+        new dir = Directory(dlkfndlks);
+        dir -> FetchFrom();
+        dir -> LockedFind(skoad);
 }
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
@@ -268,7 +272,7 @@ Directory::LockedFindCurrent(const char *name)
     return nullptr;
 }
 
-
+// GUIDIOS: Y si nos kackean?
 // Removes '/' from the first position in the string.
 // Returns true if successful.
 // Returns false if there was no '/' at the first position.
@@ -278,7 +282,7 @@ Directory::RemoveFirstSlash(char *path)
     if(path[0] != '/')
         return false;
 
-    // GUIDIOS: Y si nos kackean?
+    // We have well behaved users who will not hack us :)
     unsigned length = strlen(path);
 
     for(unsigned ind = 1; ind < length; ind++)
@@ -323,7 +327,7 @@ Directory::SplitCurrentLevel(char *path)
     }
     currentLevel[ind] = '\0';
 
-    // GUIDIOS: Y si nos kackean?
+    // We have well behaved users who will not hack us :)
     unsigned length = strlen(path);
 
     // Remove the trailing '/'

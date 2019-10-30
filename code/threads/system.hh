@@ -60,7 +60,9 @@ extern FileSystem *fileSystem;
 
 #ifdef FILESYS
 #include "filesys/synch_disk.hh"
+#include "filesys/direcory_lock_manager.hh"
 extern SynchDisk *synchDisk;
+extern DirectoryLockManager *directoryLockManager;
 #endif
 
 #ifdef NETWORK

@@ -39,6 +39,7 @@ FileSystem *fileSystem;
 
 #ifdef FILESYS
 SynchDisk *synchDisk;
+DirectoryLockManager *directoryLockManager;
 #endif
 
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
@@ -217,6 +218,7 @@ Initialize(int argc, char **argv)
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
+    directoryLockManager = new DirectoryLockManager;
 #endif
 
 #ifdef FILESYS_NEEDED
