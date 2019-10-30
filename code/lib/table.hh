@@ -14,7 +14,7 @@
 template <class T>
 class Table {
 public:
-    static const unsigned SIZE = 20;
+    static const unsigned SIZE = 100;
 
     Table();
 
@@ -100,7 +100,7 @@ Table<T>::IsEmpty() const
 
 template <class T>
 T
-Table<T>::Remove(int i)
+//~ Table<T>::Remove(int i)
 {
     ASSERT(i >= 0);
 

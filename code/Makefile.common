@@ -158,7 +158,7 @@ FILESYS_SRC = ../filesys/directory.cc           \
               ../machine/disk.cc                \
               ../filesys/open_file_list.cc      \
               ../filesys/reader_writer.cc       \
-              ../filesys/fs_concurrency_test.cc
+              ../filesys/FilesysTests/fs_concurrency_test.cc
 FILESYS_OBJ = directory.o            \
               file_header.o          \
               file_system.o          \
