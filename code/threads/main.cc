@@ -81,7 +81,7 @@ void MailTest(int networkID);
 void TestSequentialProcesses(int processAmount);
 void TestConcurrentProcesses(int processAmount);
 
-void FileSysConcurrencyTests();
+void FileSystemTestHandler();
 
 static inline void
 PrintVersion()
@@ -195,7 +195,7 @@ main(int argc, char **argv)
         } else if (!strcmp(*argv, "-tf"))    // Performance test.
             PerformanceTest();
 		  else if (!strcmp(*argv, "-ct"))    // Concurrency tests.
-			FileSysConcurrencyTests();
+			FileSystemTestHandler();
 			  
 #endif
 #ifdef NETWORK

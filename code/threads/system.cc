@@ -218,7 +218,7 @@ Initialize(int argc, char **argv)
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");
-    directoryLockManager = new DirectoryLockManager;
+    //~ directoryLockManager = new DirectoryLockManager;
 #endif
 
 #ifdef FILESYS_NEEDED

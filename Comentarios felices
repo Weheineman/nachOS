@@ -1,17 +1,11 @@
 EJERCICIO 1
--- Preguntar como estructurar lindo los test cases.
+-- Comentar todos los test cases
 -- Preguntar sobre cómo no hacer que starveen los writers en RWTest.
+-- Preguntar por valores default para los tests
+- Ver que varios threads que accedan en simultaneo a distintos archivos no se molesten.
 Test cases:
-	- Ver que muchos archivos puedan leer al mismo tiempo.
-	- Ver que archivos que lean y escriban funcionen bien entre ellos.
-  - Ver que varios threads que accedan en simultaneo a distintos archivos no se molesten.
-	Posiblemente para tests anteriores haya que meter random breaks y algunos controlados como ya hemos hecho. A lo sumo chusmear los test cases de thread_test
-	- Interrumpir lecturas y escrituras?
 	- Casos que involucren eliminar un archivo:
-		- Eliminar uno no abierto.
 		- Eliminar uno abierto, modificarlo mientras esté en pendingQueue, luego todos salen.
-		- Eliminar uno abierto, tratar de abrirlo y que no nos deje, salir y que se cierre.
-		- Eliminarlo múltiples veces.
 
 
 EJERCICIO 5

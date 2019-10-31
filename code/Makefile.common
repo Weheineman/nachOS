@@ -148,7 +148,8 @@ FILESYS_HDR = ../filesys/directory.hh       \
               ../filesys/synch_disk.hh      \
               ../machine/disk.hh            \
               ../filesys/open_file_list.hh  \
-              ../filesys/reader_writer.hh
+              ../filesys/reader_writer.hh   \
+              ../filesys/FileSystemTests/fs_test_Cases.hh
 FILESYS_SRC = ../filesys/directory.cc           \
               ../filesys/file_header.cc         \
               ../filesys/file_system.cc         \
@@ -158,7 +159,8 @@ FILESYS_SRC = ../filesys/directory.cc           \
               ../machine/disk.cc                \
               ../filesys/open_file_list.cc      \
               ../filesys/reader_writer.cc       \
-              ../filesys/FilesysTests/fs_concurrency_test.cc
+              ../filesys/FileSystemTests/fs_test_Handler.cc    \
+              ../filesys/FileSystemTests/fs_test_Cases.cc    
 FILESYS_OBJ = directory.o            \
               file_header.o          \
               file_system.o          \
@@ -168,7 +170,8 @@ FILESYS_OBJ = directory.o            \
               disk.o                 \
               open_file_list.o       \
               reader_writer.o        \
-              fs_concurrency_test.o
+              fs_test_Handler.o      \
+              fs_test_Cases.o
 
 NETWORK_HDR = ../network/post.hh \
               ../machine/network.hh

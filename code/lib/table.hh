@@ -100,7 +100,7 @@ Table<T>::IsEmpty() const
 
 template <class T>
 T
-//~ Table<T>::Remove(int i)
+Table<T>::Remove(int i)
 {
     ASSERT(i >= 0);
 
