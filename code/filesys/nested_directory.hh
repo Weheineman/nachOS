@@ -16,7 +16,6 @@
 
 
 #include "raw_directory.hh"
-#include "reader_writer.hh"
 #include "open_file.hh"
 
 
@@ -68,22 +67,18 @@ public:
 
     void ReleaseWrite();
 
+    // Returns true iff the current directory is empty.
+    bool IsEmpty();
+
 private:
-    /// The directory directly above the current level.
-    /// GUIDIOS: Esta bien asi? Podriamos como alernativa
-    /// pasar como argument a Find, Add y Remove el puntero
-    /// del directORIo a deletear.
-    Directory *upper;
-
     DirectoryEntry *first, *last;
-
-    ReaderWriter *lock;
 
     // Size of the linked list.
     unsigned directorySize;
 
-    // Returns true iff the current directory is empty.
-    bool IsEmpty();
+    // Sector of the file header of the directory. Used as an argument for the
+    // DirectoryLockManager methods.
+    int sector;
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Find the sector number of the `FileHeader` for file in the given path.
@@ -91,10 +86,7 @@ private:
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Add a file into the directory at the given path.
-    /// GUIDIOS: OJO con la siguiente situacion: / -> A -> B
-    /// Se puede borrar A aunque un thread este en B.
-    /// En ese caso, cuando B quiera hacer una operacion, no tiene que poder.
-    bool LockedAdd(const char *path, int newSector);
+    bool LockedAdd(const char *path, int newSector, bool isDirectory);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Remove a file from the directory.
@@ -123,17 +115,6 @@ private:
     // Returns the top level file name of the path and removes it from the path:
     //     "knuth/books" returns "knuth" and changes path to "books"
     char* SplitCurrentLevel(char *path);
-
-    // GUIDIOS: Unix solo deja borrar directorios vacios.
-    // Hace falta hacer las dos funciones que siguen?
-
-    /// Acquires writing permission of the current directory and all its
-    /// descendants.
-    bool SetUpDelete();
-
-    /// Removes the directory and all the files in it, recursively. It is used
-    /// in conjunction with SetUpDelete.
-    bool RemoveDir();
 };
 
 #endif

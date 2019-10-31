@@ -16,6 +16,11 @@
 /// access them directly.
 class DirectoryEntry {
 public:
+    DirectoryEntry(unsigned _sector, bool _isDirectory){
+        sector = _sector;
+        isDirectory = _isDirectory;
+    }
+
     /// Is this entry a Directory?
     bool isDirectory;
     /// Location on disk to find the `FileHeader` for this file.

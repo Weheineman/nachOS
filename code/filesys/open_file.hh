@@ -95,7 +95,7 @@ class ReaderWriter;
 class OpenFile {
 public:
 
-    /// Open a file whose header is located at `sector` on the disk.
+    /// Open a file whose header is located at `sector_` on the disk.
     OpenFile(int sector_, const char *name = nullptr, ReaderWriter* rw = nullptr);
 
     /// Close the file.

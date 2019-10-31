@@ -22,27 +22,24 @@
 #include "directory.hh"
 #include "directory_entry.hh"
 #include "file_header.hh"
+#include "openfile.hh"
 #include "lib/utility.hh"
+#include "threads/system.hh"
 
 
 /// Initialize a directory; initially, the directory is completely empty.  If
 /// the disk is being formatted, an empty directory is all we need, but
 /// otherwise, we need to call FetchFrom in order to initialize it from disk.
 ///
-Directory::Directory()
+Directory::Directory(int _sector)
 {
-    // GUIDIOS: Dejamos esto?
-    upper = nullptr;
+    sector = _sector;
     first = last = nullptr;
-    lock = new ReaderWriter();
 }
 
 /// De-allocate directory data structure.
 Directory::~Directory()
 {
-    // GUIDIOS: Dejamos esto?
-    delete upper;
-
     DirectoryEntry* aux;
 
     // GUIDIOS: Hay que ver como cambiar esto para directorios
@@ -53,8 +50,6 @@ Directory::~Directory()
   		delete first;
   		first = aux;
 	}
-
-    delete lock;
 }
 
 /// Read the contents of the directory from disk.
@@ -65,8 +60,7 @@ Directory::FetchFrom(OpenFile *file)
 {
     ASSERT(file != nullptr);
 
-    // GUIDIOS: Esta bien agarrar el lock aca?
-    lock -> AcquireWrite();
+    AcquireWrite();
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
@@ -91,7 +85,7 @@ Directory::FetchFrom(OpenFile *file)
         }
     }
 
-    lock -> ReleaseWrite();
+    ReleaseWrite();
 }
 
 /// Write any modifications to the directory back to disk.
@@ -107,7 +101,7 @@ Directory::WriteBack(OpenFile *file)
     // con tomar el freeMap dentro de WriteAt
     // SI, HAY QUE CAMBIAR WRITEAT
 
-    lock -> AcquireRead();
+    AcquireRead();
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
@@ -125,7 +119,7 @@ Directory::WriteBack(OpenFile *file)
         currentEntry = currentEntry -> next;
     }
 
-    lock -> ReleaseRead();
+    ReleaseRead();
 }
 
 /// Look up file path in directory, and return the disk sector number where
@@ -219,25 +213,25 @@ Directory::Print() const
 void
 Directory::AcquireRead()
 {
-    lock -> AcquireRead();
+    directoryLockManager -> AcquireRead(sector);
 }
 
 void
 Directory::AcquireWrite()
 {
-    lock -> AcquireWrite();
+    directoryLockManager -> AcquireWrite(sector);
 }
 
 void
 Directory::ReleaseRead()
 {
-    lock -> ReleaseRead();
+    directoryLockManager -> ReleaseRead(sector);
 }
 
 void
 Directory::ReleaseWrite()
 {
-    lock -> ReleaseWrite();
+    directoryLockManager -> ReleaseWrite(sector);
 }
 
 // Returns true iff the current directory is empty.
@@ -250,11 +244,190 @@ Directory::IsEmpty()
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Find the sector number of the `FileHeader` for file in the given path.
 int LockedFind(const char *path){
+    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+    int sectorNumber = -2;
 
-    if(Nested())
-        new dir = Directory(dlkfndlks);
-        dir -> FetchFrom();
-        dir -> LockedFind(skoad);
+    while (not IsBottomLevel(path)){
+        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+        DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+        // The path has an invalid directory.
+        if(not entry -> isDirectory){
+            sectorNumber = -1;
+            break;
+        }
+
+        // Replace the data of the directory in RAM with the data of the
+        // directory one level below.
+        directoryLockManager -> AcquireRead(entry -> sector);
+        directoryLockManager -> ReleaseRead(sector);
+        sector = entry -> sector;
+
+        // Read the data from disk.
+        OpenFile *dirFile = new OpenFile(sector);
+        FetchFrom(dirFile);
+        delete dirFile;
+    }
+
+    DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+    // The bottom level file does not exist.
+    if(entry == nullptr)
+        sectorNumber = -1;
+    else
+        // If there were no errors, get the sector number.
+        if(sectorNumber != -1)
+            sectorNumber = entry -> sector;
+
+    delete [] currentLevel;
+    directoryLockManager -> ReleaseRead(sector);
+    return sectorNumber;
+}
+
+
+/// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+/// Add a file into the directory at the given path.
+bool LockedAdd(const char *path, int newSector, bool isDirectory){
+    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+    bool bottomLevel = IsBottomLevel(path);
+
+    while (not bottomLevel){
+        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+        bottomLevel = IsBottomLevel(path);
+        DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+        // The path has an invalid directory.
+        if(not entry -> isDirectory){
+            delete [] currentLevel;
+            directoryLockManager -> ReleaseRead(sector);
+            return false;
+        }
+
+        // Replace the data of the directory in RAM with the data of the
+        // directory one level below.
+        if(bottomLevel)
+            directoryLockManager -> AcquireWrite(entry -> sector);
+        else
+            directoryLockManager -> AcquireRead(entry -> sector);
+
+        directoryLockManager -> ReleaseRead(sector);
+        sector = entry -> sector;
+
+        // Read the data from disk.
+        OpenFile *dirFile = new OpenFile(sector);
+        FetchFrom(dirFile);
+        delete dirFile;
+    }
+
+    // The file already exists.
+    if(LockedFindCurrent(path) != nullptr){
+        delete [] currentLevel;
+        directoryLockManager -> ReleaseWrite(sector);
+        return false;
+    }
+
+    DirectoryEntry *newEntry = new DirectoryEntry(newSector, isDirectory);
+    if(IsEmpty())
+        first = last = newEntry;
+    else{
+        last -> next = newEntry;
+        last = last -> next;
+    }
+
+    directorySize++;
+
+    delete [] currentLevel;
+    directoryLockManager -> ReleaseWrite(sector);
+    return true;
+}
+
+
+/// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+/// Remove a file from the directory.
+bool LockedRemove(const char *path){
+    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+    bool bottomLevel = IsBottomLevel(path);
+
+    while (not bottomLevel){
+        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+        bottomLevel = IsBottomLevel(path);
+        DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+        // The path has an invalid directory.
+        if(not entry -> isDirectory){
+            delete [] currentLevel;
+            directoryLockManager -> ReleaseRead(sector);
+            return false;
+        }
+
+        // Replace the data of the directory in RAM with the data of the
+        // directory one level below.
+        if(bottomLevel)
+            directoryLockManager -> AcquireWrite(entry -> sector);
+        else
+            directoryLockManager -> AcquireRead(entry -> sector);
+
+        directoryLockManager -> ReleaseRead(sector);
+        sector = entry -> sector;
+
+        // Read the data from disk.
+        OpenFile *dirFile = new OpenFile(sector);
+        FetchFrom(dirFile);
+        delete dirFile;
+    }
+
+    DirectoryEntry *target = LockedFindCurrent(path);
+
+    // File not found.
+    if(target == nullptr){
+        delete [] currentLevel;
+        directoryLockManager -> ReleaseWrite(sector);
+        return false;
+    }
+
+    // Check that the target isn't a non empty directory.
+    bool isNonEmptyDir = false;
+
+    if(target -> isDirectory){
+        Directory targetDir = new Directory();
+        directoryLockManager -> AcquireRead(target -> sector);
+        OpenFile *dirFile = new OpenFile(target -> sector);
+        targetDir -> FetchFrom(dirFile);
+        isNonEmptyDir = targetDir -> IsEmpty();
+
+        delete dirFile;
+        delete targetDir;
+        directoryLockManager -> ReleaseRead(target -> sector);
+    }
+
+    // Can't remove a non empty directory.
+    if(isNonEmptyDir){
+        delete [] currentLevel;
+        directoryLockManager -> ReleaseWrite(sector);
+        return false;
+    }
+
+    DirectoryEntry *current = nullptr;
+
+    //If the first item is to be deleted, advance the first pointer.
+	if(first == target)
+		first = first -> next;
+	else{
+		for(current = first; current -> next != target;
+            current = current -> next);
+
+		current -> next = current -> next -> next;
+	}
+
+	//If the last item is to be deleted, bring the last pointer one item back.
+	if(last == target)
+		last = aux;
+
+    directorySize--;
+
+    delete [] currentLevel;
+    directoryLockManager -> ReleaseWrite(sector);
+    return true;
 }
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
