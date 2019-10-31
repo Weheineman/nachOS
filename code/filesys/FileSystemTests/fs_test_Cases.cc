@@ -1,5 +1,6 @@
 #include "filesys/FileSystemTests/fs_test_Cases.hh"
 
+// Simple test that creates, opens and writes to two files simultaneously.
 void TestSimpleManyFiles(){
 	char file1[] = "Test 1";
 	char file2[] = "Test 2";
@@ -47,13 +48,13 @@ void TestSimpleManyFiles(){
 	delete openFile2;
 	
 	if(i == count)
-		printf("-- TestSimpleManyFiles successful!\n\n\n");
+		printf("--- TestSimpleManyFiles successful!\n\n\n");
 	else
 		printf("!!!! TestSimpleManyFiles unsuccessful: Writers failed to write correctly.\n\n\n");
 }
 
 
-
+// Creates and writes a file with the given name, its having given contents written count times.
 bool WriteTestFile(char *name, char *contents, unsigned size, unsigned count){
 	if(not fileSystem->Create(name, size * count)) {
         printf("Cannot create test file %s\n", name);
@@ -80,7 +81,8 @@ bool WriteTestFile(char *name, char *contents, unsigned size, unsigned count){
     return i == count;
 }
 
-void ReaderThread(void* threadArgs_){
+// Reads a given content as many times as count, checking that every reading is successful.
+void ReaderThread(void *threadArgs_){
 	ReaderArg *threadArgs = (ReaderArg *) threadArgs_;
 
 	char* fileName = threadArgs -> fileName;
@@ -101,7 +103,7 @@ void ReaderThread(void* threadArgs_){
 	for(read = 0; read < count; read++){
 		unsigned numBytes = openFile -> Read(buffer, contentSize);
         if (numBytes < contentSize || strncmp(buffer, contents, contentSize)) {
-            printf("Reader %s failed to read test file %s on interation %d\n", currentThread -> GetName(), fileName, read);
+            printf("Reader %s failed to read test file %s on iteration %d\n", currentThread -> GetName(), fileName, read);
             break;
         }
 	}
@@ -109,13 +111,14 @@ void ReaderThread(void* threadArgs_){
 	delete [] buffer;
 	delete openFile;
 
-	if(read == count)
-		printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
-
-	finishCheck -> V();
+	if(read == count){
+		//~ printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
+		finishCheck -> V();
+	}
 }
 
-void SpawnReaders(void* spawnerArgs_){
+// Forks a given amount of reader threads in a given file and checks that all of them finish.
+void SpawnReaders(void *spawnerArgs_){
 	ReaderSpawnerArg *spawnerArgs = (ReaderSpawnerArg *) spawnerArgs_;
 	char *testContents = spawnerArgs -> testContents;
 	unsigned fileNum = spawnerArgs -> fileNum;
@@ -161,7 +164,9 @@ void SpawnReaders(void* spawnerArgs_){
     totalCheck -> V();
 }
 
-void TestReadersManyFiles(unsigned fileAmount){
+// Forks multiple Reader Spawners, with each of them creating a file and forking readers to access it concurrently.
+void TestReadersManyFiles(){
+	unsigned fileAmount = 1;
 	char testContents[] = "1234567890";
 	unsigned testContentSize = sizeof testContents - 1;
 	unsigned repCount = 100;
@@ -186,16 +191,16 @@ void TestReadersManyFiles(unsigned fileAmount){
 	for(unsigned i = 0; i < fileAmount; i++)
 		totalCheck -> P();
 	
-	printf("-- TestReadersManyFiles successful!\n\n\n");
-	
 	delete [] args;
 	delete [] spawnerName;
 	delete totalCheck;
+	
+	printf("--- TestReadersManyFiles successful!\n\n\n");
 }
 
 
-
-void WriterThread(void* threadArgs_){
+// Writes its thread ID in specific points in a given file.
+void WriterThread(void *threadArgs_){
 	WriterArg *threadArgs = (WriterArg *) threadArgs_;
 
 	char* fileName = threadArgs -> fileName;
@@ -212,7 +217,8 @@ void WriterThread(void* threadArgs_){
         return;
     }
 
-	
+	// Fills a buffer with the thread number at the right end of it, 
+	// filling any spaces to the left with zeroes.
 	char* buffer = new char[writeSize + 1];
 	snprintf(buffer, writeSize, "%d", threadNum);
 	unsigned idLength = strlen(buffer);
@@ -232,7 +238,7 @@ void WriterThread(void* threadArgs_){
 		unsigned offset = writeSize * threadNum + write * writeSize * threadAmount;
 		unsigned numBytes = openFile -> WriteAt(buffer, writeSize, offset);
         if (numBytes < writeSize) {
-            printf("Writer %s failed to write test file %s on interation %d\n", currentThread -> GetName(), fileName, write);
+            printf("Writer %s failed to write test file %s on iteration %d\n", currentThread -> GetName(), fileName, write);
             break;
         }
 	}
@@ -240,12 +246,13 @@ void WriterThread(void* threadArgs_){
 	delete [] buffer;
 	delete openFile;
 
-	if(write == count)
-		printf("Writer %s finished writing successfully!\n", currentThread -> GetName());
-
-	finishCheck -> V();
+	if(write == count){
+		//~ printf("Writer %s finished writing successfully!\n", currentThread -> GetName());
+		finishCheck -> V();
+	}
 }
 
+// Checks that the writers forked by SpawnWriters have written successfully in a given file.
 bool CheckWriters(char *testFileName, unsigned contentSize, unsigned count, unsigned threadAmount){
 	OpenFile *openFile = fileSystem->Open(testFileName);
 	if(openFile == nullptr) {
@@ -258,12 +265,12 @@ bool CheckWriters(char *testFileName, unsigned contentSize, unsigned count, unsi
 	for(read = 0; read < count * threadAmount; read++){
 		unsigned numBytes = openFile -> Read(buffer, contentSize);
 		if(numBytes < contentSize){
-			printf("Checker failed to read test file %s on interation %d\n", testFileName, read);
+			printf("Checker failed to read test file %s on iteration %d\n", testFileName, read);
 			printf("Expected read size %d. Found %d\n", contentSize, numBytes);
 			break;
 		}
 		if((unsigned) atoi(buffer) != read % threadAmount){
-			printf("Checker failed to read test file %s on interation %d\n", testFileName, read);
+			printf("Checker failed to read test file %s on iteration %d\n", testFileName, read);
 			printf("Expected value %d. Found %s\n", read % threadAmount, buffer);
 			break;
 		}
@@ -274,7 +281,8 @@ bool CheckWriters(char *testFileName, unsigned contentSize, unsigned count, unsi
 	return read == count * threadAmount;
 }
 
-void SpawnWriters(void* spawnerArgs_){
+// Forks a given amount of writer threads, that fill a given file collaboratively.
+void SpawnWriters(void *spawnerArgs_){
 	WriterSpawnerArg *spawnerArgs = (WriterSpawnerArg *) spawnerArgs_;
 	unsigned fileNum = spawnerArgs -> fileNum; 
 	unsigned writeSize = spawnerArgs -> writeSize;
@@ -326,7 +334,9 @@ void SpawnWriters(void* spawnerArgs_){
     totalCheck -> V();
 }
 
-void TestWritersManyFiles(unsigned fileAmount){
+// Forks multiple Writer Spawners, with each of them creating a file and forking writers to access it concurrently.
+void TestWritersManyFiles(){
+	unsigned fileAmount = 1;
 	unsigned writeSize = 5;
 	unsigned repCount = 100;
 	unsigned threadAmount = 3;
@@ -349,22 +359,27 @@ void TestWritersManyFiles(unsigned fileAmount){
 	for(unsigned i = 0; i < fileAmount; i++)
 		totalCheck -> P();
 	
-	printf("-- TestWritersManyFiles successful!\n\n\n");
-	
 	delete [] args;
 	delete [] spawnerName;
 	delete totalCheck;	
+	
+	printf("--- TestWritersManyFiles successful!\n\n\n");
 }
 
 
 
+// Reads a section of the given test file byte by byte. If at any moment it reads a part that
+// has not been yet overwritten by a writer, it waits on a condition variable until signalled.
 void RWReaderThread(void* threadArgs_){
 	RWReaderArg *threadArgs = (RWReaderArg *) threadArgs_;
 
 	char* fileName = threadArgs -> fileName;
 	unsigned start = threadArgs -> start;
 	unsigned end = threadArgs -> end;
+  char fillContent = threadArgs -> fillContent;
 	Semaphore *finishCheck = threadArgs -> finishCheck;
+	Lock *queueLock = threadArgs -> queueLock;
+	Condition *queueCond = threadArgs -> queueCond;
 
 	OpenFile *openFile = fileSystem->Open(fileName);
     if (openFile == nullptr) {
@@ -376,54 +391,126 @@ void RWReaderThread(void* threadArgs_){
 	unsigned read;
 	for(read = start; read < end; read++){
 		unsigned numBytes = openFile -> ReadAt(&buffer, 1, read);
-		while(numBytes == 1 and buffer == '-'){
-			currentThread -> Yield();
+		while(numBytes == 1 and buffer == fillContent){
+			queueLock -> Acquire();
+			queueCond -> Wait();
+			queueLock -> Release();
+			
 			numBytes = openFile -> ReadAt(&buffer, 1, read);			
 		}
 		if(numBytes < 1){
-			printf("Reader %s failed to read test file %s on interation %d\n", currentThread -> GetName(), fileName, read - start);
+			printf("Reader %s failed to read test file %s on iteration %d\n", currentThread -> GetName(), fileName, read - start);
 			break;
 		}
 	}
 
 	delete openFile;
 
-	if(read == end)
-		printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
-
-	finishCheck -> V();
+	if(read == end){
+		//~ printf("Reader %s finished reading successfully!\n", currentThread -> GetName());
+		finishCheck -> V();
+	}
 }
 
-void TestReadersWriters(){
-	char testFileName[] = "ReadersWriters";
-	char contents[] = "-";
-	unsigned repetitionCount = 100;
-	unsigned writeSize = 5;
+// Writes its thread ID in specific points in a given file, similarly to Writer Thread.
+// After each successful write, it broadcasts readers so that they try and start reading again.
+void RWWriterThread(void* threadArgs_){
+	RWWriterArg *threadArgs = (RWWriterArg *) threadArgs_;
 
-	unsigned readerAmount = 10;
-	unsigned writerAmount = 10;
+	char* fileName = threadArgs -> fileName;
+	unsigned writeSize = threadArgs -> writeSize;
+	unsigned count = threadArgs -> count;
+	unsigned threadAmount = threadArgs -> threadAmount;
+	unsigned threadNum = threadArgs -> threadNum;
+	Semaphore *finishCheck = threadArgs -> finishCheck;
+	Lock *queueLock = threadArgs -> queueLock;
+	Condition *queueCond = threadArgs -> queueCond;
 
+	OpenFile *openFile = fileSystem->Open(fileName);
+    if (openFile == nullptr) {
+        printf("Writer %s was unable to open test file %s\n", currentThread -> GetName(), fileName);
+        return;
+    }
+
+
+	char* buffer = new char[writeSize + 1];
+	snprintf(buffer, writeSize, "%d", threadNum);
+	unsigned idLength = strlen(buffer);
+	unsigned lenDiff = writeSize - idLength;
+	
+	for(unsigned i = 0; i < idLength; i++)
+		buffer[i + lenDiff] = buffer[i];
+		
+	for(unsigned i = 0; i < lenDiff; i++)
+		buffer[i] = '0';
+		
+	buffer[writeSize] = '\0';
+
+
+	unsigned write;
+	for(write = 0; write < count; write++){
+		unsigned offset = writeSize * threadNum + write * writeSize * threadAmount;
+		unsigned numBytes = openFile -> WriteAt(buffer, writeSize, offset);
+        if (numBytes < writeSize) {
+            printf("Writer %s failed to write test file %s on iteration %d\n", currentThread -> GetName(), fileName, write);
+            break;
+        }
+        queueLock -> Acquire();
+        queueCond -> Broadcast();
+        queueLock -> Release();
+	}
+
+	delete [] buffer;
+	delete openFile;
+
+	if(write == count){
+		//~ printf("Writer %s finished writing successfully!\n", currentThread -> GetName());
+		finishCheck -> V();
+	}
+}
+
+// Creates a file and forks both readers and writers to access it concurrently.
+// Initially, the file consists of only hypens that are eventually overwritten by writers.
+// If a reader find a hyphen, it waits on a condition variable until a writer accesses the file.
+void SpawnReadersWriters(void *spawnerArgs_){
+	RWSpawnerArg *spawnerArgs = (RWSpawnerArg *) spawnerArgs_;
+	unsigned fileNum = spawnerArgs -> fileNum;
+	unsigned writeSize = spawnerArgs -> writeSize;
+	unsigned repetitionCount = spawnerArgs -> repCount;
+	unsigned writerAmount = spawnerArgs -> writerAmount;
+	unsigned readerAmount = spawnerArgs -> readerAmount;
+	char fillContent = spawnerArgs -> fillContent;
+	Semaphore *totalCheck = spawnerArgs -> totalCheck;
+	
+	char *testFileName = new char[64];
+	snprintf(testFileName, 64, "%s%d", "ReadersWriters ", fileNum);
+	
 	unsigned fileSize = repetitionCount * writeSize * writerAmount;
 
-	if(not WriteTestFile(testFileName, contents, 1, fileSize)){
+	if(not WriteTestFile(testFileName, &fillContent, 1, fileSize)){
 		printf("Failed to create test file %s\n", testFileName);
 		return;
 	}
 
 	Semaphore* finishCheck = new Semaphore("TestReadersWriters", 0);
+	Lock *queueLock = new Lock("ReadersQueueLock");
+	Condition *queueCond = new Condition("ReadersQueueCondition", queueLock);
 
 	char *threadName = new char [64];
-	WriterArg* writerArgs = new WriterArg;
-	writerArgs -> fileName = testFileName;
-	writerArgs -> writeSize = writeSize;
-	writerArgs -> count = repetitionCount;
-	writerArgs -> threadAmount = writerAmount;
-	writerArgs -> finishCheck = finishCheck;
-	
+	RWWriterArg* writerArgs = new RWWriterArg[writerAmount];
+		
 	for(unsigned threadNum = 0; threadNum < writerAmount; threadNum++){
-		snprintf(threadName, 64, "%d", threadNum);
+		writerArgs[threadNum].fileName = testFileName;
+		writerArgs[threadNum].writeSize = writeSize;
+		writerArgs[threadNum].count = repetitionCount;
+		writerArgs[threadNum].threadAmount = writerAmount;
+		writerArgs[threadNum].threadNum = threadNum;
+		writerArgs[threadNum].finishCheck = finishCheck;
+		writerArgs[threadNum].queueLock = queueLock;
+		writerArgs[threadNum].queueCond = queueCond;
+		snprintf(threadName, 64, "%s%d%s%d", "File ", fileNum, "Number ", threadNum);
 		Thread *newThread = new Thread(threadName);
-		newThread->Fork(WriterThread, (void*) writerArgs);
+		newThread->Fork(RWWriterThread, (void*) (writerArgs + threadNum));
 	}
 	
 	
@@ -433,9 +520,11 @@ void TestReadersWriters(){
 		readerArgs[threadNum].fileName = testFileName;
 		readerArgs[threadNum].start = readSize * threadNum;
 		readerArgs[threadNum].end = minn((readSize + 1) * threadNum, fileSize);
+    readerArgs[threadNum].fillContent = fillContent;
 		readerArgs[threadNum].finishCheck = finishCheck;
-		
-		snprintf(threadName, 64, "%d", threadNum);
+		readerArgs[threadNum].queueLock = queueLock;
+		readerArgs[threadNum].queueCond = queueCond;
+		snprintf(threadName, 64, "%s%d%s%d", "File ", fileNum, "Number ", threadNum);
 		Thread *newThread = new Thread(threadName);
 		newThread->Fork(RWReaderThread, (void*) (readerArgs + threadNum));
 	}
@@ -443,22 +532,67 @@ void TestReadersWriters(){
 	for(unsigned i = 0; i < readerAmount + writerAmount; i++)
 		finishCheck -> P();
 
+	bool success = false;
 	if(CheckWriters(testFileName, writeSize, repetitionCount, writerAmount)){
 		if (not fileSystem->Remove(testFileName))
 			printf("Test finished but failed to remove test file %s\n", testFileName);
-
-		printf("-- TestReadersWriters successful!\n\n\n");
+			
+		success = true;
 	}
 	else
 		printf("!!!! TestReadersWriters unsuccessful: Writers failed to write correctly.\n\n\n");
 
-    delete threadName;
-    delete writerArgs;
+
+    delete [] threadName;
+    delete [] testFileName;
+    delete queueCond;
+    delete queueLock;
+    delete finishCheck;
+    delete [] writerArgs;
     delete [] readerArgs;
+    
+    if(success)
+		totalCheck -> V();
+}
+
+// Forks multiple ReaderWriter Spawners, with each of them creating a file and forking both readers and writers to access it concurrently.
+void TestReadersWritersManyFiles(){
+	unsigned fileAmount = 1;
+	unsigned repCount = 100;
+	unsigned writeSize = 5;
+	unsigned readerAmount = 10;
+	unsigned writerAmount = 10;
+	char fillContent = '-';
+
+	RWSpawnerArg *args = new RWSpawnerArg[fileAmount];
+	char *spawnerName = new char[64];
+	Semaphore *totalCheck = new Semaphore("TestReadersManyFiles", 0);
+	for(unsigned fileNum = 0; fileNum < fileAmount; fileNum++){
+		args[fileNum].fileNum = fileNum;
+		args[fileNum].writeSize = writeSize;
+		args[fileNum].repCount = repCount;
+		args[fileNum].writerAmount = writerAmount;
+		args[fileNum].readerAmount = readerAmount;
+		args[fileNum].fillContent = fillContent;
+		args[fileNum].totalCheck = totalCheck;
+		
+		snprintf(spawnerName, 64, "%s%d", "Spawner ", fileNum);
+		Thread *newThread = new Thread(spawnerName);
+		newThread->Fork(SpawnReadersWriters, (void*) (args + fileNum));		
+	}
+	
+	for(unsigned i = 0; i < fileAmount; i++)
+		totalCheck -> P();
+	
+	delete [] args;
+	delete [] spawnerName;
+	delete totalCheck;
+	
+	printf("--- TestReadersWritersManyFiles successful!\n\n\n");	
 }
 
 
-
+// Checks that it is possible to remove a file that exists in the system but is not currently open.
 void TestRemoveClosedFile(){
 	char testName[] = "TestFile";
 	if(not fileSystem -> Create(testName, 0)){
@@ -490,6 +624,7 @@ void TestRemoveClosedFile(){
 
 
 
+// Checks that it is possible to remove a file that is currently open, and that it is not openable anymore after that.
 void TestRemoveOpenFile(){
 	char testName[] = "TestFile";
 	if(not fileSystem -> Create(testName, 0)){
@@ -530,6 +665,7 @@ void TestRemoveOpenFile(){
 
 
 
+// Checks that, if a closed file is removed multiple times, only the first one actually removes it and the rest do not find the file.
 void TestMultipleRemovalsWhileClosed(){
 	char testName[] = "TestFile";
 	if(not fileSystem -> Create(testName, 0)){
@@ -569,6 +705,7 @@ void TestMultipleRemovalsWhileClosed(){
 
 
 
+// Checks that a file can be removed any number of times while open.
 void TestMultipleRemovalsWhileOpen(){
 	char testName[] = "TestFile";
 	if(not fileSystem -> Create(testName, 0)){
@@ -603,6 +740,7 @@ void TestMultipleRemovalsWhileOpen(){
 
 
 
+// Checks that a file can be properly accessed even though it is pending to be removed.
 void TestEditWhilePendingRemoval(){
 	char testName[] = "TestFile";
 	if(not fileSystem -> Create(testName, 0)){
