@@ -1,12 +1,5 @@
 EJERCICIO 1
--- Comentar todos los test cases
--- Preguntar sobre cómo no hacer que starveen los writers en RWTest.
--- Preguntar por valores default para los tests
 - Ver que varios threads que accedan en simultaneo a distintos archivos no se molesten.
-Test cases:
-	- Casos que involucren eliminar un archivo:
-		- Eliminar uno abierto, modificarlo mientras esté en pendingQueue, luego todos salen.
-
 
 EJERCICIO 5
 Vamos a tener que implementarnos vectors propios. Vamos a necesitar eso para la tabla de Directory, que ahora tiene que ser extensible (Gracias C++ por no tener un resize de new y delete).
@@ -25,30 +18,20 @@ Roadmap
  implementaciones para que no solo pasen el nombre del archivo como argumento a
  las llamadas fileSys, sino que la ruta completa (strconcat?).
 
- - fileSys ahora tiene una interfaz similar a freeMap pero con nuestra nueva
- estructura cool de directorios (DirectoryTree?).
-   Ademas hay que cambiar todas las creaciones y llamadas de Directory por
-nuestra interfaz que provee a DirectoryTree y metodos de DirectoryTree.
+ - Hay que implementar cd. Chequear que el directorio destino sea valido.
+ No importa si el current directory del thread es invalido.
 
-  - Hay que hacer una estructura DirectoryTree que reemplace completamente a
+ - Hay que hacer una estructura DirectoryTree que reemplace completamente a
 Directory. No hay problema porque Directory solo se llama desde fileSys.
     Tiene que proveer create, find, delete, list. Y concurrencia.
-	Seria bueno modificar directory_entry para que almacene informacion como
-si la entrada es un archivo o un directorio
-	Seria bueno dejar de trabajar con arrays estaticos en raw_directory porque
-no se prestan como estructura de datos extensible. Lista enlazada?
 
-
-  - Tener en cuenta que no se rompa freeMap, ojo con los deadlocks, ver ojo arriba.
+ - Tener en cuenta que no se rompa freeMap, ojo con los deadlocks, ver ojo arriba.
 Seguramente sea bueno garantizar que al modificar directory siempre se tenga
 acceso a freeMap previamente y modificar writeAt para que no pida el freeMap en
 este caso.
 
 
-DING DING R**** ALERT DING DING
 Creamos DirectoryLockManager porque tener locks locales en RAM no arregla
 concurrencia en directorios. Es una estructura global que mantiene pares
 (sector, RW) e implementa Acquire y Release por sector. El sector es el
 sector en disco del fileheader del directorio.
-
-	- Cambiar ReaderWriter en Directory por DirectoryLockManager.

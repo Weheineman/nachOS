@@ -1,0 +1,4 @@
+Un directorio solo se puede borrar si esta vacio
+Se puede borrar un directorio que sea current path de otro thread (y yo que onda?)
+a ese thread no le pasa nada. Si intenta hacer operaciones, dan error, ls da
+vacio y cd .. anda piola.

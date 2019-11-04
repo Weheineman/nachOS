@@ -1,10 +1,6 @@
 /// Data structures to manage a UNIX-like directory of file paths.
 ///
-/// A directory is a table of pairs: *<file path, sector #>*, giving the path
-/// of each file in the directory, and where to find its file header (the
-/// data structure describing where to find the file's data blocks) on disk.
-///
-/// We assume mutual exclusion is provided by the caller.
+/// A directory is a linked list of DirectoryEntry nodes.
 ///
 /// Copyright (c) 1992-1993 The Regents of the University of California.
 ///               2016-2017 Docentes de la Universidad Nacional de Rosario.

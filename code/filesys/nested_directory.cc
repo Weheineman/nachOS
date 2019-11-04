@@ -188,26 +188,6 @@ Directory::List() const
     LockedList();
 }
 
-/// List all the file names in the directory, their `FileHeader` locations,
-/// and the contents of each file.  For debugging.
-void
-Directory::Print() const
-{
-    FileHeader *hdr = new FileHeader;
-
-    printf("Directory contents:\n");
-    for (unsigned i = 0; i < raw.tableSize; i++)
-        if (raw.table[i].inUse) {
-            printf("\nDirectory entry.\n"
-                   "    Name: %s\n"
-                   "    Sector: %u\n",
-                   raw.table[i].name, raw.table[i].sector);
-            hdr->FetchFrom(raw.table[i].sector);
-            hdr->Print();
-        }
-    printf("\n");
-    delete hdr;
-}
 
 // Interface for the ReaderWriter lock
 void
@@ -430,6 +410,51 @@ bool LockedRemove(const char *path){
     return true;
 }
 
+
+/// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+/// Print the names of all the files in the directory.
+void LockedList(const char *path){
+    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+    // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
+    bool atBottomLevel = false;
+
+    while (not atBottomLevel or not IsBottomLevel(path)){
+        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+        DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+        // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
+        if(strlen(path) == 0)
+            atBottomLevel = true;
+
+        // The path has an invalid directory.
+        if(not entry -> isDirectory){
+            // GUIDIOS: Va printf aca?
+            printf("Invalid path on LockedList call\n");
+            return;
+        }
+
+        // Replace the data of the directory in RAM with the data of the
+        // directory one level below.
+        directoryLockManager -> AcquireRead(entry -> sector);
+        directoryLockManager -> ReleaseRead(sector);
+        sector = entry -> sector;
+
+        // Read the data from disk.
+        OpenFile *dirFile = new OpenFile(sector);
+        FetchFrom(dirFile);
+        delete dirFile;
+    }
+
+    // GUIDIOS: Va printf aca?
+    for(DirectoryEntry *current = first; current != nullptr;
+        current = current -> next)
+        printf("%s\n", current -> name);
+
+    delete [] currentLevel;
+    directoryLockManager -> ReleaseRead(sector);
+}
+
+
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Returns the directory entry corresponding to the given name at the
 /// current level.
@@ -445,7 +470,6 @@ Directory::LockedFindCurrent(const char *name)
     return nullptr;
 }
 
-// GUIDIOS: Y si nos kackean?
 // Removes '/' from the first position in the string.
 // Returns true if successful.
 // Returns false if there was no '/' at the first position.
@@ -487,7 +511,7 @@ Directory::IsBottomLevel(char *path)
 char*
 Directory::SplitCurrentLevel(char *path)
 {
-    char* currentLevel = new char[FILE_NAME_MAX_LEN];
+    char* currentLevel[FILE_NAME_MAX_LEN];
 
     // The current level is the prefix up to the first '/' or
     // string terminator.
