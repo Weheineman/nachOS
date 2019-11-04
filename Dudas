@@ -1,10 +1,24 @@
 HAY QUE COMENTAR CODIGO DEL EJERCICIO 1 :^)
 
-EN QUE ANDAMOS
-Agregamos reader/writer a freeMap en file_system. Falta:
-    Cambiar todos los accesos a freemap por llamadas a acquireFreeMap y releaseFreeMap
-    Hacer algo similar con directory que con freeMap, es decir, acquireDirectory
-y releaseDirectory
+Update 04/11
+Hay que preguntar qué hacemos con el parsing de direcciones en el sistema de archivos para las syscalls.
+Por ahora, nuestra suposicion es: - Si el filename empieza con una barra (el root) entonces suponemos que el pathing es global.
+                                  - Si el filename empieza con ./ , ../ o directamente un nombre, suponemos que es relativo a la posición del Thread.
+Con respecto a la interfaz de Threads: Tendría que tener alguna especie de getPath y setPath.
+Se me ocurre handlear de dos formas distintas: - Podemos tener una especie de "lista" que sea un path y con eso nos las arreglamos para manejar bastante lindo el recorrer el árbol y hacer cosas como ../
+                                               - Podemos armarnos varios tokenizers y manejar el path como un string, laburando todo directamente a nivel de char y listo.
+                                               DING DING DING WE HAVE A WINNER: Listas doblemente enlazadas and fuck it
+Podemos tener una clase Path que nos permita hacer todas esas cositas bellas que queremos hacer.
+Métodos: FilePath(...)
+         Destructor()
+         FromString(char *pathString) ?
+         ToString() ?
+         RemoveFirstSlash() -> Ver si esto va a ser necesario con la implementacion nueva
+         IsBottomLevel() -> Dice si estás en el ultimo elemento del path
+         IsEmpty() ?
+         SplitCurrentLevel() -> Separa un path que no está en BottomLevel. Devuelve el string del nivel más cercano y cambia el path para que avance
+         Merge(...) -> Toma un string o un path y (devuelve un path?) con el mergeo de ambos. Esto va a ser útil para la implementación de las syscalls. 
+         
 
 Update 09/10
 Reader/Writer ya en el Makefile.
