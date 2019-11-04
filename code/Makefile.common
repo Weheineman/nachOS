@@ -149,6 +149,7 @@ FILESYS_HDR = ../filesys/directory.hh       \
               ../machine/disk.hh            \
               ../filesys/open_file_list.hh  \
               ../filesys/reader_writer.hh   \
+              ../filesys/directory_lock_manager.hh   \
               ../filesys/FileSystemTests/fs_test_Cases.hh
 FILESYS_SRC = ../filesys/directory.cc           \
               ../filesys/file_header.cc         \
@@ -159,8 +160,9 @@ FILESYS_SRC = ../filesys/directory.cc           \
               ../machine/disk.cc                \
               ../filesys/open_file_list.cc      \
               ../filesys/reader_writer.cc       \
+              ../filesys/directory_lock_manager.cc       \
               ../filesys/FileSystemTests/fs_test_Handler.cc    \
-              ../filesys/FileSystemTests/fs_test_Cases.cc    
+              ../filesys/FileSystemTests/fs_test_Cases.cc
 FILESYS_OBJ = directory.o            \
               file_header.o          \
               file_system.o          \
@@ -171,6 +173,7 @@ FILESYS_OBJ = directory.o            \
               open_file_list.o       \
               reader_writer.o        \
               fs_test_Handler.o      \
+              directory_lock_manager.o      \
               fs_test_Cases.o
 
 NETWORK_HDR = ../network/post.hh \
