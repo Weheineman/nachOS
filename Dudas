@@ -19,6 +19,11 @@ Métodos: FilePath(...)
          SplitCurrentLevel() -> Separa un path que no está en BottomLevel. Devuelve el string del nivel más cercano y cambia el path para que avance
          Merge(...) -> Toma un string o un path y (devuelve un path?) con el mergeo de ambos. Esto va a ser útil para la implementación de las syscalls. 
          
+Decisiones de código:
+ - FilePath asume que el string con el que lo construyen arranca con /.
+ - Preguntarle a los chicos todo el mambo de las barras al final, al principio, si van, si no, bla bla bla.
+
+
 
 Update 09/10
 Reader/Writer ya en el Makefile.

@@ -475,6 +475,7 @@ reader_writer.o: ../filesys/reader_writer.cc ../filesys/reader_writer.hh \
  ../filesys/file_system.hh ../filesys/open_file.hh ../lib/bitmap.hh \
  ../filesys/open_file_list.hh ../filesys/file_system.hh \
  ../machine/translation_entry.hh ../bin/noff.h ../lib/list.hh
+directory_lock_manager.o: ../filesys/directory_lock_manager.cc
 fs_test_Handler.o: ../filesys/FileSystemTests/fs_test_Handler.cc \
  ../filesys/FileSystemTests/fs_test_Cases.hh ../filesys/file_system.hh \
  ../filesys/open_file.hh ../lib/utility.hh ../lib/debug.hh \
@@ -507,6 +508,16 @@ fs_test_Cases.o: ../filesys/FileSystemTests/fs_test_Cases.cc \
  ../machine/timer.hh ../userprog/synch_console.hh ../machine/console.hh \
  ../vmem/tlb_handler.hh ../machine/mmu.hh ../filesys/synch_disk.hh \
  ../filesys/directory_lock_manager.hh
+file_path.o: ../filesys/file_path.cc ../filesys/file_path.hh \
+ ../filesys/open_file.hh ../lib/utility.hh ../lib/debug.hh \
+ ../machine/system_dep.hh ../filesys/reader_writer.hh ../threads/synch.hh \
+ ../threads/thread.hh ../userprog/syscall.h ../filesys/open_file.hh \
+ ../lib/table.hh ../lib/list.hh ../lib/utility.hh ../machine/machine.hh \
+ ../machine/exception_type.hh ../machine/mmu.hh ../machine/disk.hh \
+ ../machine/translation_entry.hh ../machine/single_stepper.hh \
+ ../userprog/address_space.hh ../filesys/file_system.hh ../lib/bitmap.hh \
+ ../filesys/open_file_list.hh ../filesys/file_system.hh \
+ ../machine/translation_entry.hh ../bin/noff.h ../lib/list.hh
 copyright.o: ../threads/copyright.h
 scheduler.o: ../threads/scheduler.hh ../threads/thread.hh \
  ../userprog/syscall.h ../filesys/open_file.hh ../lib/utility.hh \
@@ -718,6 +729,16 @@ reader_writer.o: ../filesys/reader_writer.hh ../threads/synch.hh \
  ../filesys/file_system.hh ../filesys/open_file.hh ../lib/bitmap.hh \
  ../filesys/open_file_list.hh ../filesys/file_system.hh \
  ../machine/translation_entry.hh ../bin/noff.h ../lib/list.hh
+directory_lock_manager.o: ../filesys/directory_lock_manager.hh \
+ ../filesys/reader_writer.hh ../threads/synch.hh ../threads/thread.hh \
+ ../userprog/syscall.h ../filesys/open_file.hh ../lib/utility.hh \
+ ../lib/debug.hh ../machine/system_dep.hh ../lib/table.hh ../lib/list.hh \
+ ../lib/utility.hh ../machine/machine.hh ../machine/exception_type.hh \
+ ../machine/mmu.hh ../machine/disk.hh ../machine/translation_entry.hh \
+ ../machine/single_stepper.hh ../userprog/address_space.hh \
+ ../filesys/file_system.hh ../filesys/open_file.hh ../lib/bitmap.hh \
+ ../filesys/open_file_list.hh ../filesys/file_system.hh \
+ ../machine/translation_entry.hh ../bin/noff.h ../lib/list.hh
 fs_test_Cases.o: ../filesys/FileSystemTests/fs_test_Cases.hh \
  ../filesys/file_system.hh ../filesys/open_file.hh ../lib/utility.hh \
  ../lib/debug.hh ../machine/system_dep.hh ../filesys/reader_writer.hh \
@@ -733,3 +754,13 @@ fs_test_Cases.o: ../filesys/FileSystemTests/fs_test_Cases.hh \
  ../machine/timer.hh ../userprog/synch_console.hh ../machine/console.hh \
  ../vmem/tlb_handler.hh ../machine/mmu.hh ../filesys/synch_disk.hh \
  ../filesys/directory_lock_manager.hh
+file_path.o: ../filesys/file_path.hh ../filesys/open_file.hh \
+ ../lib/utility.hh ../lib/debug.hh ../machine/system_dep.hh \
+ ../filesys/reader_writer.hh ../threads/synch.hh ../threads/thread.hh \
+ ../userprog/syscall.h ../filesys/open_file.hh ../lib/table.hh \
+ ../lib/list.hh ../lib/utility.hh ../machine/machine.hh \
+ ../machine/exception_type.hh ../machine/mmu.hh ../machine/disk.hh \
+ ../machine/translation_entry.hh ../machine/single_stepper.hh \
+ ../userprog/address_space.hh ../filesys/file_system.hh ../lib/bitmap.hh \
+ ../filesys/open_file_list.hh ../filesys/file_system.hh \
+ ../machine/translation_entry.hh ../bin/noff.h ../lib/list.hh
