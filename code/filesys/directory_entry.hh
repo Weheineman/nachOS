@@ -16,12 +16,19 @@
 /// access them directly.
 class DirectoryEntry {
 public:
-    /// Is this directory entry in use?
-    bool inUse;
+    DirectoryEntry(unsigned _sector, bool _isDirectory){
+        sector = _sector;
+        isDirectory = _isDirectory;
+    }
+
+    /// Is this entry a Directory?
+    bool isDirectory;
     /// Location on disk to find the `FileHeader` for this file.
     unsigned sector;
     /// Text name for file, with +1 for the trailing `'\0'`.
     char name[FILE_NAME_MAX_LEN + 1];
+    /// Pointer to the next DirectoryEntry
+    DirectoryEntry *next;
 };
 
 

@@ -56,13 +56,8 @@
 static const unsigned FREE_MAP_SECTOR = 0;
 static const unsigned DIRECTORY_SECTOR = 1;
 
-/// Initial file sizes for the bitmap and directory; until the file system
-/// supports extensible files, the directory size sets the maximum number of
-/// files that can be loaded onto the disk.
+/// Initial file sizes for the bitmap.
 static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
-static const unsigned NUM_DIR_ENTRIES = 10;
-static const unsigned DIRECTORY_FILE_SIZE = sizeof (DirectoryEntry)
-                                            * NUM_DIR_ENTRIES;
 
 /// Initialize the file system.  If `format == true`, the disk has nothing on
 /// it, and we need to initialize the disk to contain an empty directory, and
@@ -78,7 +73,7 @@ FileSystem::FileSystem(bool format)
     DEBUG('f', "Initializing the file system.\n");
     if (format) {
         Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
-        Directory  *directory = new Directory(NUM_DIR_ENTRIES);
+        Directory  *directory = new Directory(DIRECTORY_SECTOR);
         FileHeader *mapHeader = new FileHeader;
         FileHeader *dirHeader = new FileHeader;
 
@@ -93,7 +88,7 @@ FileSystem::FileSystem(bool format)
         // of the directory and bitmap files.  There better be enough space!
 
         ASSERT(mapHeader->Allocate(freeMap, FREE_MAP_FILE_SIZE));
-        ASSERT(dirHeader->Allocate(freeMap, DIRECTORY_FILE_SIZE));
+        ASSERT(dirHeader->Allocate(freeMap, 0));
 
         // Flush the bitmap and directory `FileHeader`s back to disk.
         // We need to do this before we can `Open` the file, since open reads
@@ -189,7 +184,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
-    directory = new Directory(NUM_DIR_ENTRIES);
+    directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom(directoryFile);
 
     if (directory->Find(name) != -1)
@@ -231,7 +226,7 @@ FileSystem::Open(const char *name)
 {
     ASSERT(name != nullptr);
 
-    Directory *directory = new Directory(NUM_DIR_ENTRIES);
+    Directory *directory = new Directory(DIRECTORY_SECTOR);
     OpenFile  *openFile = nullptr;
     int        sector;
 
@@ -268,13 +263,13 @@ FileSystem::Remove(const char *name)
 
     bool result = true;
     openFileList -> AcquireListLock();
-    
+
     // If the file is open, we set its pendingRemove flag.
     // If not, we search for it in the file system and remove it.
     if(not openFileList -> SetUpRemoval(name))
         // Stop other processes from opening the file that will be deleted.
-        result = DeleteFromDisk(name);    
-    
+        result = DeleteFromDisk(name);
+
     openFileList -> ReleaseListLock();
     return result;
 
@@ -287,7 +282,7 @@ FileSystem::DeleteFromDisk(const char *name){
     FileHeader *fileHeader;
     int         sector;
 
-    directory = new Directory(NUM_DIR_ENTRIES);
+    directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom(directoryFile);
     sector = directory->Find(name);
     if (sector == -1) {
@@ -314,7 +309,7 @@ FileSystem::DeleteFromDisk(const char *name){
 void
 FileSystem::List()
 {
-    Directory *directory = new Directory(NUM_DIR_ENTRIES);
+    Directory *directory = new Directory(DIRECTORY_SECTOR);
 
     directory->FetchFrom(directoryFile);
     directory->List();
@@ -506,7 +501,7 @@ FileSystem::Print()
     FileHeader *bitHeader = new FileHeader;
     FileHeader *dirHeader = new FileHeader;
     Bitmap     *freeMap   = AcquireFreeMap(false);
-    Directory  *directory = new Directory(NUM_DIR_ENTRIES);
+    Directory  *directory = new Directory(DIRECTORY_SECTOR);
 
     printf("--------------------------------\n"
            "Bit map file header:\n\n");
@@ -523,7 +518,6 @@ FileSystem::Print()
 
     printf("--------------------------------\n");
     directory->FetchFrom(directoryFile);
-    directory->Print();
     printf("--------------------------------\n");
 
     delete bitHeader;

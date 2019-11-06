@@ -1,10 +1,6 @@
-/// Data structures to manage a UNIX-like directory of file names.
+/// Data structures to manage a UNIX-like directory of file paths.
 ///
-/// A directory is a table of pairs: *<file name, sector #>*, giving the name
-/// of each file in the directory, and where to find its file header (the
-/// data structure describing where to find the file's data blocks) on disk.
-///
-/// We assume mutual exclusion is provided by the caller.
+/// A directory is a linked list of DirectoryEntry nodes.
 ///
 /// Copyright (c) 1992-1993 The Regents of the University of California.
 ///               2016-2017 Docentes de la Universidad Nacional de Rosario.
@@ -15,7 +11,7 @@
 #define NACHOS_FILESYS_DIRECTORY__HH
 
 
-#include "raw_directory.hh"
+#include "directory_entry.hh"
 #include "open_file.hh"
 
 
@@ -30,9 +26,8 @@
 /// from/to disk.
 class Directory {
 public:
-
-    /// Initialize an empty directory with space for `size` files.
-    Directory(unsigned size);
+    /// Initialize an empty directory.
+    Directory(int _sector);
 
     /// De-allocate the directory.
     ~Directory();
@@ -43,34 +38,81 @@ public:
     /// Write modifications to directory contents back to disk.
     void WriteBack(OpenFile *file);
 
-    /// Find the sector number of the `FileHeader` for file: `name`.
-    int Find(const char *name);
+    /// Find the sector number of the `FileHeader` for file in the given path.
+    int Find(const char *path);
 
-    /// Add a file name into the directory.
-    bool Add(const char *name, int newSector);
+    /// Add a file or directory into the directory at the given path.
+    /// If isDirectory is true, a directory is added.
+    /// Otherwise, a non directory file is added.
+    bool Add(const char *path, int newSector, bool isDirectory);
 
     /// Remove a file from the directory.
-    bool Remove(const char *name);
+    bool Remove(const char *path);
 
     /// Print the names of all the files in the directory.
-    void List() const;
+    void List(const char *path);
 
-    /// Verbose print of the contents of the directory -- all the file names
+    /// Verbose print of the contents of the directory -- all the file paths
     /// and their contents.
     void Print() const;
 
-    /// Get the raw directory structure.
-    ///
-    /// NOTE: this should only be used by routines that operating on the file
-    /// system at a low level.
-    const RawDirectory *GetRaw() const;
+    // Interface for the ReaderWriter lock
+    void AcquireRead();
+
+    void AcquireWrite();
+
+    void ReleaseRead();
+
+    void ReleaseWrite();
+
+    // Returns true iff the current directory is empty.
+    bool IsEmpty();
 
 private:
-    RawDirectory raw;
+    DirectoryEntry *first, *last;
 
-    /// Find the index into the directory table corresponding to `name`.
-    int FindIndex(const char *name);
+    // Size of the linked list.
+    unsigned directorySize;
+
+    // Sector of the file header of the directory. Used as an argument for the
+    // DirectoryLockManager methods.
+    int sector;
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Find the sector number of the `FileHeader` for file in the given path.
+    int LockedFind(char *path);
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Add a file into the directory at the given path.
+    bool LockedAdd(char *path, int newSector, bool isDirectory);
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Remove a file from the directory.
+    bool LockedRemove(char *path);
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Print the names of all the files in the directory.
+    void LockedList(char *path);
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Returns the directory entry corresponding to the given name at the
+    /// current level.
+    /// If there isn't one, it returns a nullptr.
+    DirectoryEntry* LockedFindCurrent(const char *name);
+
+    // Removes '/' from the first position in the string.
+    // Returns true if successful.
+    // Returns false if there was no '/' at the first position.
+    bool RemoveFirstSlash(char *path);
+
+    // Returns true iff the path does not have more than one level:
+    //     "knuth" returns true
+    //     "knuth/books" returns false
+    bool IsBottomLevel(char *path);
+
+    // Returns the top level file name of the path and removes it from the path:
+    //     "knuth/books" returns "knuth" and changes path to "books"
+    char* SplitCurrentLevel(char *path);
 };
-
 
 #endif
