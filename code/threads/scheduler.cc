@@ -19,8 +19,6 @@
 
 
 #include "scheduler.hh"
-#include "system.hh"
-
 
 /// Initialize the lists of ready but not running threads to empty.
 Scheduler::Scheduler()

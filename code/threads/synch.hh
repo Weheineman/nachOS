@@ -20,8 +20,9 @@
 #define NACHOS_THREADS_SYNCH__HH
 
 
-#include "thread.hh"
 #include "lib/list.hh"
+#include "thread.hh"
+#include "system.hh"
 
 class Thread;
 

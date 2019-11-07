@@ -18,10 +18,6 @@
 
 
 #include "thread.hh"
-#include "switch.h"
-#include "synch.hh"
-#include "system.hh"
-#include "lib/utility.hh"
 
 
 /// This is put at the top of the execution stack, for detecting stack

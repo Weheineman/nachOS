@@ -12,8 +12,6 @@
 
 
 #include "open_file.hh"
-#include "file_header.hh"
-#include "threads/system.hh"
 
 
 /// Open a Nachos file for reading and writing.  Bring the file header into

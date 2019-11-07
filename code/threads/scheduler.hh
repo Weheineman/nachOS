@@ -13,6 +13,7 @@
 
 #include "thread.hh"
 #include "lib/list.hh"
+#include "system.hh"
 
 
 /// The following class defines the scheduler/dispatcher abstraction --

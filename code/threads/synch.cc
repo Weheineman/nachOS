@@ -23,7 +23,6 @@
 
 
 #include "synch.hh"
-#include "system.hh"
 
 
 /// Initialize a semaphore, so that it can be used for synchronization.
