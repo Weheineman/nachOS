@@ -46,7 +46,7 @@ FilePath::ToString(){
 bool
 FilePath::IsBottomLevel(){
 	if(IsEmpty())
-		return false;
+		return true;
 	return first -> next == nullptr;
 }
 

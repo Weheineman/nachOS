@@ -188,7 +188,12 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     if (position + numBytes > fileLength){
         unsigned extendSize = position + numBytes - fileLength;
 
+        DEBUG('f', "Fetching the freeMap to extend the file\n");
+
         Bitmap *freeMap = fileSystem -> AcquireFreeMap(true);
+
+        DEBUG('f', "Freemap acquired\n");
+
         if (not hdr -> Extend(freeMap, extendSize)){
             if(fileLock != nullptr)
                 fileLock -> ReleaseWrite();

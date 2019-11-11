@@ -1,3 +1,5 @@
+#include "directory_lock_manager.hh"
+
 DirectoryLockNode::DirectoryLockNode(int _sector)
 {
     sector = _sector;
@@ -8,7 +10,7 @@ DirectoryLockNode::DirectoryLockNode(int _sector)
 
 DirectoryLockNode::~DirectoryLockNode()
 {
-    free lock;
+    delete lock;
 }
 
 DirectoryLockManager::DirectoryLockManager()
@@ -43,7 +45,9 @@ void
 DirectoryLockManager::Acquire(int sector, bool writePermission)
 {
     managerLock -> Acquire();
+
     DirectoryLockNode *node = FindNode(sector);
+
     if(node == nullptr){
         // If the directory isn't in the list, it is added with the
         // corresponding permission taken.
@@ -54,9 +58,9 @@ DirectoryLockManager::Acquire(int sector, bool writePermission)
         managerLock -> Release();
 
         if(writePermission)
-            node -> AcquireWrite();
+            node -> lock -> AcquireWrite();
         else
-            node -> AcquireRead();
+            node -> lock -> AcquireRead();
 
         managerLock -> Acquire();
         node -> waiting--;
@@ -71,7 +75,7 @@ DirectoryLockManager::ReleaseRead(int sector)
 }
 
 void
-DirectoryLockManager::ReleaseRead(int sector)
+DirectoryLockManager::ReleaseWrite(int sector)
 {
     Release(sector, true);
 }
@@ -127,8 +131,13 @@ DirectoryLockManager::AddNode(int sector, bool writePermission)
     else
         newNode -> lock -> AcquireRead();
 
-    last -> next = newNode;
-    last = newNode;
+
+    if(last == nullptr)
+        first = last = newNode;
+    else{
+        last -> next = newNode;
+        last = newNode;
+    }
 }
 
 
@@ -136,12 +145,11 @@ DirectoryLockManager::AddNode(int sector, bool writePermission)
 void
 DirectoryLockManager::DeleteNode(DirectoryLockNode *target)
 {
+    DirectoryLockNode* previous = nullptr;
+
     //If the first item is to be deleted, advance the first pointer.
     if(first == target)
         first = first -> next;
-
-
-    DirectoryLockNode* previous = nullptr;
     else{
         for(previous = first; previous -> next != target;
             previous = previous -> next);

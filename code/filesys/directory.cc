@@ -98,6 +98,7 @@ void
 Directory::WriteBack(OpenFile *file)
 {
     // GUIDIOS: Solo escribe el nivel actual. Queremos una version recursiva?
+    // GUIDIOS: Vengo del futuro y creo que no.
 
     ASSERT(file != nullptr);
     // GUIDIOS: Si fuera necesario extender el archivo aca, tener cuidado
@@ -162,10 +163,15 @@ Directory::Add(const char *path, int newSector, bool isDirectory)
     char *myPath = new char [128];
     strcpy(myPath, path);
 
-    if(not RemoveFirstSlash(myPath))
-        return false;
+
+    DEBUG('f', "Calling RemoveFirstSlash on %s\n", myPath);
+
+    // if(not RemoveFirstSlash(myPath))
+    //     return false;
 
     AcquireWrite();
+
+    DEBUG('f', "Calling LockedAdd on %s\n", myPath);
 
     return LockedAdd(myPath, newSector, isDirectory);
 }
@@ -244,7 +250,8 @@ Directory::IsEmpty()
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Find the sector number of the `FileHeader` for file in the given path.
-int LockedFind(const char *path){
+int
+Directory::LockedFind(char *path){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
     int sectorNumber = -2;
 
@@ -288,7 +295,8 @@ int LockedFind(const char *path){
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Add a file into the directory at the given path.
-bool LockedAdd(const char *path, int newSector, bool isDirectory){
+bool
+Directory::LockedAdd(char *path, int newSector, bool isDirectory){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
     bool bottomLevel = IsBottomLevel(path);
 
@@ -345,7 +353,8 @@ bool LockedAdd(const char *path, int newSector, bool isDirectory){
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Remove a file from the directory.
-bool LockedRemove(const char *path){
+bool
+Directory::LockedRemove(char *path){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
     bool bottomLevel = IsBottomLevel(path);
 
@@ -390,7 +399,7 @@ bool LockedRemove(const char *path){
     bool isNonEmptyDir = false;
 
     if(target -> isDirectory){
-        Directory *targetDir = new Directory();
+        Directory *targetDir = new Directory(target -> sector);
         directoryLockManager -> AcquireRead(target -> sector);
         OpenFile *dirFile = new OpenFile(target -> sector);
         targetDir -> FetchFrom(dirFile);
@@ -422,7 +431,7 @@ bool LockedRemove(const char *path){
 
 	//If the last item is to be deleted, bring the last pointer one item back.
 	if(last == target)
-		last = aux;
+		last = current;
 
     directorySize--;
 
@@ -434,13 +443,16 @@ bool LockedRemove(const char *path){
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Print the names of all the files in the directory.
-void LockedList(const char *path){
+void
+Directory::LockedList(char *path){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+
     // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
-    bool atBottomLevel = false;
+    bool atBottomLevel = IsBottomLevel(path);
 
     while (not atBottomLevel or not IsBottomLevel(path)){
         strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+        DEBUG('f', "CurrLevel: %s \t Path: %s\n", currentLevel, path);
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
@@ -503,7 +515,7 @@ Directory::RemoveFirstSlash(char *path)
     // We have well behaved users who will not hack us :)
     unsigned length = strlen(path);
 
-    for(unsigned ind = 1; ind < length; ind++)
+    for(unsigned ind = 1; ind <= length; ind++)
         path[ind-1] = path[ind];
 
     return true;
@@ -532,7 +544,7 @@ Directory::IsBottomLevel(char *path)
 char*
 Directory::SplitCurrentLevel(char *path)
 {
-    char* currentLevel[FILE_NAME_MAX_LEN];
+    char *currentLevel = new char [FILE_NAME_MAX_LEN];
 
     // The current level is the prefix up to the first '/' or
     // string terminator.
@@ -554,4 +566,6 @@ Directory::SplitCurrentLevel(char *path)
     // Move the contents of path to eliminate the prefix that was split.
     for(unsigned pos = ind; pos < length; pos++)
         path[pos - ind] = path[pos];
+
+    return currentLevel;
 }

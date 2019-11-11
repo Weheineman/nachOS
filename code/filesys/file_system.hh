@@ -114,7 +114,7 @@ public:
     void List();
 
     /// Check the filesystem.
-    bool Check();
+    // bool Check();
 
     /// List all the files and their contents.
     void Print();

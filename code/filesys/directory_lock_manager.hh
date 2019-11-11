@@ -10,6 +10,10 @@
 
 class DirectoryLockNode{
 public:
+    DirectoryLockNode(int _sector);
+    ~DirectoryLockNode();
+
+
     int sector;
     ReaderWriter *lock;
     DirectoryLockNode *next;

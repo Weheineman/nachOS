@@ -4,7 +4,7 @@
 #include "open_file.hh"
 
 struct PathNode{
-	char name[FILENAME_NAME_MAX_LEN];
+	char name[FILE_NAME_MAX_LEN + 1];
 	PathNode *next, *prev;
 };
 
