@@ -20,8 +20,6 @@
 #define NACHOS_FILESYS_OPENFILE__HH
 
 #include "lib/utility.hh"
-#include "file_header.hh"
-#include "threads/system.hh"
 
 /// For simplicity, we assume file names are <= 32 characters long.
 const unsigned FILE_NAME_MAX_LEN = 32;

@@ -42,10 +42,6 @@
 // #include "lib/utility.hh"
 #include "userprog/syscall.h"
 #include "lib/table.hh"
-#include "switch.h"
-#include "synch.hh"
-#include "system.hh"
-#include "lib/utility.hh"
 #include "filesys/open_file.hh"
 
 

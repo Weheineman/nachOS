@@ -14,13 +14,9 @@
 #include "machine/interrupt.hh"
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
-#include "preemptive.hh"
 
 #ifdef USER_PROGRAM
-#include "userprog/debugger.hh"
-#include "userprog/exception.hh"
 #include "userprog/synch_console.hh"
-#include "lib/bitmap.hh"
 #endif
 
 /// Initialization and cleanup routines.

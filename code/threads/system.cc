@@ -7,7 +7,13 @@
 
 
 #include "system.hh"
+#include "preemptive.hh"
 
+#ifdef USER_PROGRAM
+#include "userprog/debugger.hh"
+#include "userprog/exception.hh"
+#include "lib/bitmap.hh"
+#endif
 
 /// This defines *all* of the global data structures used by Nachos.
 ///

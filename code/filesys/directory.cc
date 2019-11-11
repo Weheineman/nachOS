@@ -20,7 +20,11 @@
 
 
 #include "directory.hh"
-
+#include "directory_entry.hh"
+#include "file_header.hh"
+#include "open_file.hh"
+#include "lib/utility.hh"
+#include "threads/system.hh"
 
 /// Initialize a directory; initially, the directory is completely empty.  If
 /// the disk is being formatted, an empty directory is all we need, but

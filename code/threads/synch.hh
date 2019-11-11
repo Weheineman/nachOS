@@ -22,7 +22,6 @@
 
 #include "lib/list.hh"
 #include "thread.hh"
-#include "system.hh"
 
 class Thread;
 
