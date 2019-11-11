@@ -41,8 +41,12 @@
 // Uncomment if not including open_file.hh!
 // #include "lib/utility.hh"
 #include "userprog/syscall.h"
-#include "filesys/open_file.hh"
 #include "lib/table.hh"
+#include "switch.h"
+#include "synch.hh"
+#include "system.hh"
+#include "lib/utility.hh"
+#include "filesys/open_file.hh"
 
 
 #ifdef USER_PROGRAM
