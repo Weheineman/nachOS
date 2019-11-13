@@ -2,7 +2,7 @@
 
 // Creates a file path from a string that describes it,
 // or sets it to an empty path if NULL is given.
-FilePath::FilePath(char *pathString){
+FilePath::FilePath(const char *pathString){
 	first = last = nullptr;
 	if(pathString != nullptr and *pathString != '\0' and strcmp(pathString, "/"))
 		MergeString(pathString);
@@ -81,7 +81,7 @@ FilePath::SplitBottomLevel(){
 // - if the string represents a global path, sets the current path to it.
 // - if not, appends the path described by the string to the current path.
 void
-FilePath::Merge(char *pathString){
+FilePath::Merge(const char *pathString){
 	if(*pathString == '/')
 		Clear();
 
@@ -102,7 +102,9 @@ FilePath::Clear(){
 
 // Appends the path described by the given string to the current path.
 void
-FilePath::MergeString(char *pathString){
+FilePath::MergeString(const char *pathString_){
+	char *pathString = pathString_;
+
 	if(*pathString == '/')
 		pathString ++;
 

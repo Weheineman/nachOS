@@ -80,19 +80,19 @@ private:
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Find the sector number of the `FileHeader` for file in the given path.
-    int LockedFind(char *path);
+    int LockedFind(FilePath *path);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Add a file into the directory at the given path.
-    bool LockedAdd(char *path, int newSector, bool isDirectory);
+    bool LockedAdd(FilePath *path, int newSector, bool isDirectory);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Remove a file from the directory.
-    bool LockedRemove(char *path);
+    bool LockedRemove(FilePath *path);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Print the names of all the files in the directory.
-    void LockedList(char *path);
+    void LockedList(FilePath *path);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Returns the directory entry corresponding to the given name at the
@@ -100,19 +100,7 @@ private:
     /// If there isn't one, it returns a nullptr.
     DirectoryEntry* LockedFindCurrent(const char *name);
 
-    // Removes '/' from the first position in the string.
-    // Returns true if successful.
-    // Returns false if there was no '/' at the first position.
-    bool RemoveFirstSlash(char *path);
-
-    // Returns true iff the path does not have more than one level:
-    //     "knuth" returns true
-    //     "knuth/books" returns false
-    bool IsBottomLevel(char *path);
-
-    // Returns the top level file name of the path and removes it from the path:
-    //     "knuth/books" returns "knuth" and changes path to "books"
-    char* SplitCurrentLevel(char *path);
+    void
 };
 
 #endif

@@ -131,20 +131,16 @@ Directory::WriteBack(OpenFile *file)
 ///
 /// * `path` is the file path to look up.
 int
-Directory::Find(const char *path)
+Directory::Find(const char *path_)
 {
-    ASSERT(path != nullptr);
+    ASSERT(path_ != nullptr);
 
-    // GUIDIOS: Chanchada para testear, fixear cuando exista clase path.
-    char *myPath = new char [128];
-    strcpy(myPath, path);
-
-    // if(not RemoveFirstSlash(myPath))
-    //     return -1;
-
+    FilePath *path = new FilePath(path_);
     AcquireRead();
+    int result = LockedFind(path);
 
-    return LockedFind(myPath);
+    delete path;
+    return result;
 }
 
 /// Add a file into the directory.  Return true if successful; return false
@@ -154,20 +150,16 @@ Directory::Find(const char *path)
 /// * `path` is the path of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *path, int newSector, bool isDirectory)
+Directory::Add(const char *path_, int newSector, bool isDirectory)
 {
-    ASSERT(path != nullptr);
+    ASSERT(path_ != nullptr);
 
-    // GUIDIOS: Chanchada para testear, fixear cuando exista clase path.
-    char *myPath = new char [128];
-    strcpy(myPath, path);
-
-    // if(not RemoveFirstSlash(myPath))
-    //     return false;
-
+    FilePath *path = new FilePath(path_);
     AcquireWrite();
+    bool result = LockedAdd(path, newSector, isDirectory);
 
-    return LockedAdd(myPath, newSector, isDirectory);
+    delete path;
+    return result;
 }
 
 /// Remove a file from the directory.   Return true if successful;
@@ -175,38 +167,29 @@ Directory::Add(const char *path, int newSector, bool isDirectory)
 ///
 /// * `path` is the file path to be removed.
 bool
-Directory::Remove(const char *path)
+Directory::Remove(const char *path_)
 {
-    ASSERT(path != nullptr);
+    ASSERT(path_ != nullptr);
 
-    // GUIDIOS: Chanchada para testear, fixear cuando exista clase path.
-    char *myPath = new char [128];
-    strcpy(myPath, path);
-
-    if(not RemoveFirstSlash(myPath))
-        return false;
-
+    FilePath *path = new FilePath(path_);
     AcquireWrite();
+    bool result = LockedRemove(path);
 
-    return LockedRemove(myPath);
+    delete path;
+    return result;
 }
 
 /// List all the file names in the directory.
 void
-Directory::List(const char *path)
+Directory::List(const char *path_)
 {
-    ASSERT(path != nullptr);
+    ASSERT(path_ != nullptr);
 
-    // GUIDIOS: Chanchada para testear, fixear cuando exista clase path.
-    char *myPath = new char [128];
-    strcpy(myPath, path);
-
-    if(not RemoveFirstSlash(myPath))
-        return;
-
+    FilePath *path = new FilePath(path_);
     AcquireRead();
+    LockedList(path);
 
-    LockedList(myPath);
+    delete path;
 }
 
 
@@ -245,16 +228,19 @@ Directory::IsEmpty()
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Find the sector number of the `FileHeader` for file in the given path.
 int
-Directory::LockedFind(char *path){
-    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+Directory::LockedFind(FilePath *path){
+    char *currentLevel = nullptr;
     int sectorNumber = -2;
 
-    while (not IsBottomLevel(path)){
-        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
+    while (not path -> IsBottomLevel()){
+        if(currentLevel != nullptr)
+            delete [] currentLevel;
+
+        currentLevel = path -> SplitBottomLevel();
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
-        if(not entry -> isDirectory){
+        if(entry == nullptr or not entry -> isDirectory){
             sectorNumber = -1;
             break;
         }
@@ -270,6 +256,11 @@ Directory::LockedFind(char *path){
         FetchFrom(dirFile);
         delete dirFile;
     }
+
+    if(currentLevel != nullptr)
+        delete currentLevel;
+
+    currentLevel = path -> SplitBottomLevel();
 
     DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
@@ -290,7 +281,7 @@ Directory::LockedFind(char *path){
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Add a file into the directory at the given path.
 bool
-Directory::LockedAdd(char *path, int newSector, bool isDirectory){
+Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
     bool bottomLevel = IsBottomLevel(path);
 
@@ -300,7 +291,7 @@ Directory::LockedAdd(char *path, int newSector, bool isDirectory){
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
-        if(not entry -> isDirectory){
+        if(entry == nullptr or not entry -> isDirectory){
             delete [] currentLevel;
             directoryLockManager -> ReleaseRead(sector);
             return false;
@@ -351,7 +342,7 @@ Directory::LockedAdd(char *path, int newSector, bool isDirectory){
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Remove a file from the directory.
 bool
-Directory::LockedRemove(char *path){
+Directory::LockedRemove(FilePath *path){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
     bool bottomLevel = IsBottomLevel(path);
 
@@ -361,7 +352,7 @@ Directory::LockedRemove(char *path){
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
-        if(not entry -> isDirectory){
+        if(entry == nullptr or not entry -> isDirectory){
             delete [] currentLevel;
             directoryLockManager -> ReleaseRead(sector);
             return false;
@@ -441,7 +432,7 @@ Directory::LockedRemove(char *path){
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Print the names of all the files in the directory.
 void
-Directory::LockedList(char *path){
+Directory::LockedList(FilePath *path){
     char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
 
     // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
@@ -457,7 +448,7 @@ Directory::LockedList(char *path){
             atBottomLevel = true;
 
         // The path has an invalid directory.
-        if(not entry -> isDirectory){
+        if(entry == nullptr or not entry -> isDirectory){
             // GUIDIOS: Va printf aca?
             printf("Invalid path on LockedList call\n");
             return;
@@ -498,71 +489,4 @@ Directory::LockedFindCurrent(const char *name)
             return currentEntry;
 
     return nullptr;
-}
-
-// Removes '/' from the first position in the string.
-// Returns true if successful.
-// Returns false if there was no '/' at the first position.
-bool
-Directory::RemoveFirstSlash(char *path)
-{
-    if(path[0] != '/')
-        return false;
-
-    // We have well behaved users who will not hack us :)
-    unsigned length = strlen(path);
-
-    for(unsigned ind = 1; ind <= length; ind++)
-        path[ind-1] = path[ind];
-
-    return true;
-}
-
-// Returns true iff the path does not have more than one level:
-//     "knuth" returns true
-//     "knuth/books" returns false
-bool
-Directory::IsBottomLevel(char *path)
-{
-    // "filename/" has length at most FILE_NAME_MAX_LEN + 1
-    for(unsigned ind = 0; ind < FILE_NAME_MAX_LEN + 1; ind++){
-        if(path[ind] == '\0')
-            break;
-
-        if(path[ind] == '/')
-            return false;
-    }
-
-    return true;
-}
-
-// Returns the top level file name of the path and removes it from the path:
-//     "knuth/books" returns "knuth" and changes path to "books"
-char*
-Directory::SplitCurrentLevel(char *path)
-{
-    char *currentLevel = new char [FILE_NAME_MAX_LEN];
-
-    // The current level is the prefix up to the first '/' or
-    // string terminator.
-    unsigned ind = 0;
-    for(; ind < FILE_NAME_MAX_LEN; ind++){
-        if(path[ind] == '\0' or path[ind] == '/')
-            break;
-
-        currentLevel[ind] = path[ind];
-    }
-    currentLevel[ind] = '\0';
-
-    // We have well behaved users who will not hack us :)
-    unsigned length = strlen(path);
-
-    // Remove the trailing '/'
-    if(path[ind] == '/')    ind++;
-
-    // Move the contents of path to eliminate the prefix that was split.
-    for(unsigned pos = ind; pos < length; pos++)
-        path[pos - ind] = path[pos];
-
-    return currentLevel;
 }
