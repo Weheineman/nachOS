@@ -169,8 +169,9 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     ASSERT(from != nullptr);
     ASSERT(numBytes > 0);
 
-    if(fileLock != nullptr)
+    if(fileLock != nullptr){
         fileLock -> AcquireWrite();
+    }
 
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
@@ -188,17 +189,20 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     if (position + numBytes > fileLength){
         unsigned extendSize = position + numBytes - fileLength;
 
-        DEBUG('f', "Fetching the freeMap to extend the file\n");
+        // Fetch the bitmap containing the free disk sectors.
+        Bitmap *freeMap;
 
-        Bitmap *freeMap = fileSystem -> AcquireFreeMap(true);
-
-        DEBUG('f', "Freemap acquired\n");
+        // If the file is special, exclusive access is already guaranteed.
+        if(fileLock == nullptr)
+            freeMap = fileSystem -> GetCurrentFreeMap();
+        else
+            freeMap = fileSystem -> AcquireFreeMap();
 
         if (not hdr -> Extend(freeMap, extendSize)){
-            if(fileLock != nullptr)
+            if(fileLock != nullptr){
                 fileLock -> ReleaseWrite();
-
-            fileSystem -> ReleaseFreeMap(freeMap, true);
+                fileSystem -> ReleaseFreeMap(freeMap);
+            }
             return 0;
         }
 
@@ -206,12 +210,15 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
         // Write back the changes to disk.
         hdr -> WriteBack(sector);
-        fileSystem -> ReleaseFreeMap(freeMap, true);
 
+        // If exclusive freeMap access was requested in this function,
+        // it is revoked here.
+        if(fileLock != nullptr)
+            fileSystem -> ReleaseFreeMap(freeMap);
     }
 
     //numBytes = fileLength - position;
-    DEBUG('f', "HELLO! Writing %u bytes at %u, from file of length %u.\n",
+    DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
           numBytes, position, fileLength);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
@@ -241,6 +248,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
 
     if(fileLock != nullptr)
         fileLock -> ReleaseWrite();
+
+    DEBUG('f', "Writing successful. %d bytes written.\n", numBytes);
 
     return numBytes;
 }

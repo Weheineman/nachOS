@@ -13,6 +13,7 @@
 
 #include "directory_entry.hh"
 #include "open_file.hh"
+#include "file_path.hh"
 
 /// The following class defines a UNIX-like “directory”.  Each entry in the
 /// directory describes a file, and where to find it on disk.

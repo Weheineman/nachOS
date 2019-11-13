@@ -73,11 +73,10 @@ FileSystem::FileSystem(bool format)
     DEBUG('f', "Initializing the file system.\n");
 
     openFileList = new OpenFileList(this);
-    freeMapLock = new ReaderWriter;
-    directoryLock = new ReaderWriter;
+    freeMapLock = new Lock("freeMap");
 
     if (format) {
-        Bitmap     *freeMap   = new Bitmap(NUM_SECTORS);
+        freeMap   = new Bitmap(NUM_SECTORS);
         Directory  *directory = new Directory(DIRECTORY_SECTOR);
         FileHeader *mapHeader = new FileHeader;
         FileHeader *dirHeader = new FileHeader;
@@ -124,9 +123,6 @@ FileSystem::FileSystem(bool format)
 
         DEBUG('f', "Writing bitmap back to disk.\n");
         freeMap->WriteBack(freeMapFile);     // flush changes to disk
-
-        freeMapLock -> AcquireWrite();
-        freeMapLock -> ReleaseWrite();
 
         DEBUG('f', "Writing directory back to disk.\n");
         directory->WriteBack(directoryFile);
@@ -189,7 +185,6 @@ FileSystem::Create(const char *name, unsigned initialSize)
     ASSERT(name != nullptr);
 
     Directory  *directory;
-    Bitmap     *freeMap;
     FileHeader *header;
     int         sector;
     bool        success;
@@ -205,14 +200,16 @@ FileSystem::Create(const char *name, unsigned initialSize)
 
     DEBUG('f', "Calling directory -> Find()\n");
     if (directory->Find(myName) != -1)
-        success = false, DEBUG('f', "File already in dir\n");  // File is already in directory.
+        success = false;  // File is already in directory.
     else {
-        freeMap = AcquireFreeMap(true);
+        // Redundant because AcquireFreeMap already sets the value of freeMap, but
+        // consistent with the use of freeMap outside of FileSystem.
+        freeMap = AcquireFreeMap();
         sector = freeMap->Find();  // Find a sector to hold the file header.
         if (sector == -1)
-            success = false, DEBUG('f', "No free block\n");  // No free block for file header.
+            success = false;    // No free block for file header.
         else if (!directory->Add(myName, sector, false))
-            success = false, DEBUG('f', "No space in dir\n");  // No space in directory.
+            success = false;  // No space in directory.
         else {
             header = new FileHeader;
             if (!header->Allocate(freeMap, initialSize))
@@ -222,12 +219,13 @@ FileSystem::Create(const char *name, unsigned initialSize)
                 // Everthing worked, flush all changes back to disk.
                 header->WriteBack(sector);
                 directory->WriteBack(directoryFile);
-                ReleaseFreeMap(freeMap, true);
+                ReleaseFreeMap(freeMap);
             }
             delete header;
         }
     }
     delete directory;
+
     return success;
 }
 
@@ -250,19 +248,19 @@ FileSystem::Open(const char *name)
     DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom(directoryFile);
 
-
     // GUIDIOS: Chanchadita, cambiar cuando usemos path.
     char *myName = new char [FILE_NAME_MAX_LEN + 1];
     strcpy(myName, name);
 
+    DEBUG('f', "Calling dir::find with %s\n", myName);
     sector = directory->Find(myName);
     if (sector >= 0){
         ReaderWriter* newFileRW = openFileList -> AddOpenFile(name);
-        if(newFileRW)
+        if(newFileRW != nullptr)
             openFile = new OpenFile(sector, name, newFileRW);  // `name` was found in directory.
-
     }
 
+    DEBUG('f', "Open anduvo, %d.\n", openFile == nullptr);
     delete directory;
     return openFile;  // Return null if not found.
 }
@@ -301,7 +299,6 @@ FileSystem::Remove(const char *name)
 bool
 FileSystem::DeleteFromDisk(const char *name){
     Directory  *directory;
-    Bitmap     *freeMap;
     FileHeader *fileHeader;
     int         sector;
 
@@ -320,13 +317,15 @@ FileSystem::DeleteFromDisk(const char *name){
     fileHeader = new FileHeader;
     fileHeader->FetchFrom(sector);
 
-    freeMap = AcquireFreeMap(true);
+    // Redundant because AcquireFreeMap already sets the value of freeMap, but
+    // consistent with the use of freeMap outside of FileSystem.
+    freeMap = AcquireFreeMap();
 
     fileHeader->Deallocate(freeMap);  // Remove data blocks.
     freeMap->Clear(sector);           // Remove header block.
     directory->Remove(name);
 
-    ReleaseFreeMap(freeMap, true);      // Flush to disk.
+    ReleaseFreeMap(freeMap);              // Flush to disk.
     directory->WriteBack(directoryFile);  // Flush to disk.
     delete fileHeader;
     delete directory;
@@ -537,7 +536,7 @@ FileSystem::Print()
 
     FileHeader *bitHeader = new FileHeader;
     FileHeader *dirHeader = new FileHeader;
-    Bitmap     *freeMap   = AcquireFreeMap(false);
+    freeMap   = AcquireFreeMap();
     Directory  *directory = new Directory(DIRECTORY_SECTOR);
 
     printf("--------------------------------\n"
@@ -559,38 +558,42 @@ FileSystem::Print()
 
     delete bitHeader;
     delete dirHeader;
-    ReleaseFreeMap(freeMap, false);
+    ReleaseFreeMap(freeMap);
     delete directory;
 }
 
-/// Returns the bitmap of free sectors on the disk granting reading or
+/// Returns the bitmap of free sectors on the disk granting reading and
 /// writing exclusivity.
 Bitmap *
-FileSystem::AcquireFreeMap(bool writeAccess)
+FileSystem::AcquireFreeMap()
 {
-    if(writeAccess)
-        freeMapLock -> AcquireWrite();
-    else
-        freeMapLock -> AcquireRead();
+    freeMapLock -> Acquire();
 
-    Bitmap* freeMap = new Bitmap(NUM_SECTORS);
+    freeMap = new Bitmap(NUM_SECTORS);
     freeMap -> FetchFrom(freeMapFile);
+
     return freeMap;
 }
 
-/// Marks the end of the freeMap usage. The lock is released and the
-/// memory is freed. If write access was granted, the changes are saved
-/// to disk
-void
-FileSystem::ReleaseFreeMap(Bitmap *freeMap, bool writeAccess)
-{
-    if(writeAccess){
-        freeMap -> WriteBack(freeMapFile);
-        freeMapLock -> ReleaseWrite();
-    }else
-        freeMapLock -> ReleaseRead();
+/// Returns the current value of the freeMap pointer. No exclusive access
+/// is guaranteed.
+Bitmap*
+FileSystem::GetCurrentFreeMap(){
+    return freeMap;
+}
 
+/// Marks the end of the freeMap usage. The lock is released, the
+/// memory is freed and the changes are saved to disk.
+void
+FileSystem::ReleaseFreeMap(Bitmap *freeMap_)
+{
+    ASSERT(freeMap_ == freeMap);
+
+    freeMap -> WriteBack(freeMapFile);
     delete freeMap;
+    freeMap = nullptr;
+
+    freeMapLock -> Release();
 }
 
 void

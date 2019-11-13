@@ -98,11 +98,11 @@ Directory::WriteBack(OpenFile *file)
 {
     // GUIDIOS: Solo escribe el nivel actual. Queremos una version recursiva?
     // GUIDIOS: Vengo del futuro y creo que no.
+    // GUIDIOS: Yo tambien, y soy mas inteligente. No hace falta, pero
+    // estaria re piola que se haga el WriteBack en cada ReleaseWrite
+    // y que no lo haga el fileSystem.
 
     ASSERT(file != nullptr);
-    // GUIDIOS: Si fuera necesario extender el archivo aca, tener cuidado
-    // con tomar el freeMap dentro de WriteAt
-    // SI, HAY QUE CAMBIAR WRITEAT
 
     AcquireRead();
 
@@ -139,8 +139,8 @@ Directory::Find(const char *path)
     char *myPath = new char [128];
     strcpy(myPath, path);
 
-    if(not RemoveFirstSlash(myPath))
-        return -1;
+    // if(not RemoveFirstSlash(myPath))
+    //     return -1;
 
     AcquireRead();
 
@@ -162,15 +162,10 @@ Directory::Add(const char *path, int newSector, bool isDirectory)
     char *myPath = new char [128];
     strcpy(myPath, path);
 
-
-    DEBUG('f', "Calling RemoveFirstSlash on %s\n", myPath);
-
     // if(not RemoveFirstSlash(myPath))
     //     return false;
 
     AcquireWrite();
-
-    DEBUG('f', "Calling LockedAdd on %s\n", myPath);
 
     return LockedAdd(myPath, newSector, isDirectory);
 }
@@ -244,7 +239,7 @@ Directory::ReleaseWrite()
 bool
 Directory::IsEmpty()
 {
-    return directorySize == 0;
+    return first == nullptr;
 }
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
@@ -343,6 +338,9 @@ Directory::LockedAdd(char *path, int newSector, bool isDirectory){
     }
 
     directorySize++;
+
+
+    DEBUG('f', "LockedAdd finished.\n");
 
     delete [] currentLevel;
     directoryLockManager -> ReleaseWrite(sector);

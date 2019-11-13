@@ -81,11 +81,12 @@ public:
 
 #else  // FILESYS
 
-#include "open_file_list.hh"
-
 class OpenFile;
 class Bitmap;
 class OpenFileList;
+class Lock;
+
+#include "open_file_list.hh"
 
 class FileSystem {
     //We know how to code properly, we swear.
@@ -119,14 +120,17 @@ public:
     /// List all the files and their contents.
     void Print();
 
-    /// Returns the bitmap of free sectors on the disk granting reading or
+    /// Returns the bitmap of free sectors on the disk granting reading and
     /// writing exclusivity.
-    Bitmap* AcquireFreeMap(bool writeAccess);
+    Bitmap* AcquireFreeMap();
 
-    /// Marks the end of the freeMap usage. The lock is released and the
-    /// memory is freed. If write access was granted, the changes are saved
-    /// to disk.
-    void ReleaseFreeMap(Bitmap *freeMap, bool writeAccess);
+    /// Returns the current value of the freeMap pointer. No exclusive access
+    /// is guaranteed.
+    Bitmap* GetCurrentFreeMap();
+
+    /// Marks the end of the freeMap usage. The lock is released, the
+    /// memory is freed and the changes are saved to disk.
+    void ReleaseFreeMap(Bitmap *freeMap);
 
     void CloseFile(const char *name);
 
@@ -143,7 +147,8 @@ private:
                               ///< represented as a file.
     OpenFileList *openFileList; ///< Structure containing metadata about the
                                 ///< open files
-    ReaderWriter *freeMapLock, *directoryLock;
+    Bitmap *freeMap; ///< Bit map of free disk blocks.
+    Lock *freeMapLock; ///< Lock to guarantee exclusive freeMap access.
 };
 
 #endif
