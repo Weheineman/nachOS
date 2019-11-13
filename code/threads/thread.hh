@@ -53,6 +53,13 @@ class AddressSpace;
 class OpenFile;
 #endif
 
+#ifdef FILESYS
+#include "filesys/file_path.hh"
+class FilePath;
+#endif
+
+
+
 /// To avoid mutual includes involving this file and synch.hh
 class Port;
 
@@ -241,6 +248,20 @@ public:
     void RestoreUserState();
 
 #endif
+
+#ifdef FILESYS
+
+public:
+	// Returns a copy of the thread path.
+	FilePath *GetPath();
+	// Stores a copy of the given path as the new thread path.
+	void SetPath(FilePath *path);
+
+private:
+	FilePath *path;
+	
+#endif
+
 };
 
 /// Magical machine-dependent routines, defined in `switch.s`.

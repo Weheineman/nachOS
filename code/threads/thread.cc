@@ -75,6 +75,11 @@ Thread::Thread(const char *threadName, bool enableJoin_, int priority_)
     // Add this thread to the userprog thread table (declared in system.cc)
     spaceId = threadTable -> Add(this);
 #endif
+
+#ifdef FILESYS
+	path = new FilePath(nullptr);
+#endif
+
 }
 
 /// De-allocate a thread.
@@ -103,6 +108,11 @@ Thread::~Thread()
         delete fileTable;
         delete space;
     #endif
+    
+    #ifdef FILESYS
+		path -> Clear();
+    #endif
+    
 
     delete [] name;
 }
@@ -465,3 +475,27 @@ Thread::RestoreUserState()
 }
 
 #endif
+
+
+#ifdef FILESYS
+// Returns a copy of the thread path.	
+FilePath *
+Thread::GetPath(){
+	char *pathString = path -> ToString();
+	FilePath *result = new FilePath(pathString);
+	
+	delete [] pathString;
+	return result;
+}
+
+// Stores a copy of the given path as the new thread path.
+void 
+Thread::SetPath(FilePath *pathArg){
+	delete path;
+	char *pathString = pathArg -> ToString();
+	path = new FilePath(pathString);
+	
+	delete [] pathString;
+}
+#endif
+
