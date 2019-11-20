@@ -44,13 +44,21 @@ void TestSimpleManyFiles(){
 		}
 	}
 
-	delete openFile1;
-	delete openFile2;
+	if(not fileSystem -> Remove(file1))
+		printf("Unable to remove test file %s\n", file1);
 	
-	if(i == count)
-		printf("--- TestSimpleManyFiles successful!\n\n\n");
-	else
-		printf("!!!! TestSimpleManyFiles unsuccessful: Writers failed to write correctly.\n\n\n");
+	else if(not fileSystem -> Remove(file2))
+		printf("Unable to remove test file %s\n", file2);
+
+	else{
+		delete openFile1;
+		delete openFile2;
+		
+		if(i == count)
+			printf("--- TestSimpleManyFiles successful!\n\n\n");
+		else
+			printf("!!!! TestSimpleManyFiles unsuccessful: Writers failed to write correctly.\n\n\n");
+	}
 }
 
 
