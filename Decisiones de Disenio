@@ -1,3 +1,9 @@
+Creamos DirectoryLockManager porque tener locks locales en RAM no arregla
+concurrencia en directorios. Es una estructura global que mantiene pares
+(sector, RW) e implementa Acquire y Release por sector. El sector es el
+sector en disco del fileheader del directorio.
+
+
 Un directorio solo se puede borrar si esta vacio
 Se puede borrar un directorio que sea current path de otro thread (y yo que onda?)
 a ese thread no le pasa nada. Si intenta hacer operaciones, dan error, ls da

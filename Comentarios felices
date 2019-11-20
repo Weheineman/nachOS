@@ -20,20 +20,5 @@ Roadmap
  implementaciones para que no solo pasen el nombre del archivo como argumento a
  las llamadas fileSys, sino que la ruta completa (strconcat?).
 
- - Hay que implementar cd. Chequear que el directorio destino sea valido.
- No importa si el current directory del thread es invalido.
-
- - Hay que hacer una estructura DirectoryTree que reemplace completamente a
-Directory. No hay problema porque Directory solo se llama desde fileSys.
-    Tiene que proveer create, find, delete, list. Y concurrencia.
-
- - Tener en cuenta que no se rompa freeMap, ojo con los deadlocks, ver ojo arriba.
-Seguramente sea bueno garantizar que al modificar directory siempre se tenga
-acceso a freeMap previamente y modificar writeAt para que no pida el freeMap en
-este caso.
-
-
-Creamos DirectoryLockManager porque tener locks locales en RAM no arregla
-concurrencia en directorios. Es una estructura global que mantiene pares
-(sector, RW) e implementa Acquire y Release por sector. El sector es el
-sector en disco del fileheader del directorio.
+ - En filepath esta bien que los metodos que devuelven strings devuelvan char*
+ y no const char *?

@@ -118,11 +118,11 @@ main(int argc, char **argv)
         }
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {          // Run a user program.
-			
-			//Synch Console setup here and not in Initialize to avoid 
+
+			//Synch Console setup here and not in Initialize to avoid
 			//issues with any of the console tests.
 			synchConsole = new SynchConsole(NULL, NULL);
-            
+
             ASSERT(argc > 1);
             StartProcess(*(argv + 1));
             argCount = 2;
@@ -150,19 +150,19 @@ main(int argc, char **argv)
                                 // input.
         }
 #ifdef DEMAND_LOADING
-	if (!strcmp(*argv, "-tsp")) { // Run a test with sequential processes.			
-			//Synch Console setup here and not in Initialize to avoid 
+	if (!strcmp(*argv, "-tsp")) { // Run a test with sequential processes.
+			//Synch Console setup here and not in Initialize to avoid
 			//issues with any of the console tests.
 			synchConsole = new SynchConsole(NULL, NULL);
-            
+
             ASSERT(argc > 1);
             TestSequentialProcesses(atoi(*(argv + 1)));
             argCount = 2;
     } else if(!strcmp(*argv, "-tcp")){ // Run a test with concurrent processes.
-			//Synch Console setup here and not in Initialize to avoid 
+			//Synch Console setup here and not in Initialize to avoid
 			//issues with any of the console tests.
 			synchConsole = new SynchConsole(NULL, NULL);
-            
+
             ASSERT(argc > 1);
             TestConcurrentProcesses(atoi(*(argv + 1)));
             argCount = 2;
@@ -198,7 +198,7 @@ main(int argc, char **argv)
 			FileSystemTestHandler();
 		  else if (!strcmp(*argv, "-dt"))    // Directory concurrency tests.
 			FileSystemTestHandler();
-			  
+
 #endif
 #ifdef NETWORK
         if (!strcmp(*argv, "-tn")) {

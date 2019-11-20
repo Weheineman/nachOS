@@ -16,9 +16,10 @@
 /// access them directly.
 class DirectoryEntry {
 public:
-    DirectoryEntry(unsigned _sector, bool _isDirectory){
+    DirectoryEntry(unsigned _sector, bool _isDirectory, const char * _name){
         sector = _sector;
         isDirectory = _isDirectory;
+        strncpy(name, _name, FILE_NAME_MAX_LEN);
     }
 
     /// Is this entry a Directory?

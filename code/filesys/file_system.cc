@@ -49,13 +49,6 @@
 #include "lib/bitmap.hh"
 #include "machine/disk.hh"
 
-
-/// Sectors containing the file headers for the bitmap of free sectors, and
-/// the directory of files.  These file headers are placed in well-known
-/// sectors, so that they can be located on boot-up.
-static const unsigned FREE_MAP_SECTOR = 0;
-static const unsigned DIRECTORY_SECTOR = 1;
-
 /// Initial file sizes for the bitmap.
 static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
 
@@ -336,20 +329,21 @@ FileSystem::DeleteFromDisk(const char *name){
 /// resulting in merging the thread path with the relative one is
 /// valid in the file system. If so, then it also sets the thread path to it.
 bool ChangeDirectory(Thread *thread, const char *relativePath){
-	/// Falta el lock stuff y qué sé yo.
-	FilePath *threadPath = thread -> GetPath();
-	threadPath -> Merge(relativePath);
-	
-	char *newPath = threadPath -> ToString();
-	bool dirFound = (Find(newPath) != -1);
-	
-	if(dirFound)
-		thread -> SetPath(threadPath);
-	else
-		delete threadPath;
-		
-	delete [] newPath;
-	return dirFound;	
+	/// GUIDIOS: Falta el lock stuff y qué sé yo.
+    return true;
+	// FilePath *threadPath = thread -> GetPath();
+	// threadPath -> Merge(relativePath);
+    //
+	// char *newPath = threadPath -> ToString();
+	// bool dirFound = (Find(newPath) != -1);
+    //
+	// if(dirFound)
+	// 	thread -> SetPath(threadPath);
+	// else
+	// 	delete threadPath;
+    //
+	// delete [] newPath;
+	// return dirFound;
 }
 
 /// List all the files in the file system directory.

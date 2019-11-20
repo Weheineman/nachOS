@@ -25,6 +25,7 @@
 #include "open_file.hh"
 #include "lib/utility.hh"
 #include "threads/system.hh"
+#include "file_system.hh"
 
 /// Initialize a directory; initially, the directory is completely empty.  If
 /// the disk is being formatted, an empty directory is all we need, but
@@ -75,7 +76,7 @@ Directory::FetchFrom(OpenFile *file)
 
         // The constructor is called with dummy values, since they will be
         // overwritten.
-        DirectoryEntry *newDirEntry = new DirectoryEntry(0, true);
+        DirectoryEntry *newDirEntry = new DirectoryEntry(0, true, "");
         file -> ReadAt((char*) newDirEntry, sizeof(DirectoryEntry), readPos);
 
         newDirEntry -> next = nullptr;
@@ -229,6 +230,10 @@ Directory::IsEmpty()
 /// Find the sector number of the `FileHeader` for file in the given path.
 int
 Directory::LockedFind(FilePath *path){
+    // If the path is root, return the hard coded sector.
+    if(path -> IsEmpty())
+        return DIRECTORY_SECTOR;
+
     char *currentLevel = nullptr;
 
     // Initialize to a value that isn't a sector number or an error.
@@ -260,7 +265,7 @@ Directory::LockedFind(FilePath *path){
     }
 
     if(currentLevel != nullptr)
-        delete currentLevel;
+        delete [] currentLevel;
 
     currentLevel = path -> SplitBottomLevel();
 
@@ -284,11 +289,17 @@ Directory::LockedFind(FilePath *path){
 /// Add a file into the directory at the given path.
 bool
 Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
+    // The root folder cannot be created.
+    if(path -> IsEmpty())
+        return false;
+
     char *currentLevel = nullptr;
 
-    while (not bottomLevel){
-        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
-        bottomLevel = IsBottomLevel(path);
+    while (not path -> IsBottomLevel()){
+        if(currentLevel != nullptr)
+            delete [] currentLevel;
+
+        currentLevel = path -> SplitBottomLevel();
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
@@ -300,7 +311,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
 
         // Replace the data of the directory in RAM with the data of the
         // directory one level below.
-        if(bottomLevel)
+        if(path -> IsBottomLevel())
             directoryLockManager -> AcquireWrite(entry -> sector);
         else
             directoryLockManager -> AcquireRead(entry -> sector);
@@ -314,14 +325,21 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         delete dirFile;
     }
 
+    if(currentLevel != nullptr)
+        delete [] currentLevel;
+
+    currentLevel = path -> SplitBottomLevel();
+
     // The file already exists.
-    if(LockedFindCurrent(path) != nullptr){
+    if(LockedFindCurrent(currentLevel) != nullptr){
         delete [] currentLevel;
         directoryLockManager -> ReleaseWrite(sector);
         return false;
     }
 
-    DirectoryEntry *newEntry = new DirectoryEntry(newSector, isDirectory);
+    DirectoryEntry *newEntry =
+                    new DirectoryEntry(newSector, isDirectory, currentLevel);
+
     if(IsEmpty())
         first = last = newEntry;
     else{
@@ -330,9 +348,6 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     }
 
     directorySize++;
-
-
-    DEBUG('f', "LockedAdd finished.\n");
 
     delete [] currentLevel;
     directoryLockManager -> ReleaseWrite(sector);
@@ -344,12 +359,17 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
 /// Remove a file from the directory.
 bool
 Directory::LockedRemove(FilePath *path){
-    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
-    bool bottomLevel = IsBottomLevel(path);
+    // The root folder cannot be removed.
+    if(path -> IsEmpty())
+        return false;
 
-    while (not bottomLevel){
-        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
-        bottomLevel = IsBottomLevel(path);
+    char *currentLevel = nullptr;
+
+    while (not path -> IsBottomLevel()){
+        if(currentLevel != nullptr)
+            delete [] currentLevel;
+
+        currentLevel = path -> SplitBottomLevel();
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
@@ -361,7 +381,7 @@ Directory::LockedRemove(FilePath *path){
 
         // Replace the data of the directory in RAM with the data of the
         // directory one level below.
-        if(bottomLevel)
+        if(path -> IsBottomLevel())
             directoryLockManager -> AcquireWrite(entry -> sector);
         else
             directoryLockManager -> AcquireRead(entry -> sector);
@@ -375,7 +395,12 @@ Directory::LockedRemove(FilePath *path){
         delete dirFile;
     }
 
-    DirectoryEntry *target = LockedFindCurrent(path);
+    if(currentLevel != nullptr)
+        delete [] currentLevel;
+
+    currentLevel = path -> SplitBottomLevel();
+
+    DirectoryEntry *target = LockedFindCurrent(currentLevel);
 
     // File not found.
     if(target == nullptr){
@@ -434,24 +459,20 @@ Directory::LockedRemove(FilePath *path){
 /// Print the names of all the files in the directory.
 void
 Directory::LockedList(FilePath *path){
-    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
+    char *currentLevel = nullptr;
 
-    // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
-    bool atBottomLevel = IsBottomLevel(path);
+    while(not path -> IsEmpty()){
+        if(currentLevel != nullptr)
+            delete [] currentLevel;
 
-    while (not atBottomLevel or not IsBottomLevel(path)){
-        strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
-        DEBUG('f', "CurrLevel: %s \t Path: %s\n", currentLevel, path);
+        currentLevel = path -> SplitBottomLevel();
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
-
-        // GUIDIOS: Chanchada hasta que Tomy haga la clase Path
-        if(strlen(path) == 0)
-            atBottomLevel = true;
 
         // The path has an invalid directory.
         if(entry == nullptr or not entry -> isDirectory){
             // GUIDIOS: Va printf aca?
             printf("Invalid path on LockedList call\n");
+            delete [] currentLevel;
             return;
         }
 
@@ -472,7 +493,8 @@ Directory::LockedList(FilePath *path){
         current = current -> next)
         printf("%s\n", current -> name);
 
-    delete [] currentLevel;
+    if(currentLevel != nullptr)
+        delete [] currentLevel;
     directoryLockManager -> ReleaseRead(sector);
 }
 

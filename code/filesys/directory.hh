@@ -99,8 +99,6 @@ private:
     /// current level.
     /// If there isn't one, it returns a nullptr.
     DirectoryEntry* LockedFindCurrent(const char *name);
-
-    void
 };
 
 #endif

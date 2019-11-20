@@ -102,8 +102,7 @@ FilePath::Clear(){
 
 // Appends the path described by the given string to the current path.
 void
-FilePath::MergeString(const char *pathString_){
-	char *pathString = pathString_;
+FilePath::MergeString(const char *pathString){
 
 	if(*pathString == '/')
 		pathString ++;
