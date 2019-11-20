@@ -81,12 +81,14 @@ public:
 
 #else  // FILESYS
 
+#include "open_file_list.hh"
+#include "thread.hh"
+
+class Thread;
 class OpenFile;
 class Bitmap;
 class OpenFileList;
 class Lock;
-
-#include "open_file_list.hh"
 
 class FileSystem {
     //We know how to code properly, we swear.

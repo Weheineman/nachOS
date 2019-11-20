@@ -2,7 +2,7 @@
 // access to the file system by many threads simultaneously.
 
 #ifndef NACHOS_FILESYS_TEST_CASES__HH
-#define NACHOS_FILESYS_DIRECTORY__HH
+#define NACHOS_FILESYS_TEST_CASES__HH
 
 #include "filesys/file_system.hh"
 #include "lib/utility.hh"

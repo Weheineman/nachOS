@@ -194,7 +194,9 @@ main(int argc, char **argv)
             printf("\n");
         } else if (!strcmp(*argv, "-tf"))    // Performance test.
             PerformanceTest();
-		  else if (!strcmp(*argv, "-ct"))    // Concurrency tests.
+		  else if (!strcmp(*argv, "-ct"))    // File concurrency tests.
+			FileSystemTestHandler();
+		  else if (!strcmp(*argv, "-dt"))    // Directory concurrency tests.
 			FileSystemTestHandler();
 			  
 #endif
