@@ -332,6 +332,26 @@ FileSystem::DeleteFromDisk(const char *name){
     return true;
 }
 
+/// Given a thread and a relative path, returns if the global path
+/// resulting in merging the thread path with the relative one is
+/// valid in the file system. If so, then it also sets the thread path to it.
+bool ChangeDirectory(Thread *thread, const char *relativePath){
+	/// Falta el lock stuff y qué sé yo.
+	FilePath *threadPath = thread -> GetPath();
+	threadPath -> Merge(relativePath);
+	
+	char *newPath = threadPath -> ToString();
+	bool dirFound = (Find(newPath) != -1);
+	
+	if(dirFound)
+		thread -> SetPath(threadPath);
+	else
+		delete threadPath;
+		
+	delete [] newPath;
+	return dirFound;	
+}
+
 /// List all the files in the file system directory.
 void
 FileSystem::List()
