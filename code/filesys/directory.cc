@@ -230,6 +230,8 @@ Directory::IsEmpty()
 int
 Directory::LockedFind(FilePath *path){
     char *currentLevel = nullptr;
+
+    // Initialize to a value that isn't a sector number or an error.
     int sectorNumber = -2;
 
     while (not path -> IsBottomLevel()){
@@ -282,8 +284,7 @@ Directory::LockedFind(FilePath *path){
 /// Add a file into the directory at the given path.
 bool
 Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
-    char *currentLevel = new char [FILE_NAME_MAX_LEN + 1];
-    bool bottomLevel = IsBottomLevel(path);
+    char *currentLevel = nullptr;
 
     while (not bottomLevel){
         strncpy(currentLevel, SplitCurrentLevel(path), FILE_NAME_MAX_LEN+1);
@@ -483,6 +484,10 @@ Directory::LockedList(FilePath *path){
 DirectoryEntry*
 Directory::LockedFindCurrent(const char *name)
 {
+    // If the name is invalid, it cannot be found.
+    if(name == nullptr)
+        return nullptr;
+
     for(DirectoryEntry *currentEntry = first; currentEntry != nullptr;
         currentEntry = currentEntry -> next)
         if(strncmp(currentEntry->name, name, FILE_NAME_MAX_LEN) == 0)
