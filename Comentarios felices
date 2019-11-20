@@ -20,5 +20,8 @@ Roadmap
  implementaciones para que no solo pasen el nombre del archivo como argumento a
  las llamadas fileSys, sino que la ruta completa (strconcat?).
 
+ - Integrar directory y filesystem, hay que hacerle saber al filesys si debe
+ crear un directorio o no, mkdir es igual a create pero tiene true el isDirectory.
+
  - En filepath esta bien que los metodos que devuelven strings devuelvan char*
  y no const char *?

@@ -241,19 +241,14 @@ FileSystem::Open(const char *name)
     DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom(directoryFile);
 
-    // GUIDIOS: Chanchadita, cambiar cuando usemos path.
-    char *myName = new char [FILE_NAME_MAX_LEN + 1];
-    strcpy(myName, name);
-
-    DEBUG('f', "Calling dir::find with %s\n", myName);
-    sector = directory->Find(myName);
+    DEBUG('f', "Calling dir::find with %s\n", name);
+    sector = directory->Find(name);
     if (sector >= 0){
         ReaderWriter* newFileRW = openFileList -> AddOpenFile(name);
         if(newFileRW != nullptr)
             openFile = new OpenFile(sector, name, newFileRW);  // `name` was found in directory.
     }
 
-    DEBUG('f', "Open anduvo, %d.\n", openFile == nullptr);
     delete directory;
     return openFile;  // Return null if not found.
 }

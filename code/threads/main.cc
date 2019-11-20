@@ -82,6 +82,7 @@ void TestSequentialProcesses(int processAmount);
 void TestConcurrentProcesses(int processAmount);
 
 void FileSystemTestHandler();
+void DirectoryTestHandler();
 
 static inline void
 PrintVersion()
@@ -197,7 +198,7 @@ main(int argc, char **argv)
 		  else if (!strcmp(*argv, "-ct"))    // File concurrency tests.
 			FileSystemTestHandler();
 		  else if (!strcmp(*argv, "-dt"))    // Directory concurrency tests.
-			FileSystemTestHandler();
+			DirectoryTestHandler();
 
 #endif
 #ifdef NETWORK

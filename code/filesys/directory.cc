@@ -60,7 +60,7 @@ Directory::FetchFrom(OpenFile *file)
 {
     ASSERT(file != nullptr);
 
-    AcquireWrite();
+    AcquireRead();
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
@@ -88,7 +88,7 @@ Directory::FetchFrom(OpenFile *file)
         }
     }
 
-    ReleaseWrite();
+    ReleaseRead();
 }
 
 /// Write any modifications to the directory back to disk.
@@ -199,6 +199,7 @@ void
 Directory::AcquireRead()
 {
     directoryLockManager -> AcquireRead(sector);
+    DEBUG('f', "Read adquirido del directorio sector %d.\n", sector);
 }
 
 void
@@ -210,6 +211,7 @@ Directory::AcquireWrite()
 void
 Directory::ReleaseRead()
 {
+    DEBUG('f', "Read a ser liberado %d.\n", sector);
     directoryLockManager -> ReleaseRead(sector);
 }
 

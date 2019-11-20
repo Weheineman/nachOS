@@ -5,7 +5,7 @@ DirectoryLockNode::DirectoryLockNode(int _sector)
     sector = _sector;
     next = nullptr;
     lock = new ReaderWriter();
-    waiting = 0;
+    useCount = 1;
 }
 
 DirectoryLockNode::~DirectoryLockNode()
@@ -54,17 +54,13 @@ DirectoryLockManager::Acquire(int sector, bool writePermission)
         AddNode(sector, writePermission);
         managerLock -> Release();
     }else{
-        node -> waiting++;
+        node -> useCount++;
         managerLock -> Release();
 
         if(writePermission)
             node -> lock -> AcquireWrite();
         else
             node -> lock -> AcquireRead();
-
-        managerLock -> Acquire();
-        node -> waiting--;
-        managerLock -> Release();
     }
 }
 
@@ -91,14 +87,15 @@ DirectoryLockManager::Release(int sector, bool writePermission)
     // The lock to be released should always be in the list.
     ASSERT(node != nullptr);
 
-    if(node -> waiting == 0)
+    if(writePermission)
+        node -> lock -> ReleaseWrite();
+    else
+        node -> lock -> ReleaseRead();
+
+    // The current thread is not using this directory anymore.
+    node -> useCount--;
+    if(node -> useCount == 0)
         DeleteNode(node);
-    else{
-        if(writePermission)
-            node -> lock -> ReleaseWrite();
-        else
-            node -> lock -> ReleaseRead();
-    }
 
     managerLock -> Release();
 }

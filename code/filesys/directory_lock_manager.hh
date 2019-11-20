@@ -19,7 +19,7 @@ public:
     DirectoryLockNode *next;
 
     // Amount of processes that want to take this lock.
-    int waiting;
+    int useCount;
 };
 
 /// The following class defines a "directory lock manager". It is a linked
