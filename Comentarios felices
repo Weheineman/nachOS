@@ -13,11 +13,11 @@ Hay que testear FilePath, pero parecería estar hecho
 
 
 Roadmap
- - exception.cc tiene la implementacion de las syscalls. Hay que modificar dichas
- implementaciones para que no solo pasen el nombre del archivo como argumento a
- las llamadas fileSys, sino que la ruta completa (strconcat?). Alternativamente,
- Directory podria hacer el merge del path que recibe con el currentThread path.
- Decidir que hacer.
+ - DING DING BUG ALERT DING DING En Directory, Add toma writer lock, el while
+ loop en LockedAdd releasea reader lock. Pasa lo mismo con Remove y LockedRemove.
+
+ - exception.cc tiene la implementacion de las syscalls. Hay que agregar mkdir
+ y cd.
 
  - Integrar directory y filesystem, hay que hacerle saber al filesys si debe
  crear un directorio o no, mkdir es igual a create pero tiene true el isDirectory.

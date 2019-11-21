@@ -96,6 +96,9 @@ class Lock;
 static const unsigned FREE_MAP_SECTOR = 0;
 static const unsigned DIRECTORY_SECTOR = 1;
 
+/// Based on what is defined by POSIX.
+static const unsigned MAX_PATH_LEN = 4096;
+
 class FileSystem {
     //We know how to code properly, we swear.
     friend class OpenFileList;

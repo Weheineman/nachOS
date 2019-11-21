@@ -172,7 +172,6 @@ FileSystem::~FileSystem()
 bool
 FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
 {
-    // GUIDIOS: Meter el isDirectory por ahi.
     ASSERT(name != nullptr);
 
     Directory  *directory;
@@ -194,7 +193,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
         sector = freeMap->Find();  // Find a sector to hold the file header.
         if (sector == -1)
             success = false;    // No free block for file header.
-        else if (!directory->Add(name, sector, false))
+        else if (!directory->Add(name, sector, isDirectory))
             success = false;  // No space in directory.
         else {
             header = new FileHeader;
@@ -311,20 +310,21 @@ FileSystem::DeleteFromDisk(const char *name){
 /// resulting in merging the thread path with the relative one is
 /// valid in the file system. If so, then it also sets the thread path to it.
 bool
-FileSystem::ChangeDirectory(const char *path){
-    // GUIDIOS: Hacer esto. Ver como interactua con Directory si es el trabajo
-    // de Directory mergear el path con el thread path.
-    return true;
-	// Directory *directory = new Directory(DIRECTORY_SECTOR);
-    // directory -> FetchFrom();
-    //
-    // // Check if the new path is valid.
-    // bool validPath = (directory -> Find(path) != -1);
-    //
-    // if(validPath)
-	// 	currentThread -> SetPath(threadPath);
-    //
-	// return validPath;
+FileSystem::ChangeDirectory(const char *pathString){
+	Directory *directory = new Directory(DIRECTORY_SECTOR);
+    directory -> FetchFrom();
+
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(pathString);
+
+    // Check if the new path is valid.
+    bool validPath = (directory -> Find(pathString) != -1);
+
+    if(validPath)
+		currentThread -> SetPath(path);
+
+    delete path;
+	return validPath;
 }
 
 /// List all the files in the file system directory.
