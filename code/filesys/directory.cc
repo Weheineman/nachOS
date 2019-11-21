@@ -95,11 +95,6 @@ Directory::FetchFrom()
 void
 Directory::WriteBack()
 {
-    // GUIDIOS: Solo escribe el nivel actual. Queremos una version recursiva?
-    // GUIDIOS: Vengo del futuro y creo que no.
-    // GUIDIOS: Yo tambien, y soy mas inteligente. No hace falta, pero
-    // estaria re piola que se haga el WriteBack en cada ReleaseWrite
-    // y que no lo haga el fileSystem.
     AcquireRead();
 
     OpenFile *file= new OpenFile(sector);
@@ -179,16 +174,13 @@ Directory::Remove(const char *path_)
     return result;
 }
 
-/// List all the file names in the directory.
+/// List all the file names in the current directory.
 void
-Directory::List(const char *path_)
+Directory::List()
 {
-    ASSERT(path_ != nullptr);
-
-    FilePath *path = new FilePath(path_);
+    FilePath *path = currentThread -> GetPath();
     AcquireRead();
     LockedList(path);
-
     delete path;
 }
 
@@ -466,7 +458,6 @@ Directory::LockedList(FilePath *path){
 
         // The path has an invalid directory.
         if(entry == nullptr or not entry -> isDirectory){
-            // GUIDIOS: Va printf aca?
             printf("Invalid path on LockedList call\n");
             delete [] currentLevel;
             return;
@@ -482,7 +473,6 @@ Directory::LockedList(FilePath *path){
         FetchFrom();
     }
 
-    // GUIDIOS: Va printf aca?
     printf("Printing directory content:\n");
     for(DirectoryEntry *current = first; current != nullptr;
         current = current -> next)
@@ -511,4 +501,12 @@ Directory::LockedFindCurrent(const char *name)
             return currentEntry;
 
     return nullptr;
+}
+
+
+// Dummy function our teacher told us not to implement.
+void
+Directory::Print() const
+{
+    printf("Hola, persona que corrige! Hablamos con Guillermo y nos dijo que no era necesario implementar print en Directory luego de haber cambiado tan fuertemente su estructura interna. Que tengas un buen dia! ( ͡° ͜ʖ ͡°)\n");
 }

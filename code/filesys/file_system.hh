@@ -122,7 +122,7 @@ public:
 	/// Given a thread and a relative path, returns if the global path
 	/// resulting in merging the thread path with the relative one is
 	/// valid in the file system. If so, then it also sets the thread path to it.
-	bool ChangeDirectory(Thread *thread, const char *relativePath);
+	bool ChangeDirectory(const char *path);
 
     /// List all the files in the file system.
     void List();

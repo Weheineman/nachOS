@@ -13,15 +13,11 @@ Hay que testear FilePath, pero parecería estar hecho
 
 
 Roadmap
-
- - Thread debe conocer su path y tener una interfaz para consultar y modificarlo.
-
  - exception.cc tiene la implementacion de las syscalls. Hay que modificar dichas
  implementaciones para que no solo pasen el nombre del archivo como argumento a
- las llamadas fileSys, sino que la ruta completa (strconcat?).
+ las llamadas fileSys, sino que la ruta completa (strconcat?). Alternativamente,
+ Directory podria hacer el merge del path que recibe con el currentThread path.
+ Decidir que hacer.
 
  - Integrar directory y filesystem, hay que hacerle saber al filesys si debe
  crear un directorio o no, mkdir es igual a create pero tiene true el isDirectory.
-
- - En filepath esta bien que los metodos que devuelven strings devuelvan char*
- y no const char *?

@@ -49,11 +49,10 @@ public:
     /// Remove a file from the directory.
     bool Remove(const char *path);
 
-    /// Print the names of all the files in the directory.
-    void List(const char *path);
+    /// Print the names of all the files in the current directory.
+    void List();
 
-    /// Verbose print of the contents of the directory -- all the file paths
-    /// and their contents.
+    /// Dummy function our teacher told us not to implement.
     void Print() const;
 
     // Interface for the ReaderWriter lock

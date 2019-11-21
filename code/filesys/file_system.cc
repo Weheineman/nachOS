@@ -48,6 +48,7 @@
 #include "file_header.hh"
 #include "lib/bitmap.hh"
 #include "machine/disk.hh"
+#include "threads/system.hh"
 
 /// Initial file sizes for the bitmap.
 static const unsigned FREE_MAP_FILE_SIZE = NUM_SECTORS / BITS_IN_BYTE;
@@ -121,8 +122,7 @@ FileSystem::FileSystem(bool format)
 
         if (debug.IsEnabled('f')) {
             freeMap->Print();
-            // GUIDIOS: Que hacemos con print de FileSystem?
-            // directory->Print();
+            directory->Print();
         }
 
         delete freeMap;
@@ -311,27 +311,20 @@ FileSystem::DeleteFromDisk(const char *name){
 /// resulting in merging the thread path with the relative one is
 /// valid in the file system. If so, then it also sets the thread path to it.
 bool
-FileSystem::ChangeDirectory(Thread *thread, const char *relativePath){
-	/// GUIDIOS: Falta el lock stuff y qué sé yo.
-
+FileSystem::ChangeDirectory(const char *path){
+    // GUIDIOS: Hacer esto. Ver como interactua con Directory si es el trabajo
+    // de Directory mergear el path con el thread path.
     return true;
-
-	// FilePath *threadPath = currentThread -> GetPath();
-	// threadPath -> Merge(relativePath);
+	// Directory *directory = new Directory(DIRECTORY_SECTOR);
+    // directory -> FetchFrom();
     //
-    // directory = new Directory(DIRECTORY_SECTOR);
-    // directory->FetchFrom();
+    // // Check if the new path is valid.
+    // bool validPath = (directory -> Find(path) != -1);
     //
-	// char *newPath = threadPath -> ToString();
-	// bool dirFound = (Find(newPath) != -1);
-    //
-	// if(dirFound)
+    // if(validPath)
 	// 	currentThread -> SetPath(threadPath);
-	// else
-	// 	delete threadPath;
     //
-	// delete [] newPath;
-	// return dirFound;
+	// return validPath;
 }
 
 /// List all the files in the file system directory.
@@ -339,17 +332,12 @@ void
 FileSystem::List()
 {
     Directory *directory = new Directory(DIRECTORY_SECTOR);
-
     directory->FetchFrom();
 
-    DEBUG('f', "Directory fetched from file\n");
+    // GUIDIOS: Hace falta que ls pueda tomar un argumento?
+    // Ahora solo muestra el directorio actual.
 
-    // GUIDIOS: FIX FIX FIX FIX FIX
-    // GUIDIOS: Chanchadita, cambiar cuando usemos path.
-    char *myName = new char [FILE_NAME_MAX_LEN + 1];
-    strcpy(myName, "/");
-
-    directory->List(myName);
+    directory->List();
     delete directory;
 }
 
