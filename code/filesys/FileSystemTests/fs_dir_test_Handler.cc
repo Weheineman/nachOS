@@ -2,4 +2,7 @@
 
 void DirectoryTestHandler(){
 	TestRootAccess();
+	TestCreateDirectoryStructure();
+	TestTraverseDirectoryStructure();
+	TestRemoveDirectoryStructure();
 }

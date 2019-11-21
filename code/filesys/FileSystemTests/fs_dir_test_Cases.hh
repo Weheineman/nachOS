@@ -9,11 +9,16 @@
 
 /// Checks the expected behaviour of Add, Remove and Find operations in the root directory.
 void TestRootAccess();
+/// Checks that a simple directory structure can be created, using both relative and global paths.
+/// Also checks that duplicate creations are not possible.
+void TestCreateDirectoryStructure();
+/// Checks that the structure previously created is correctly traversable.
+void TestTraverseDirectoryStructure();
+/// Checks that both files and empty directories can be removed.
+/// Also checks that non existing files and populated directories cannot be removed.
+void TestRemoveDirectoryStructure();
 
 
-/// Poder crear una estructura de árbol y que las cosas se encuentren.
-/// Poder eliminar cosas creadas y que ya no se encuentren.
-/// Tratar de borrar directorios (vacios y no vacios).
 /// Tratar de borrar directorio vacío en el que haya alguien.
 /// Tratar de crear simultáneamente en distintas partes del file system.
 /// Stress test multinivel?
