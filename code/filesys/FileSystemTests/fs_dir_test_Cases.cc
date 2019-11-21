@@ -10,12 +10,12 @@ void TestRootAccess(){
 		printf("!!!! TestRootAccess failed: Could delete root directory\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("/") or not fileSystem -> ChangeDirectory("")){
 		printf("!!!! TestRootAccess failed: Could not move to root directory\n");
 		return;
 	}
-	
+
 	printf("--- TestRootAccess successful!\n\n\n");
 }
 
@@ -29,7 +29,7 @@ void TestCreateDirectoryStructure(){
 		printf("!!!! TestCreateDirectoryStructure failed: Could not create files in root folder\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("/1", 0, true) or
 	   fileSystem -> Create("/1", 0, false) or
 	   fileSystem -> Create("/2", 0, true) or
@@ -39,25 +39,25 @@ void TestCreateDirectoryStructure(){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file twice in root folder\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("/3/Fail", 0, true) or
 	   fileSystem -> Create("/3/Fail", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file inside a file in root folder\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("/NonExisting/Fail", 0, true) or
 	   fileSystem -> Create("/NonExisting/Fail", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file with a non existing global path\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> Create("/1/1A", 0, true) or
 	   not fileSystem -> Create("/1/1B", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could not create a file using a global path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("/1/1A", 0, true) or
 	   fileSystem -> Create("/1/1A", 0, false) or
 	   fileSystem -> Create("/1/1B", 0, true) or
@@ -65,24 +65,24 @@ void TestCreateDirectoryStructure(){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file twice using a global path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("/1/1B/Fail", 0, true) or
 	   fileSystem -> Create("/1/1B/Fail", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file inside a file using a global path\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("/2")){
 		printf("!!!! TestCreateDirectoryStructure failed: Could not move to a subdirectory\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> Create("2A", 0, true) or
 	   not fileSystem -> Create("2B", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could not create a file using a relative path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("2A", 0, true) or
 	   fileSystem -> Create("2A", 0, false) or
 	   fileSystem -> Create("2B", 0, true) or
@@ -90,24 +90,24 @@ void TestCreateDirectoryStructure(){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file twice using a relative path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("2B/Fail", 0, true) or
 	   fileSystem -> Create("2B/Fail", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file inside a file using a relative path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Create("NonExisting/Fail", 0, true) or
 	   fileSystem -> Create("NonExisting/Fail", 0, false)){
 		printf("!!!! TestCreateDirectoryStructure failed: Could create a file with a non existing relative path\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("..")){
 		printf("!!!! TestCreateDirectoryStructure failed: Could not move back to root\n");
 		return;
 	}
-	
+
 	printf("--- TestCreateDirectoryStructure successful!\n\n\n");
 }
 
@@ -122,46 +122,46 @@ void TestTraverseDirectoryStructure(){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could not move to a directory with a global path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("/1/1B") or
 	   fileSystem -> ChangeDirectory("/2/2B")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could move to a file with a global path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("3")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could move to a root file with a relative path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("/NonExisting")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could move to a non existing directory with a global path\n");
-		return;	
+		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("1") or
 	   not fileSystem -> ChangeDirectory("1A")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could not move to a directory with a relative path\n");
-		return;	
+		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("NonExisting")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could move to a non existing directory with a relative path\n");
-		return;	
+		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("..") or
 	   not fileSystem -> ChangeDirectory("..")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could not move back to root directory using ..\n");
-		return;	
+		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory(".")){
 		printf("!!!! TestTraverseDirectoryStructure failed: Could not move to the same directory using .\n");
-		return;	
+		return;
 	}
-	
-	printf("--- TestTraverseDirectoryStructure successful!\n\n\n");	
+
+	printf("--- TestTraverseDirectoryStructure successful!\n\n\n");
 }
 
 
@@ -172,78 +172,78 @@ void TestRemoveDirectoryStructure(){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could remove a nonexisting file using a global path\n");
 		return;
 	}
-	
+
 	if(fileSystem -> Remove("NonExisting")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could remove a nonexisting file using a relative path\n");
 		return;
-	}	
-	
-	if(fileSytem -> Remove("/1")){
+	}
+
+	if(fileSystem -> Remove("/1")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could remove a populated directory using a global path\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> Remove("/1/1A") or
 	   not fileSystem -> Remove("/1/1B")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not remove a file using a global path\n");
-		return;		   
+		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("/1/1A")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could move to a directory previously removed using a global path\n");
-		return;		   		
+		return;
 	}
-	
+
 	if(not fileSystem -> Remove("/1")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not remove a root subdirectory using a global path\n");
-		return;		   
+		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("/1")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could move to a root subdirectory previously removed using a global path\n");
-		return;		   		
+		return;
 	}
-	
-	if(fileSytem -> Remove("2")){
+
+	if(fileSystem -> Remove("2")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could remove a populated directory using a relative path\n");
 		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("2")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not move to a root subdirectory\n");
-		return;		   		
+		return;
 	}
-	
+
 	if(not fileSystem -> Remove("2A") or
 	   not fileSystem -> Remove("2B")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not remove a file using a relative path\n");
-		return;		   
+		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("2A")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could move to a directory previously removed using a relative path\n");
-		return;		   		
+		return;
 	}
-	
+
 	if(not fileSystem -> ChangeDirectory("..")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not move back to root\n");
-		return;		   		
+		return;
 	}
-	
+
 	if(not fileSystem -> Remove("2")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not remove a root subdirectory using a relative path\n");
-		return;		   
+		return;
 	}
-	
+
 	if(fileSystem -> ChangeDirectory("2")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could move to a root subdirectory previously removed using a relative path\n");
-		return;		   		
+		return;
 	}
-	
+
 	if(not fileSystem -> Remove("3")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could not remove a root file using a relative path\n");
-		return;		   		
+		return;
 	}
-	
-	printf("--- TestRemoveDirectoryStructure successful!\n\n\n");	
+
+	printf("--- TestRemoveDirectoryStructure successful!\n\n\n");
 }

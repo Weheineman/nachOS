@@ -96,8 +96,7 @@ void
 Directory::WriteBack()
 {
     AcquireRead();
-
-    OpenFile *file= new OpenFile(sector);
+    OpenFile *file = new OpenFile(sector);
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
@@ -125,11 +124,12 @@ Directory::WriteBack()
 ///
 /// * `path` is the file path to look up.
 int
-Directory::Find(const char *path_)
+Directory::Find(const char *pathString)
 {
-    ASSERT(path_ != nullptr);
+    ASSERT(pathString != nullptr);
 
-    FilePath *path = new FilePath(path_);
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(pathString);
     AcquireRead();
     int result = LockedFind(path);
 
@@ -144,13 +144,13 @@ Directory::Find(const char *path_)
 /// * `path` is the path of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *path_, int newSector, bool isDirectory)
+Directory::Add(const char *pathString, int newSector, bool isDirectory)
 {
-    ASSERT(path_ != nullptr);
+    ASSERT(pathString != nullptr);
 
-    FilePath *path = new FilePath(path_);
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(pathString);
     AcquireWrite();
-    DEBUG('f', "Calling directory -> LockedAdd()\n");
     bool result = LockedAdd(path, newSector, isDirectory);
 
     delete path;
@@ -162,11 +162,12 @@ Directory::Add(const char *path_, int newSector, bool isDirectory)
 ///
 /// * `path` is the file path to be removed.
 bool
-Directory::Remove(const char *path_)
+Directory::Remove(const char *pathString)
 {
-    ASSERT(path_ != nullptr);
+    ASSERT(pathString != nullptr);
 
-    FilePath *path = new FilePath(path_);
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(pathString);
     AcquireWrite();
     bool result = LockedRemove(path);
 
@@ -208,7 +209,6 @@ Directory::ReleaseRead()
 void
 Directory::ReleaseWrite()
 {
-    DEBUG('f', "Hi master, I'm going to write back to sector %d OwO\n", sector);
     // Write the changes back to disk.
     WriteBack();
     directoryLockManager -> ReleaseWrite(sector);
