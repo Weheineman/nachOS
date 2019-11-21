@@ -218,8 +218,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     }
 
     //numBytes = fileLength - position;
-    DEBUG('f', "Writing %u bytes at %u, from file of length %u.\n",
-          numBytes, position, fileLength);
+    DEBUG('f', "Writing %u bytes at %u, from file of length %u, which starts at sector %u.\n",
+          numBytes, position, fileLength, sector);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);

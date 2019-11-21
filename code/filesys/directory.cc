@@ -42,9 +42,6 @@ Directory::~Directory()
 {
     DirectoryEntry* aux;
 
-    // GUIDIOS: Hay que ver como cambiar esto para directorios
-    // recursivos, queda asi de placeholder.
-    // Ver bien cuando se llama al destructor.
     while(first != nullptr){
   		aux = first -> next;
   		delete first;
@@ -56,15 +53,15 @@ Directory::~Directory()
 ///
 /// * `file` is file containing the directory contents.
 void
-Directory::FetchFrom(OpenFile *file)
+Directory::FetchFrom()
 {
-    ASSERT(file != nullptr);
-
     AcquireRead();
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
     // where the amount of DirectoryEntries is directorySize
+
+    OpenFile *file = new OpenFile(sector);
 
     // First, get the directory size.
     file -> ReadAt((char*) &directorySize, sizeof(unsigned), 0);
@@ -88,6 +85,7 @@ Directory::FetchFrom(OpenFile *file)
         }
     }
 
+    delete file;
     ReleaseRead();
 }
 
@@ -95,17 +93,16 @@ Directory::FetchFrom(OpenFile *file)
 ///
 /// * `file` is a file to contain the new directory contents.
 void
-Directory::WriteBack(OpenFile *file)
+Directory::WriteBack()
 {
     // GUIDIOS: Solo escribe el nivel actual. Queremos una version recursiva?
     // GUIDIOS: Vengo del futuro y creo que no.
     // GUIDIOS: Yo tambien, y soy mas inteligente. No hace falta, pero
     // estaria re piola que se haga el WriteBack en cada ReleaseWrite
     // y que no lo haga el fileSystem.
-
-    ASSERT(file != nullptr);
-
     AcquireRead();
+
+    OpenFile *file= new OpenFile(sector);
 
     // The file looks like this:
     // [directorySize | DirectoryEntry | ... | DirectoryEntry]
@@ -123,6 +120,7 @@ Directory::WriteBack(OpenFile *file)
         currentEntry = currentEntry -> next;
     }
 
+    delete file;
     ReleaseRead();
 }
 
@@ -157,6 +155,7 @@ Directory::Add(const char *path_, int newSector, bool isDirectory)
 
     FilePath *path = new FilePath(path_);
     AcquireWrite();
+    DEBUG('f', "Calling directory -> LockedAdd()\n");
     bool result = LockedAdd(path, newSector, isDirectory);
 
     delete path;
@@ -199,7 +198,6 @@ void
 Directory::AcquireRead()
 {
     directoryLockManager -> AcquireRead(sector);
-    DEBUG('f', "Read adquirido del directorio sector %d.\n", sector);
 }
 
 void
@@ -211,13 +209,16 @@ Directory::AcquireWrite()
 void
 Directory::ReleaseRead()
 {
-    DEBUG('f', "Read a ser liberado %d.\n", sector);
+
     directoryLockManager -> ReleaseRead(sector);
 }
 
 void
 Directory::ReleaseWrite()
 {
+    DEBUG('f', "Hi master, I'm going to write back to sector %d OwO\n", sector);
+    // Write the changes back to disk.
+    WriteBack();
     directoryLockManager -> ReleaseWrite(sector);
 }
 
@@ -261,9 +262,7 @@ Directory::LockedFind(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        OpenFile *dirFile = new OpenFile(sector);
-        FetchFrom(dirFile);
-        delete dirFile;
+        FetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -322,9 +321,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         sector = entry -> sector;
 
         // Read the data from disk.
-        OpenFile *dirFile = new OpenFile(sector);
-        FetchFrom(dirFile);
-        delete dirFile;
+        FetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -335,7 +332,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     // The file already exists.
     if(LockedFindCurrent(currentLevel) != nullptr){
         delete [] currentLevel;
-        directoryLockManager -> ReleaseWrite(sector);
+        ReleaseWrite();
         return false;
     }
 
@@ -352,7 +349,8 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     directorySize++;
 
     delete [] currentLevel;
-    directoryLockManager -> ReleaseWrite(sector);
+    DEBUG('f', "Termine el add y tengo tamanio %d\n", directorySize);
+    ReleaseWrite();
     return true;
 }
 
@@ -392,9 +390,7 @@ Directory::LockedRemove(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        OpenFile *dirFile = new OpenFile(sector);
-        FetchFrom(dirFile);
-        delete dirFile;
+        FetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -407,7 +403,7 @@ Directory::LockedRemove(FilePath *path){
     // File not found.
     if(target == nullptr){
         delete [] currentLevel;
-        directoryLockManager -> ReleaseWrite(sector);
+        ReleaseWrite();
         return false;
     }
 
@@ -417,11 +413,9 @@ Directory::LockedRemove(FilePath *path){
     if(target -> isDirectory){
         Directory *targetDir = new Directory(target -> sector);
         directoryLockManager -> AcquireRead(target -> sector);
-        OpenFile *dirFile = new OpenFile(target -> sector);
-        targetDir -> FetchFrom(dirFile);
+        targetDir -> FetchFrom();
         isNonEmptyDir = targetDir -> IsEmpty();
 
-        delete dirFile;
         delete targetDir;
         directoryLockManager -> ReleaseRead(target -> sector);
     }
@@ -429,7 +423,7 @@ Directory::LockedRemove(FilePath *path){
     // Can't remove a non empty directory.
     if(isNonEmptyDir){
         delete [] currentLevel;
-        directoryLockManager -> ReleaseWrite(sector);
+        ReleaseWrite();
         return false;
     }
 
@@ -452,7 +446,7 @@ Directory::LockedRemove(FilePath *path){
     directorySize--;
 
     delete [] currentLevel;
-    directoryLockManager -> ReleaseWrite(sector);
+    ReleaseWrite();
     return true;
 }
 
@@ -485,12 +479,11 @@ Directory::LockedList(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        OpenFile *dirFile = new OpenFile(sector);
-        FetchFrom(dirFile);
-        delete dirFile;
+        FetchFrom();
     }
 
     // GUIDIOS: Va printf aca?
+    printf("Printing directory content:\n");
     for(DirectoryEntry *current = first; current != nullptr;
         current = current -> next)
         printf("%s\n", current -> name);

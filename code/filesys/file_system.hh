@@ -111,7 +111,7 @@ public:
     ~FileSystem();
 
     /// Create a file (UNIX `creat`).
-    bool Create(const char *name, unsigned initialSize);
+    bool Create(const char *name, unsigned initialSize, bool isDirectory = false);
 
     /// Open a file (UNIX `open`).
     OpenFile *Open(const char *name);
@@ -156,8 +156,6 @@ private:
 
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.
-    OpenFile *directoryFile;  ///< “Root” directory -- list of file names,
-                              ///< represented as a file.
     OpenFileList *openFileList; ///< Structure containing metadata about the
                                 ///< open files
     Bitmap *freeMap; ///< Bit map of free disk blocks.

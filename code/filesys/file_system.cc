@@ -101,12 +101,11 @@ FileSystem::FileSystem(bool format)
         mapHeader->WriteBack(FREE_MAP_SECTOR);
         dirHeader->WriteBack(DIRECTORY_SECTOR);
 
-        // OK to open the bitmap and directory files now.
-        // The file system operations assume these two files are left open
+        // OK to open the bitmap and directory file now.
+        // The file system operations assume this file is left open
         // while Nachos is running.
 
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
-        directoryFile = new OpenFile(DIRECTORY_SECTOR);
 
         // Once we have the files “open”, we can write the initial version of
         // each file back to disk.  The directory at this point is completely
@@ -118,7 +117,7 @@ FileSystem::FileSystem(bool format)
         freeMap->WriteBack(freeMapFile);     // flush changes to disk
 
         DEBUG('f', "Writing directory back to disk.\n");
-        directory->WriteBack(directoryFile);
+        directory->WriteBack(); // flush changes to disk
 
         if (debug.IsEnabled('f')) {
             freeMap->Print();
@@ -135,14 +134,12 @@ FileSystem::FileSystem(bool format)
         // representing the bitmap and directory; these are left open while
         // Nachos is running.
         freeMapFile   = new OpenFile(FREE_MAP_SECTOR);
-        directoryFile = new OpenFile(DIRECTORY_SECTOR);
     }
 }
 
 FileSystem::~FileSystem()
 {
     delete freeMapFile;
-    delete directoryFile;
     delete openFileList;
     delete freeMapLock;
 }
@@ -173,8 +170,9 @@ FileSystem::~FileSystem()
 /// * `name` is the name of file to be created.
 /// * `initialSize` is the size of file to be created.
 bool
-FileSystem::Create(const char *name, unsigned initialSize)
+FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
 {
+    // GUIDIOS: Meter el isDirectory por ahi.
     ASSERT(name != nullptr);
 
     Directory  *directory;
@@ -185,14 +183,9 @@ FileSystem::Create(const char *name, unsigned initialSize)
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
     directory = new Directory(DIRECTORY_SECTOR);
-    directory->FetchFrom(directoryFile);
+    directory->FetchFrom();
 
-    // GUIDIOS: Chanchadita, cambiar cuando usemos path.
-    char *myName = new char [FILE_NAME_MAX_LEN + 1];
-    strcpy(myName, name);
-
-    DEBUG('f', "Calling directory -> Find()\n");
-    if (directory->Find(myName) != -1)
+    if (directory->Find(name) != -1)
         success = false;  // File is already in directory.
     else {
         // Redundant because AcquireFreeMap already sets the value of freeMap, but
@@ -201,7 +194,7 @@ FileSystem::Create(const char *name, unsigned initialSize)
         sector = freeMap->Find();  // Find a sector to hold the file header.
         if (sector == -1)
             success = false;    // No free block for file header.
-        else if (!directory->Add(myName, sector, false))
+        else if (!directory->Add(name, sector, false))
             success = false;  // No space in directory.
         else {
             header = new FileHeader;
@@ -211,7 +204,6 @@ FileSystem::Create(const char *name, unsigned initialSize)
                 success = true;
                 // Everthing worked, flush all changes back to disk.
                 header->WriteBack(sector);
-                directory->WriteBack(directoryFile);
                 ReleaseFreeMap(freeMap);
             }
             delete header;
@@ -239,7 +231,7 @@ FileSystem::Open(const char *name)
     int        sector;
 
     DEBUG('f', "Opening file %s\n", name);
-    directory->FetchFrom(directoryFile);
+    directory->FetchFrom();
 
     DEBUG('f', "Calling dir::find with %s\n", name);
     sector = directory->Find(name);
@@ -291,13 +283,9 @@ FileSystem::DeleteFromDisk(const char *name){
     int         sector;
 
     directory = new Directory(DIRECTORY_SECTOR);
-    directory->FetchFrom(directoryFile);
+    directory->FetchFrom();
 
-    // GUIDIOS: Chanchadita, cambiar cuando usemos path.
-    char *myName = new char [FILE_NAME_MAX_LEN + 1];
-    strcpy(myName, name);
-
-    sector = directory->Find(myName);
+    sector = directory->Find(name);
     if (sector == -1) {
        delete directory;
        return false;  // file not found
@@ -314,7 +302,6 @@ FileSystem::DeleteFromDisk(const char *name){
     directory->Remove(name);
 
     ReleaseFreeMap(freeMap);              // Flush to disk.
-    directory->WriteBack(directoryFile);  // Flush to disk.
     delete fileHeader;
     delete directory;
     return true;
@@ -323,17 +310,23 @@ FileSystem::DeleteFromDisk(const char *name){
 /// Given a thread and a relative path, returns if the global path
 /// resulting in merging the thread path with the relative one is
 /// valid in the file system. If so, then it also sets the thread path to it.
-bool ChangeDirectory(Thread *thread, const char *relativePath){
+bool
+FileSystem::ChangeDirectory(Thread *thread, const char *relativePath){
 	/// GUIDIOS: Falta el lock stuff y qué sé yo.
+
     return true;
-	// FilePath *threadPath = thread -> GetPath();
+
+	// FilePath *threadPath = currentThread -> GetPath();
 	// threadPath -> Merge(relativePath);
+    //
+    // directory = new Directory(DIRECTORY_SECTOR);
+    // directory->FetchFrom();
     //
 	// char *newPath = threadPath -> ToString();
 	// bool dirFound = (Find(newPath) != -1);
     //
 	// if(dirFound)
-	// 	thread -> SetPath(threadPath);
+	// 	currentThread -> SetPath(threadPath);
 	// else
 	// 	delete threadPath;
     //
@@ -347,7 +340,7 @@ FileSystem::List()
 {
     Directory *directory = new Directory(DIRECTORY_SECTOR);
 
-    directory->FetchFrom(directoryFile);
+    directory->FetchFrom();
 
     DEBUG('f', "Directory fetched from file\n");
 
@@ -517,7 +510,7 @@ FileSystem::List()
 //     Bitmap *freeMap = AcquireFreeMap(false);
 //     Directory *dir = new Directory(NUM_DIR_ENTRIES);
 //     const RawDirectory *rdir = dir->GetRaw();
-//     dir->FetchFrom(directoryFile);
+//     dir->FetchFrom();
 //     error |= CheckDirectory(rdir, shadowMap);
 //     delete dir;
 //
@@ -562,7 +555,7 @@ FileSystem::Print()
     freeMap->Print();
 
     printf("--------------------------------\n");
-    directory->FetchFrom(directoryFile);
+    directory->FetchFrom();
     printf("--------------------------------\n");
 
     delete bitHeader;

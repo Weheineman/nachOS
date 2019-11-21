@@ -33,10 +33,10 @@ public:
     ~Directory();
 
     /// Initialize directory contents from disk.
-    void FetchFrom(OpenFile *file);
+    void FetchFrom();
 
     /// Write modifications to directory contents back to disk.
-    void WriteBack(OpenFile *file);
+    void WriteBack();
 
     /// Find the sector number of the `FileHeader` for file in the given path.
     int Find(const char *path);
