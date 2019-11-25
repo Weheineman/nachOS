@@ -5,4 +5,6 @@ void DirectoryTestHandler(){
 	TestCreateDirectoryStructure();
 	TestTraverseDirectoryStructure();
 	TestRemoveDirectoryStructure();
+	TestRemoveDirectoryWithThread();
+	TestMultilevelStress();
 }

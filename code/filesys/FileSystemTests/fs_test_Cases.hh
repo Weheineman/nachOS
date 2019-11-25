@@ -37,7 +37,7 @@ struct WriterSpawnerArg{
 struct RWReaderArg{
 	char *fileName;
 	unsigned start, end;
-  char fillContent;
+	char fillContent;
 	Semaphore *finishCheck;
 	Lock *queueLock;
 	Condition *queueCond;

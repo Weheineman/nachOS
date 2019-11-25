@@ -1,6 +1,6 @@
 #include "filesys/FileSystemTests/fs_dir_test_Cases.hh"
 
-/// Checks the expected behaviour of Add, Remove and Find operations in the root directory.
+// Checks the expected behaviour of Add, Remove and Find operations in the root directory.
 void TestRootAccess(){
 	if(fileSystem -> Create("/", 0) or fileSystem -> Create("", 0)){
 		printf("!!!! TestRootAccess failed: Could create a root directory\n");
@@ -20,8 +20,8 @@ void TestRootAccess(){
 }
 
 
-/// Checks that a simple directory structure can be created, using both relative and global paths.
-/// Also checks that duplicate creations are not possible.
+// Checks that a simple directory structure can be created, using both relative and global paths.
+// Also checks that duplicate creations are not possible.
 void TestCreateDirectoryStructure(){
 	if(not fileSystem -> Create("/1", 0, true) or
 	   not fileSystem -> Create("/2", 0, true) or
@@ -112,7 +112,7 @@ void TestCreateDirectoryStructure(){
 }
 
 
-/// Checks that the structure previously created is correctly traversable.
+// Checks that the structure previously created is correctly traversable.
 void TestTraverseDirectoryStructure(){
 	if(not fileSystem -> ChangeDirectory("/1") or
 	   not fileSystem -> ChangeDirectory("/2") or
@@ -165,8 +165,8 @@ void TestTraverseDirectoryStructure(){
 }
 
 
-/// Checks that both files and empty directories can be removed.
-/// Also checks that non existing files and populated directories cannot be removed.
+// Checks that both files and empty directories can be removed.
+// Also checks that non existing files and populated directories cannot be removed.
 void TestRemoveDirectoryStructure(){
 	if(fileSystem -> Remove("/NonExisting")){
 		printf("!!!! TestRemoveDirectoryStructure failed: Could remove a nonexisting file using a global path\n");
@@ -246,4 +246,189 @@ void TestRemoveDirectoryStructure(){
 	}
 
 	printf("--- TestRemoveDirectoryStructure successful!\n\n\n");
+}
+
+
+// Child thread used in TestRemoveDirectoryWithThread.
+void RemoveDirChild(void *args_){
+	RemoveDirChildArg *args = (RemoveDirChildArg *) args_;
+	Semaphore *parentReady = args -> parentReady;
+	Semaphore *childReady = args -> childReady;
+	char *subDirectory = args -> subDirectory;
+	
+	if(not fileSystem -> ChangeDirectory(subDirectory)){
+		printf("!!!! TestRemoveDirectoryWithThread failed: Child thread could not move to test directory\n");
+		return;
+	}
+	
+	childReady -> V();
+	parentReady -> P();
+	
+	if(not fileSystem -> ChangeDirectory("..")){
+		printf("!!!! TestRemoveDirectoryWithThread failed: Child thread could not move to its parent directory\n");
+		return;
+	}
+	
+	childReady -> V();
+}
+
+
+// Checks that an empty directory with a thread located inside it is still removable.
+void TestRemoveDirectoryWithThread(){
+	char subDirectory[] = "/Test";
+	
+	if(not fileSystem -> Create(subDirectory, 0, true)){
+		printf("!!!! TestRemoveDirectoryWithThread failed: Could not create test directory\n");
+		return;
+	}
+	
+	Semaphore *parentReady = new Semaphore("Parent Directory Ready", 0);
+	Semaphore *childReady  = new Semaphore("Child Directory Ready", 0);
+	
+	RemoveDirChildArg *childArgs = new RemoveDirChildArg;
+	childArgs -> parentReady = parentReady;
+	childArgs -> childReady = childReady;
+	childArgs -> subDirectory = subDirectory;
+	
+	Thread *childThread = new Thread("Child Thread");
+	childThread -> Fork(RemoveDirChild, (void *) childArgs);
+	
+	childReady -> P();
+	
+	if(not fileSystem -> Remove(subDirectory)){
+		printf("!!!! TestRemoveDirectoryWithThread failed: Could not remove test directory with child thread inside\n");
+		return;
+	}
+	
+	parentReady -> V();
+	childReady -> P();
+
+	delete parentReady;
+	delete childReady;
+	delete childArgs;
+	
+	printf("--- TestRemoveDirectoryWithThread successful!\n\n\n");
+}
+
+
+// Thread that creates and writes to many files in the path given to it.
+// Used in TestMultilevelStress.
+void MultilevelStressThread(void *args_){
+	MultiLevelStressArg *args = (MultiLevelStressArg *) args_;
+	char *path = args -> path;
+	char *toWrite = args -> toWrite;
+	unsigned writeAmount = args -> writeAmount;
+	unsigned writeSize = args -> writeSize;
+	unsigned fileAmount = args -> fileAmount;
+	Semaphore *finishCheck = args -> finishCheck;	
+	
+	/// Move to the given subdirectory.
+	if(not fileSystem -> ChangeDirectory(path)){
+		printf("!!!! TestMultilevelStress failed: Child could not move to directory %s\n", path);
+		return;
+	}
+	
+	/// Create each file.
+	char fileName[100];
+	for(unsigned i = 0; i < fileAmount; i++){
+		snprintf(fileName, 100, "%d", i); 
+		if(not fileSystem -> Create(fileName, 0, false)){
+			printf("!!!! TestMultilevelStress failed: Child could not create file %d in directory %s\n", i, path);
+			return;
+		}
+	}
+	
+	/// Open each file.
+	OpenFile *descriptors[fileAmount];
+	for(unsigned i = 0; i < fileAmount; i++){
+		snprintf(fileName, 100, "%d", i); 
+		descriptors[i] = fileSystem -> Open(fileName);
+		if(descriptors[i] == nullptr){
+			printf("!!!! TestMultilevelStress failed: Child could not open file %d in directory %s\n", i, path);
+			return;
+		}
+	}
+	
+	/// Write to each file.
+	for(unsigned writeNum = 0; writeNum < writeAmount; writeNum ++){
+		for(unsigned file = 0; file < fileAmount; file ++){
+			unsigned numBytes = descriptors[file] -> Write(toWrite, writeSize);
+			if (numBytes < writeSize) {
+				printf("!!!! TestMultilevelStress failed: Child could not write to file %d on iteration %d in directory %s\n", file, writeNum, path);
+				return;
+			}
+		}
+	}
+	
+	/// Read each file and check it was correctly written.
+	char buffer[writeSize + 1];
+	for(unsigned readNum = 0; readNum < writeAmount; readNum ++){
+		for(unsigned file = 0; file < fileAmount; file ++){
+			unsigned numBytes = descriptors[file] -> Read(buffer, writeSize);
+			if (numBytes < writeSize or strcmp(buffer, toWrite)) {
+				printf("!!!! TestMultilevelStress failed: Child could not read file %d on iteration %d in directory %s\n", file, readNum, path);
+				return;
+			}
+		}
+	}
+	
+	/// Close each file.
+	for(unsigned i = 0; i < fileAmount; i++)
+		delete descriptors[i];
+	
+	/// Remove each file.
+	for(unsigned i = 0; i < fileAmount; i++){
+		snprintf(fileName, 100, "%d", i); 
+		if(not fileSystem -> Remove(fileName)){
+			printf("!!!! TestMultilevelStress failed: Child could not remove file %d in directory %s\n", i, path);
+			return;
+		}
+	}
+			
+	/// Report to master thread.
+	finishCheck -> V();
+}
+
+// Creates a directory structure and forks threads to each of them to create
+// files and write to them concurrently.
+void TestMultilevelStress(){
+	const unsigned subDirLen = 10;
+	char subDirs[][subDirLen] = {"/", "/1", "/2", "/1/A", "/1/B", "/2/A", "/2/B"};
+	unsigned subDirCount = (sizeof subDirs) / subDirLen;
+	
+	// Setting i initially to 1 on purpose to ignore the root level.
+	for(unsigned i = 1; i < subDirCount; i++)
+		if(not fileSystem -> Create(subDirs[i], 0, true)){
+			printf("!!!! TestMultilevelStress failed: Could not create directory %s\n", subDirs[i]);
+			return;
+		}
+	
+	char toWrite[] = "1234567890";
+	unsigned writeAmount = 100;
+	unsigned writeSize = sizeof toWrite;
+	unsigned fileAmount = 5;
+	Semaphore *finishCheck = new Semaphore("Multilevel Stress Test", 0);
+	
+	MultiLevelStressArg *threadArgs = new MultiLevelStressArg[subDirCount];
+	for(unsigned i = 0; i < subDirCount; i++){
+		threadArgs[i].path = subDirs[i];
+		threadArgs[i].toWrite = toWrite;
+		threadArgs[i].writeAmount = writeAmount;
+		threadArgs[i].writeSize = writeSize;
+		threadArgs[i].fileAmount = fileAmount;
+		threadArgs[i].finishCheck = finishCheck;
+		Thread *newThread = new Thread("Multilevel Stress Thread");
+		newThread -> Fork(MultilevelStressThread, (void *) (threadArgs + i));
+	}
+
+	for(unsigned i = 0; i < subDirCount; i++)
+		finishCheck -> P();
+			
+	for(unsigned i = subDirCount - 1; i >= 1; i --)
+		if(not fileSystem -> Remove(subDirs[i]))
+			printf("!!!! TestMultilevelStress failed, kinda: Every child finished executing but could not remove directory %s\n", subDirs[i]);
+	
+	delete finishCheck;
+	
+	printf("--- TestMultilevelStress successful!\n\n\n");
 }

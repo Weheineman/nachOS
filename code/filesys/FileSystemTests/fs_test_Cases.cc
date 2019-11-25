@@ -528,7 +528,7 @@ void SpawnReadersWriters(void *spawnerArgs_){
 		readerArgs[threadNum].fileName = testFileName;
 		readerArgs[threadNum].start = readSize * threadNum;
 		readerArgs[threadNum].end = minn((readSize + 1) * threadNum, fileSize);
-    readerArgs[threadNum].fillContent = fillContent;
+		readerArgs[threadNum].fillContent = fillContent;
 		readerArgs[threadNum].finishCheck = finishCheck;
 		readerArgs[threadNum].queueLock = queueLock;
 		readerArgs[threadNum].queueCond = queueCond;
