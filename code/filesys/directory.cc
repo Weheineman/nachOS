@@ -41,7 +41,8 @@ Directory::Directory(int _sector)
 /// De-allocate directory data structure.
 Directory::~Directory()
 {
-    FreeList();
+    // GUIDIOS: FIX FIX FIX
+    // FreeList();
 }
 
 /// Read the contents of the directory from disk.
@@ -115,7 +116,14 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
     ASSERT(pathString != nullptr);
 
     FilePath *path = currentThread -> GetPath();
+    DEBUG('f', "Path del currentThread es %s\n",
+          path -> ToString());
+    DEBUG('f', "pathString es %s\n",
+          pathString);
+
     path -> Merge(pathString);
+
+    DEBUG('f', "Path me quedo %s\n", path -> ToString());
 
     if(path -> IsBottomLevel())
         AcquireWrite();
@@ -266,6 +274,8 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         return false;
     }
 
+    DEBUG('f', "Llegue a lockedadd y no mori\n");
+
     char *currentLevel = nullptr;
 
     while (not path -> IsBottomLevel()){
@@ -282,6 +292,8 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
             return false;
         }
 
+        DEBUG('f', "%s es un directorio :)\n", currentLevel);
+
         // Replace the data of the directory in RAM with the data of the
         // directory one level below.
         if(path -> IsBottomLevel())
@@ -292,17 +304,31 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         directoryLockManager -> ReleaseRead(sector);
         sector = entry -> sector;
 
+        DEBUG('f', "Estoy antes del fetch y el path es %s\n", path -> ToString());
         // Read the data from disk.
         LockedFetchFrom();
+        DEBUG('f', "Estoy despues del fetch y el path es %s\n", path -> ToString());
+
     }
+
+    DEBUG('f', "%s es BottomLevel\n", path -> ToString());
 
     if(currentLevel != nullptr)
         delete [] currentLevel;
 
     currentLevel = path -> SplitBottomLevel();
 
+    DEBUG('f', "%s es path y %s es currentLevel\n", path -> ToString(), currentLevel);
+
+    printf("Printing directory content:\n");
+    for(DirectoryEntry *current = first; current != nullptr;
+        current = current -> next)
+        printf("%s\n", current -> name);
+
     // The file already exists.
     if(LockedFindCurrent(currentLevel) != nullptr){
+        DEBUG('f', "%s ya existe asi que no hago nada. Es un directorio? %d\n",
+              currentLevel, LockedFindCurrent(currentLevel) -> isDirectory);
         delete [] currentLevel;
         ReleaseWrite();
         return false;
@@ -540,6 +566,12 @@ Directory::LockedFetchFrom()
 void
 Directory::FreeList()
 {
+    // GUIDIOS: Esto por alguna razon hace que LockedFetchFrom cambie el path
+    // Fixear antes de entregar?
+    // Hacernos los boludos total hay memory leak por todos lados?
+    // return;
+    // Ahora anda y no se por que.
+
     DirectoryEntry* aux;
 
     while(first != nullptr){

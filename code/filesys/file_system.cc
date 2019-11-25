@@ -199,6 +199,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
        not header->Allocate(freeMap, initialSize))
         success = false; // No space in disk.
     else{
+        DEBUG('f', "Por llamar a Add\n");
         if(not directory->Add(name, sector, isDirectory)){
             success = false;
             header -> Deallocate(freeMap);
@@ -207,6 +208,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
             success = true;
             header->WriteBack(sector);
         }
+        DEBUG('f', "Por salir del if de create a a matar cosas\n");
     }
 
     ReleaseFreeMap(freeMap);

@@ -9,9 +9,6 @@ La estructura de directorios para soporte de concurrencia parece bastante simila
 	- Hay algunos caveats a las operaciones. Por ejemplo: Para eliminar un directorio no basta con que ese directorio no esté abierto, sino también no tiene que estar abierto ninguno de sus hijos.
 Cosas a implementar como mínimo: mkdir, rmdir, cd. Para cada directorio vamos a necesitar saber su daddy para poder movernos para arriba. Probablemente varias operaciones de OpenFile ahora necesiten saber la posición en el árbol de directorios :)
 
-Hay que testear FilePath, pero parecería estar hecho
-
-
 Roadmap
  - exception.cc tiene la implementacion de las syscalls. Hay que agregar mkdir
  y cd.
