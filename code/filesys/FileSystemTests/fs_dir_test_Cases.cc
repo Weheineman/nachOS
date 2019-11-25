@@ -329,9 +329,9 @@ void MultilevelStressThread(void *args_){
 	}
 	
 	/// Create each file.
-	char fileName[100];
+	char fileName[10];
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 100, "%d", i); 
+		snprintf(fileName, 10, "%d", i); 
 		if(not fileSystem -> Create(fileName, 0, false)){
 			printf("!!!! TestMultilevelStress failed: Child could not create file %d in directory %s\n", i, path);
 			return;
@@ -341,7 +341,7 @@ void MultilevelStressThread(void *args_){
 	/// Open each file.
 	OpenFile *descriptors[fileAmount];
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 100, "%d", i); 
+		snprintf(fileName, 10, "%d", i); 
 		descriptors[i] = fileSystem -> Open(fileName);
 		if(descriptors[i] == nullptr){
 			printf("!!!! TestMultilevelStress failed: Child could not open file %d in directory %s\n", i, path);
@@ -365,7 +365,7 @@ void MultilevelStressThread(void *args_){
 	for(unsigned readNum = 0; readNum < writeAmount; readNum ++){
 		for(unsigned file = 0; file < fileAmount; file ++){
 			unsigned numBytes = descriptors[file] -> Read(buffer, writeSize);
-			if (numBytes < writeSize or strcmp(buffer, toWrite)) {
+			if (numBytes < writeSize or strncmp(toWrite, buffer, writeSize)) {
 				printf("!!!! TestMultilevelStress failed: Child could not read file %d on iteration %d in directory %s\n", file, readNum, path);
 				return;
 			}
@@ -378,7 +378,7 @@ void MultilevelStressThread(void *args_){
 	
 	/// Remove each file.
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 100, "%d", i); 
+		snprintf(fileName, 10, "%d", i); 
 		if(not fileSystem -> Remove(fileName)){
 			printf("!!!! TestMultilevelStress failed: Child could not remove file %d in directory %s\n", i, path);
 			return;
