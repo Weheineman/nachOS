@@ -138,8 +138,8 @@ OpenFile::ReadAt(char *into, unsigned numBytes, unsigned position)
 
     if (position + numBytes > fileLength)
         numBytes = fileLength - position;
-    DEBUG('f', "Reading %u bytes at %u, from file of length %u, which starts at sector %u.\n",
-          numBytes, position, fileLength, sector);
+    // DEBUG('f', "Reading %u bytes at %u, from file of length %u, which starts at sector %u.\n",
+    //       numBytes, position, fileLength, sector);
 
     // The byte interval is [position, position+numBytes)
     // The sector interval is [firstSector, lastSector]
@@ -218,8 +218,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     }
 
     //numBytes = fileLength - position;
-    DEBUG('f', "Writing %u bytes at %u, from file of length %u, which starts at sector %u.\n",
-          numBytes, position, fileLength, sector);
+    // DEBUG('f', "Writing %u bytes at %u, from file of length %u, which starts at sector %u.\n",
+    //       numBytes, position, fileLength, sector);
 
     firstSector = DivRoundDown(position, SECTOR_SIZE);
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);

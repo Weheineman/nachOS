@@ -179,37 +179,40 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
     int         sector;
     bool        success;
 
+    // GUIDIOS:CHANCHADA
+    if(isDirectory)
+        initialSize = sizeof(unsigned);
+
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
     directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
 
-    if (directory->Find(name) != -1)
-        success = false;  // File is already in directory.
-    else {
-        // Redundant because AcquireFreeMap already sets the value of freeMap, but
-        // consistent with the use of freeMap outside of FileSystem.
-        freeMap = AcquireFreeMap();
-        sector = freeMap->Find();  // Find a sector to hold the file header.
-        if (sector == -1)
-            success = false;    // No free block for file header.
-        else if (!directory->Add(name, sector, isDirectory))
-            success = false;  // No space in directory.
-        else {
-            header = new FileHeader;
-            if (!header->Allocate(freeMap, initialSize))
-                success = false;  // No space on disk for data.
-            else {
-                success = true;
-                // Everthing worked, flush all changes back to disk.
-                header->WriteBack(sector);
-                ReleaseFreeMap(freeMap);
-            }
-            delete header;
+    // Redundant because AcquireFreeMap already sets the value of freeMap, but
+    // consistent with the use of freeMap outside of FileSystem.
+    freeMap = AcquireFreeMap();
+    sector = freeMap->Find();  // Find a sector to hold the file header.
+
+    header = new FileHeader;
+
+    if(sector == -1 or
+       not header->Allocate(freeMap, initialSize))
+        success = false; // No space in disk.
+    else{
+        if(not directory->Add(name, sector, isDirectory)){
+            success = false;
+            header -> Deallocate(freeMap);
+        }else{
+            // Everthing worked, flush all changes back to disk.
+            success = true;
+            header->WriteBack(sector);
         }
     }
-    delete directory;
 
+    ReleaseFreeMap(freeMap);
+    delete header;
+    delete directory;
+    DEBUG('f', "Termine fileSystem create con %d\n", success);
     return success;
 }
 
@@ -272,7 +275,6 @@ FileSystem::Remove(const char *name)
 
     openFileList -> ReleaseListLock();
     return result;
-
 }
 
 bool
@@ -285,7 +287,7 @@ FileSystem::DeleteFromDisk(const char *name){
     directory->FetchFrom();
 
     sector = directory->Find(name);
-    if (sector == -1) {
+    if (sector == -1 or sector == DIRECTORY_SECTOR) {
        delete directory;
        return false;  // file not found
     }
@@ -296,9 +298,9 @@ FileSystem::DeleteFromDisk(const char *name){
     // consistent with the use of freeMap outside of FileSystem.
     freeMap = AcquireFreeMap();
 
+    directory->Remove(name);
     fileHeader->Deallocate(freeMap);  // Remove data blocks.
     freeMap->Clear(sector);           // Remove header block.
-    directory->Remove(name);
 
     ReleaseFreeMap(freeMap);              // Flush to disk.
     delete fileHeader;

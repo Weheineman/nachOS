@@ -94,6 +94,13 @@ private:
     void LockedList(FilePath *path);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Initialize directory contents from disk.
+    void LockedFetchFrom();
+
+    // Deallocates the memory of the internal linked list.
+    void FreeList();
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Returns the directory entry corresponding to the given name at the
     /// current level.
     /// If there isn't one, it returns a nullptr.

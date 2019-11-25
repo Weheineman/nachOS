@@ -116,6 +116,9 @@ public:
     /// Create a file (UNIX `creat`).
     bool Create(const char *name, unsigned initialSize, bool isDirectory = false);
 
+    /// Create an empty directory (UNIX `mkdir`).
+    bool MakeDirectory(const char *name);
+
     /// Open a file (UNIX `open`).
     OpenFile *Open(const char *name);
 

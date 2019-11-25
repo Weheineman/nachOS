@@ -33,6 +33,7 @@
 ///
 Directory::Directory(int _sector)
 {
+    directorySize = 0;
     sector = _sector;
     first = last = nullptr;
 }
@@ -40,13 +41,7 @@ Directory::Directory(int _sector)
 /// De-allocate directory data structure.
 Directory::~Directory()
 {
-    DirectoryEntry* aux;
-
-    while(first != nullptr){
-  		aux = first -> next;
-  		delete first;
-  		first = aux;
-	}
+    FreeList();
 }
 
 /// Read the contents of the directory from disk.
@@ -56,36 +51,7 @@ void
 Directory::FetchFrom()
 {
     AcquireRead();
-
-    // The file looks like this:
-    // [directorySize | DirectoryEntry | ... | DirectoryEntry]
-    // where the amount of DirectoryEntries is directorySize
-
-    OpenFile *file = new OpenFile(sector);
-
-    // First, get the directory size.
-    file -> ReadAt((char*) &directorySize, sizeof(unsigned), 0);
-
-    // Then, read the directory entries.
-    for(unsigned readPos = sizeof(unsigned);
-        readPos < directorySize * sizeof(DirectoryEntry) + sizeof(unsigned);
-        readPos += sizeof(DirectoryEntry)){
-
-        // The constructor is called with dummy values, since they will be
-        // overwritten.
-        DirectoryEntry *newDirEntry = new DirectoryEntry(0, true, "");
-        file -> ReadAt((char*) newDirEntry, sizeof(DirectoryEntry), readPos);
-
-        newDirEntry -> next = nullptr;
-        if(IsEmpty())
-            first = last = newDirEntry;
-        else{
-            last -> next = newDirEntry;
-            last = last -> next;
-        }
-    }
-
-    delete file;
+    LockedFetchFrom();
     ReleaseRead();
 }
 
@@ -150,7 +116,12 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
 
     FilePath *path = currentThread -> GetPath();
     path -> Merge(pathString);
-    AcquireWrite();
+
+    if(path -> IsBottomLevel())
+        AcquireWrite();
+    else
+        AcquireRead();
+
     bool result = LockedAdd(path, newSector, isDirectory);
 
     delete path;
@@ -168,7 +139,12 @@ Directory::Remove(const char *pathString)
 
     FilePath *path = currentThread -> GetPath();
     path -> Merge(pathString);
-    AcquireWrite();
+
+    if(path -> IsBottomLevel())
+        AcquireWrite();
+    else
+        AcquireRead();
+
     bool result = LockedRemove(path);
 
     delete path;
@@ -226,8 +202,10 @@ Directory::IsEmpty()
 int
 Directory::LockedFind(FilePath *path){
     // If the path is root, return the hard coded sector.
-    if(path -> IsEmpty())
+    if(path -> IsEmpty()){
+        ReleaseRead();
         return DIRECTORY_SECTOR;
+    }
 
     char *currentLevel = nullptr;
 
@@ -254,7 +232,7 @@ Directory::LockedFind(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        FetchFrom();
+        LockedFetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -283,8 +261,10 @@ Directory::LockedFind(FilePath *path){
 bool
 Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     // The root folder cannot be created.
-    if(path -> IsEmpty())
+    if(path -> IsEmpty()){
+        ReleaseWrite();
         return false;
+    }
 
     char *currentLevel = nullptr;
 
@@ -296,7 +276,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         DirectoryEntry *entry = LockedFindCurrent(currentLevel);
 
         // The path has an invalid directory.
-        if(entry == nullptr or not entry -> isDirectory){
+        if(entry == nullptr or (not entry -> isDirectory)){
             delete [] currentLevel;
             directoryLockManager -> ReleaseRead(sector);
             return false;
@@ -313,7 +293,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         sector = entry -> sector;
 
         // Read the data from disk.
-        FetchFrom();
+        LockedFetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -340,8 +320,18 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
 
     directorySize++;
 
+    // If a new directory was created, it has to be written back as well.
+    if(isDirectory){
+        directoryLockManager -> AcquireWrite(newSector);
+        // Write back the level above the created directory.
+        ReleaseWrite();
+
+        sector = newSector;
+        directorySize = 0;
+        FreeList();
+    }
+
     delete [] currentLevel;
-    DEBUG('f', "Termine el add y tengo tamanio %d\n", directorySize);
     ReleaseWrite();
     return true;
 }
@@ -352,8 +342,10 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
 bool
 Directory::LockedRemove(FilePath *path){
     // The root folder cannot be removed.
-    if(path -> IsEmpty())
+    if(path -> IsEmpty()){
+        ReleaseWrite();
         return false;
+    }
 
     char *currentLevel = nullptr;
 
@@ -382,7 +374,7 @@ Directory::LockedRemove(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        FetchFrom();
+        LockedFetchFrom();
     }
 
     if(currentLevel != nullptr)
@@ -405,7 +397,7 @@ Directory::LockedRemove(FilePath *path){
     if(target -> isDirectory){
         Directory *targetDir = new Directory(target -> sector);
         directoryLockManager -> AcquireRead(target -> sector);
-        targetDir -> FetchFrom();
+        targetDir -> LockedFetchFrom();
         isNonEmptyDir = targetDir -> IsEmpty();
 
         delete targetDir;
@@ -470,7 +462,7 @@ Directory::LockedList(FilePath *path){
         sector = entry -> sector;
 
         // Read the data from disk.
-        FetchFrom();
+        LockedFetchFrom();
     }
 
     printf("Printing directory content:\n");
@@ -503,6 +495,59 @@ Directory::LockedFindCurrent(const char *name)
     return nullptr;
 }
 
+/// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+/// Read the contents of the directory from disk.
+///
+/// * `file` is file containing the directory contents.
+void
+Directory::LockedFetchFrom()
+{
+    // First deallocate the current linked list.
+    FreeList();
+
+    // The file looks like this:
+    // [directorySize | DirectoryEntry | ... | DirectoryEntry]
+    // where the amount of DirectoryEntries is directorySize
+
+    OpenFile *file = new OpenFile(sector);
+
+    // First, get the directory size.
+    file -> ReadAt((char*) &directorySize, sizeof(unsigned), 0);
+
+    // Then, read the directory entries.
+    for(unsigned readPos = sizeof(unsigned);
+        readPos < directorySize * sizeof(DirectoryEntry) + sizeof(unsigned);
+        readPos += sizeof(DirectoryEntry)){
+
+        // The constructor is called with dummy values, since they will be
+        // overwritten.
+        DirectoryEntry *newDirEntry = new DirectoryEntry(0, true, "");
+        file -> ReadAt((char*) newDirEntry, sizeof(DirectoryEntry), readPos);
+
+        newDirEntry -> next = nullptr;
+        if(IsEmpty())
+            first = last = newDirEntry;
+        else{
+            last -> next = newDirEntry;
+            last = last -> next;
+        }
+    }
+
+    delete file;
+}
+
+// Deallocates the memory of the internal linked list.
+void
+Directory::FreeList()
+{
+    DirectoryEntry* aux;
+
+    while(first != nullptr){
+  		aux = first -> next;
+  		delete first;
+  		first = aux;
+	}
+}
 
 // Dummy function our teacher told us not to implement.
 void

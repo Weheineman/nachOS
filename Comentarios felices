@@ -13,9 +13,6 @@ Hay que testear FilePath, pero parecería estar hecho
 
 
 Roadmap
- - DING DING BUG ALERT DING DING En Directory, Add toma writer lock, el while
- loop en LockedAdd releasea reader lock. Pasa lo mismo con Remove y LockedRemove.
-
  - exception.cc tiene la implementacion de las syscalls. Hay que agregar mkdir
  y cd.
 
