@@ -10,8 +10,7 @@ La estructura de directorios para soporte de concurrencia parece bastante simila
 Cosas a implementar como mínimo: mkdir, rmdir, cd. Para cada directorio vamos a necesitar saber su daddy para poder movernos para arriba. Probablemente varias operaciones de OpenFile ahora necesiten saber la posición en el árbol de directorios :)
 
 Roadmap
- - exception.cc tiene la implementacion de las syscalls. Hay que agregar mkdir
- y cd.
+ - exception.cc tiene la implementacion de las syscalls. Hay que agregar mkdir?
 
  - Integrar directory y filesystem, hay que hacerle saber al filesys si debe
  crear un directorio o no, mkdir es igual a create pero tiene true el isDirectory.

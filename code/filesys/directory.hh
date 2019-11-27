@@ -41,6 +41,11 @@ public:
     /// Find the sector number of the `FileHeader` for file in the given path.
     int Find(const char *path);
 
+    /// Find the sector number of the `FileHeader` for the directory in the
+    /// given path. Returns -1 if the file does not exist or if it isn't a
+    /// directory.
+    int FindDirectory(const char *path);
+
     /// Add a file or directory into the directory at the given path.
     /// If isDirectory is true, a directory is added.
     /// Otherwise, a non directory file is added.
@@ -82,6 +87,12 @@ private:
     int LockedFind(FilePath *path);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+    /// Find the sector number of the `FileHeader` for the directory in the
+    /// given path. Returns -1 if the file does not exist or if it isn't a
+    /// directory.
+    int LockedFindDirectory(FilePath *path);
+
+    /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Add a file into the directory at the given path.
     bool LockedAdd(FilePath *path, int newSector, bool isDirectory);
 
@@ -97,8 +108,14 @@ private:
     /// Initialize directory contents from disk.
     void LockedFetchFrom();
 
-    // Deallocates the memory of the internal linked list.
+    /// Deallocates the memory of the internal linked list.
     void FreeList();
+
+    /// Sets the current position to the root directory.
+    void ReturnToRoot();
+
+    /// Removes a node from the linked list.
+    void RemoveFromList(DirectoryEntry *target);
 
     /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
     /// Returns the directory entry corresponding to the given name at the

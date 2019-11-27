@@ -20,6 +20,7 @@ public:
         sector = _sector;
         isDirectory = _isDirectory;
         strncpy(name, _name, FILE_NAME_MAX_LEN);
+        next = nullptr;
     }
 
     /// Is this entry a Directory?

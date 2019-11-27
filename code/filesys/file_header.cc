@@ -249,7 +249,7 @@ FileHeader::Extend(Bitmap *freeMap, unsigned extendSize) {
         return false;  // Not enough space.
     }
 
-    DEBUG('f', "There is enough disk size to extend the file.\n");
+    // DEBUG('f', "There is enough disk size to extend the file.\n");
 
     // The amount of bytes that still need to be allocated.
     unsigned remainingBytes = extendSize;

@@ -199,7 +199,6 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
        not header->Allocate(freeMap, initialSize))
         success = false; // No space in disk.
     else{
-        DEBUG('f', "Por llamar a Add\n");
         if(not directory->Add(name, sector, isDirectory)){
             success = false;
             header -> Deallocate(freeMap);
@@ -208,13 +207,11 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
             success = true;
             header->WriteBack(sector);
         }
-        DEBUG('f', "Por salir del if de create a a matar cosas\n");
     }
 
     ReleaseFreeMap(freeMap);
     delete header;
     delete directory;
-    DEBUG('f', "Termine fileSystem create con %d\n", success);
     return success;
 }
 
@@ -234,10 +231,8 @@ FileSystem::Open(const char *name)
     OpenFile  *openFile = nullptr;
     int        sector;
 
-    DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom();
 
-    DEBUG('f', "Calling dir::find with %s\n", name);
     sector = directory->Find(name);
     if (sector >= 0){
         ReaderWriter* newFileRW = openFileList -> AddOpenFile(name);
@@ -300,14 +295,16 @@ FileSystem::DeleteFromDisk(const char *name){
     // consistent with the use of freeMap outside of FileSystem.
     freeMap = AcquireFreeMap();
 
-    directory->Remove(name);
-    fileHeader->Deallocate(freeMap);  // Remove data blocks.
-    freeMap->Clear(sector);           // Remove header block.
+    bool success = directory->Remove(name);
+    if(success){
+        fileHeader->Deallocate(freeMap);  // Remove data blocks.
+        freeMap->Clear(sector);           // Remove header block.
+    }
 
     ReleaseFreeMap(freeMap);              // Flush to disk.
     delete fileHeader;
     delete directory;
-    return true;
+    return success;
 }
 
 /// Given a thread and a relative path, returns if the global path
@@ -322,7 +319,7 @@ FileSystem::ChangeDirectory(const char *pathString){
     path -> Merge(pathString);
 
     // Check if the new path is valid.
-    bool validPath = (directory -> Find(pathString) != -1);
+    bool validPath = (directory -> FindDirectory(pathString) != -1);
 
     if(validPath)
 		currentThread -> SetPath(path);

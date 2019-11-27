@@ -249,7 +249,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     if(fileLock != nullptr)
         fileLock -> ReleaseWrite();
 
-    DEBUG('f', "Writing successful. %d bytes written.\n", numBytes);
+    // DEBUG('f', "Writing successful. %d bytes written.\n", numBytes);
 
     return numBytes;
 }

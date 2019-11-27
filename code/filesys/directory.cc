@@ -42,7 +42,7 @@ Directory::Directory(int _sector)
 Directory::~Directory()
 {
     // GUIDIOS: FIX FIX FIX
-    // FreeList();
+    FreeList();
 }
 
 /// Read the contents of the directory from disk.
@@ -62,7 +62,6 @@ Directory::FetchFrom()
 void
 Directory::WriteBack()
 {
-    AcquireRead();
     OpenFile *file = new OpenFile(sector);
 
     // The file looks like this:
@@ -82,7 +81,6 @@ Directory::WriteBack()
     }
 
     delete file;
-    ReleaseRead();
 }
 
 /// Look up file path in directory, and return the disk sector number where
@@ -99,6 +97,27 @@ Directory::Find(const char *pathString)
     path -> Merge(pathString);
     AcquireRead();
     int result = LockedFind(path);
+    ReturnToRoot();
+
+    delete path;
+    return result;
+}
+
+/// Look up file path in directory, and return the disk sector number where
+/// the file's header is stored.  Return -1 if the path is not in the
+/// directory or if the file isn't a directory.
+///
+/// * `path` is the file path to look up.
+int
+Directory::FindDirectory(const char *pathString)
+{
+    ASSERT(pathString != nullptr);
+
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(pathString);
+    AcquireRead();
+    int result = LockedFindDirectory(path);
+    ReturnToRoot();
 
     delete path;
     return result;
@@ -116,14 +135,7 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
     ASSERT(pathString != nullptr);
 
     FilePath *path = currentThread -> GetPath();
-    DEBUG('f', "Path del currentThread es %s\n",
-          path -> ToString());
-    DEBUG('f', "pathString es %s\n",
-          pathString);
-
     path -> Merge(pathString);
-
-    DEBUG('f', "Path me quedo %s\n", path -> ToString());
 
     if(path -> IsBottomLevel())
         AcquireWrite();
@@ -131,6 +143,8 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
         AcquireRead();
 
     bool result = LockedAdd(path, newSector, isDirectory);
+
+    ReturnToRoot();
 
     delete path;
     return result;
@@ -145,6 +159,8 @@ Directory::Remove(const char *pathString)
 {
     ASSERT(pathString != nullptr);
 
+    DEBUG('f', "Voy a nismanear %s\n", pathString);
+
     FilePath *path = currentThread -> GetPath();
     path -> Merge(pathString);
 
@@ -154,8 +170,10 @@ Directory::Remove(const char *pathString)
         AcquireRead();
 
     bool result = LockedRemove(path);
+    ReturnToRoot();
 
     delete path;
+    DEBUG('f', "!!!!!!!!!!!!!!!!! remove dio %d\n", result);
     return result;
 }
 
@@ -166,6 +184,7 @@ Directory::List()
     FilePath *path = currentThread -> GetPath();
     AcquireRead();
     LockedList(path);
+    ReturnToRoot();
     delete path;
 }
 
@@ -263,6 +282,63 @@ Directory::LockedFind(FilePath *path){
     return sectorNumber;
 }
 
+/// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
+/// Find the sector number of the `FileHeader` for the directory in the
+/// given path. Returns -1 if the file does not exist or if it isn't a
+/// directory.
+int
+Directory::LockedFindDirectory(FilePath *path){
+    // If the path is root, return the hard coded sector.
+    if(path -> IsEmpty()){
+        ReleaseRead();
+        return DIRECTORY_SECTOR;
+    }
+
+    char *currentLevel = nullptr;
+
+    // Initialize to the error value.
+    int sectorNumber = -1;
+
+    while (not path -> IsBottomLevel()){
+        if(currentLevel != nullptr)
+            delete [] currentLevel;
+
+        currentLevel = path -> SplitBottomLevel();
+        DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+        // The path has an invalid directory.
+        if(entry == nullptr or not entry -> isDirectory){
+            delete [] currentLevel;
+            directoryLockManager -> ReleaseRead(sector);
+            return -1;
+        }
+
+        // Replace the data of the directory in RAM with the data of the
+        // directory one level below.
+        directoryLockManager -> AcquireRead(entry -> sector);
+        directoryLockManager -> ReleaseRead(sector);
+        sector = entry -> sector;
+
+        // Read the data from disk.
+        LockedFetchFrom();
+    }
+
+    if(currentLevel != nullptr)
+        delete [] currentLevel;
+
+    currentLevel = path -> SplitBottomLevel();
+
+    DirectoryEntry *entry = LockedFindCurrent(currentLevel);
+
+    // If the bottom file level exists and is a directory, get the sector number.
+    if(entry != nullptr and entry -> isDirectory)
+        sectorNumber = entry -> sector;
+
+    delete [] currentLevel;
+    directoryLockManager -> ReleaseRead(sector);
+    return sectorNumber;
+}
+
 
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Add a file into the directory at the given path.
@@ -273,8 +349,6 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         ReleaseWrite();
         return false;
     }
-
-    DEBUG('f', "Llegue a lockedadd y no mori\n");
 
     char *currentLevel = nullptr;
 
@@ -292,8 +366,6 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
             return false;
         }
 
-        DEBUG('f', "%s es un directorio :)\n", currentLevel);
-
         // Replace the data of the directory in RAM with the data of the
         // directory one level below.
         if(path -> IsBottomLevel())
@@ -304,31 +376,17 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         directoryLockManager -> ReleaseRead(sector);
         sector = entry -> sector;
 
-        DEBUG('f', "Estoy antes del fetch y el path es %s\n", path -> ToString());
         // Read the data from disk.
         LockedFetchFrom();
-        DEBUG('f', "Estoy despues del fetch y el path es %s\n", path -> ToString());
-
     }
-
-    DEBUG('f', "%s es BottomLevel\n", path -> ToString());
 
     if(currentLevel != nullptr)
         delete [] currentLevel;
 
     currentLevel = path -> SplitBottomLevel();
 
-    DEBUG('f', "%s es path y %s es currentLevel\n", path -> ToString(), currentLevel);
-
-    printf("Printing directory content:\n");
-    for(DirectoryEntry *current = first; current != nullptr;
-        current = current -> next)
-        printf("%s\n", current -> name);
-
     // The file already exists.
     if(LockedFindCurrent(currentLevel) != nullptr){
-        DEBUG('f', "%s ya existe asi que no hago nada. Es un directorio? %d\n",
-              currentLevel, LockedFindCurrent(currentLevel) -> isDirectory);
         delete [] currentLevel;
         ReleaseWrite();
         return false;
@@ -407,55 +465,34 @@ Directory::LockedRemove(FilePath *path){
         delete [] currentLevel;
 
     currentLevel = path -> SplitBottomLevel();
-
     DirectoryEntry *target = LockedFindCurrent(currentLevel);
+    delete [] currentLevel;
 
     // File not found.
     if(target == nullptr){
-        delete [] currentLevel;
         ReleaseWrite();
         return false;
     }
 
-    // Check that the target isn't a non empty directory.
-    bool isNonEmptyDir = false;
 
     if(target -> isDirectory){
+        DEBUG('f', "Voy a matar un directorio\n");
         Directory *targetDir = new Directory(target -> sector);
-        directoryLockManager -> AcquireRead(target -> sector);
+        targetDir -> AcquireWrite();
         targetDir -> LockedFetchFrom();
-        isNonEmptyDir = targetDir -> IsEmpty();
 
+        // Only empty directories can be deleted.
+        bool isEmptyDir = targetDir -> IsEmpty();
+
+        if(isEmptyDir)
+            RemoveFromList(target);
+        targetDir -> ReleaseWrite();
         delete targetDir;
-        directoryLockManager -> ReleaseRead(target -> sector);
-    }
-
-    // Can't remove a non empty directory.
-    if(isNonEmptyDir){
-        delete [] currentLevel;
         ReleaseWrite();
-        return false;
+        return isEmptyDir;
     }
 
-    DirectoryEntry *current = nullptr;
-
-    //If the first item is to be deleted, advance the first pointer.
-	if(first == target)
-		first = first -> next;
-	else{
-		for(current = first; current -> next != target;
-            current = current -> next);
-
-		current -> next = current -> next -> next;
-	}
-
-	//If the last item is to be deleted, bring the last pointer one item back.
-	if(last == target)
-		last = current;
-
-    directorySize--;
-
-    delete [] currentLevel;
+    RemoveFromList(target);
     ReleaseWrite();
     return true;
 }
@@ -521,6 +558,14 @@ Directory::LockedFindCurrent(const char *name)
     return nullptr;
 }
 
+/// Sets the current position to the root directory.
+void
+Directory::ReturnToRoot()
+{
+    sector = DIRECTORY_SECTOR;
+    FetchFrom();
+}
+
 /// ASSUMES THE LOCK FOR THE CURRENT DIRECTORY IS TAKEN
 /// Read the contents of the directory from disk.
 ///
@@ -566,12 +611,6 @@ Directory::LockedFetchFrom()
 void
 Directory::FreeList()
 {
-    // GUIDIOS: Esto por alguna razon hace que LockedFetchFrom cambie el path
-    // Fixear antes de entregar?
-    // Hacernos los boludos total hay memory leak por todos lados?
-    // return;
-    // Ahora anda y no se por que.
-
     DirectoryEntry* aux;
 
     while(first != nullptr){
@@ -579,6 +618,30 @@ Directory::FreeList()
   		delete first;
   		first = aux;
 	}
+
+    first = last = nullptr;
+}
+
+/// Removes a node from the linked list.
+void
+Directory::RemoveFromList(DirectoryEntry *target){
+    DirectoryEntry *current = nullptr;
+
+    //If the first item is to be deleted, advance the first pointer.
+	if(first == target)
+		first = first -> next;
+	else{
+		for(current = first; current -> next != target;
+            current = current -> next);
+
+		current -> next = current -> next -> next;
+	}
+
+	//If the last item is to be deleted, bring the last pointer one item back.
+	if(last == target)
+		last = current;
+
+    directorySize--;
 }
 
 // Dummy function our teacher told us not to implement.
