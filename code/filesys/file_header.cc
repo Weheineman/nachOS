@@ -43,6 +43,8 @@ FileHeader::Allocate(Bitmap *freeMap, unsigned fileSize)
     raw.numSectors = dataSectorCount + indirectionSectorCount;
     indirTable = vector<FileHeader*>(indirectionSectorCount);
 
+	memset(raw.dataSectors, 0, sizeof(unsigned) * NUM_DIRECT);
+	
     if (freeMap->CountClear() < raw.numSectors or INDIR_MAX_FILE_SIZE < fileSize)
         return false;  // Not enough space.
 

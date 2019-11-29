@@ -45,9 +45,7 @@ FilePath::ToString(){
 // Returns whether the current path is a terminal node.
 bool
 FilePath::IsBottomLevel(){
-	if(IsEmpty())
-		return true;
-	return first -> next == nullptr;
+	return IsEmpty() or first == last;
 }
 
 // Returns whether the path is empty.

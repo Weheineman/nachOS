@@ -176,7 +176,6 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     unsigned fileLength = hdr->FileLength();
     unsigned firstSector, lastSector, numSectors;
     bool firstAligned, lastAligned;
-    char *buf;
 
     if (position > fileLength){
         if(fileLock != nullptr)
@@ -225,7 +224,8 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     lastSector  = DivRoundDown(position + numBytes - 1, SECTOR_SIZE);
     numSectors  = 1 + lastSector - firstSector;
 
-    buf = new char [numSectors * SECTOR_SIZE];
+    char *buf = new char [numSectors * SECTOR_SIZE];
+    memset(buf, 0, numSectors * SECTOR_SIZE);
 
     firstAligned = position == firstSector * SECTOR_SIZE;
     lastAligned  = position + numBytes == (lastSector + 1) * SECTOR_SIZE;
@@ -243,7 +243,7 @@ OpenFile::WriteAt(const char *from, unsigned numBytes, unsigned position)
     // Write modified sectors back.
     for (unsigned i = firstSector; i <= lastSector; i++)
         synchDisk->WriteSector(hdr->ByteToSector(i * SECTOR_SIZE),
-                               &buf[(i - firstSector) * SECTOR_SIZE]);
+                               &(buf[(i - firstSector) * SECTOR_SIZE]));
     delete [] buf;
 
     if(fileLock != nullptr)

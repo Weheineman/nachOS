@@ -126,6 +126,8 @@ FileSystem::FileSystem(bool format)
         }
 
         delete freeMap;
+        freeMap = nullptr;
+        
         delete directory;
         delete mapHeader;
         delete dirHeader;
@@ -139,6 +141,9 @@ FileSystem::FileSystem(bool format)
 
 FileSystem::~FileSystem()
 {
+    if(freeMap != nullptr)
+		freeMap -> WriteBack(freeMapFile);
+    
     delete freeMapFile;
     delete openFileList;
     delete freeMapLock;

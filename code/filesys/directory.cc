@@ -69,15 +69,13 @@ Directory::WriteBack()
     // where the amount of DirectoryEntries is directorySize
 
     // First, write the directory size.
-    file -> WriteAt((char*) &directorySize, sizeof(unsigned), 0);
+    file -> Write((char*) &directorySize, sizeof(unsigned));
 
     // Then, write the directory entries.
-    DirectoryEntry *currentEntry = first;
-    for(unsigned writePos = sizeof(unsigned);
-        writePos < directorySize * sizeof(DirectoryEntry) + sizeof(unsigned);
-        writePos += sizeof(DirectoryEntry)){
-        file -> WriteAt((char*) currentEntry, sizeof(DirectoryEntry), writePos);
-        currentEntry = currentEntry -> next;
+    for(DirectoryEntry *currentEntry = first;
+        currentEntry != nullptr;
+        currentEntry = currentEntry -> next){
+        file -> Write((char*) currentEntry, sizeof(DirectoryEntry));
     }
 
     delete file;
@@ -159,6 +157,7 @@ Directory::Remove(const char *pathString)
 {
     ASSERT(pathString != nullptr);
 
+	/// GUIDIOS: Sacar esto, por el amor de Dios.
     DEBUG('f', "Voy a nismanear %s\n", pathString);
 
     FilePath *path = currentThread -> GetPath();
@@ -392,9 +391,8 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
         return false;
     }
 
-    DirectoryEntry *newEntry =
-                    new DirectoryEntry(newSector, isDirectory, currentLevel);
-
+    DirectoryEntry *newEntry = new DirectoryEntry(newSector, isDirectory, currentLevel);
+    
     if(IsEmpty())
         first = last = newEntry;
     else{
@@ -583,17 +581,14 @@ Directory::LockedFetchFrom()
     OpenFile *file = new OpenFile(sector);
 
     // First, get the directory size.
-    file -> ReadAt((char*) &directorySize, sizeof(unsigned), 0);
+    file -> Read((char*) &directorySize, sizeof(unsigned));
 
     // Then, read the directory entries.
-    for(unsigned readPos = sizeof(unsigned);
-        readPos < directorySize * sizeof(DirectoryEntry) + sizeof(unsigned);
-        readPos += sizeof(DirectoryEntry)){
-
+    for(unsigned readNum = 0; readNum < directorySize; readNum ++){
         // The constructor is called with dummy values, since they will be
         // overwritten.
         DirectoryEntry *newDirEntry = new DirectoryEntry(0, true, "");
-        file -> ReadAt((char*) newDirEntry, sizeof(DirectoryEntry), readPos);
+        file -> Read((char*) newDirEntry, sizeof(DirectoryEntry));
 
         newDirEntry -> next = nullptr;
         if(IsEmpty())

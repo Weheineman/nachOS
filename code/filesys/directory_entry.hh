@@ -16,7 +16,7 @@
 /// access them directly.
 class DirectoryEntry {
 public:
-    DirectoryEntry(unsigned _sector, bool _isDirectory, const char * _name){
+    DirectoryEntry(unsigned _sector, unsigned _isDirectory, const char * _name){
         sector = _sector;
         isDirectory = _isDirectory;
         strncpy(name, _name, FILE_NAME_MAX_LEN);
@@ -24,13 +24,15 @@ public:
     }
 
     /// Is this entry a Directory?
-    bool isDirectory;
+    unsigned isDirectory;
     /// Location on disk to find the `FileHeader` for this file.
     unsigned sector;
-    /// Text name for file, with +1 for the trailing `'\0'`.
-    char name[FILE_NAME_MAX_LEN + 1];
     /// Pointer to the next DirectoryEntry
     DirectoryEntry *next;
+    /// Text name for file, with +1 for the trailing `'\0'`.
+    //GUIDIOS: Le tuve que sacar el +1 por el tema del padding. Ver qué hacemos con esto.
+    char name[FILE_NAME_MAX_LEN];
+    
 };
 
 
