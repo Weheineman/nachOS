@@ -127,7 +127,7 @@ FileSystem::FileSystem(bool format)
 
         delete freeMap;
         freeMap = nullptr;
-        
+
         delete directory;
         delete mapHeader;
         delete dirHeader;
@@ -143,7 +143,7 @@ FileSystem::~FileSystem()
 {
     if(freeMap != nullptr)
 		freeMap -> WriteBack(freeMapFile);
-    
+
     delete freeMapFile;
     delete openFileList;
     delete freeMapLock;
@@ -204,13 +204,13 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
        not header->Allocate(freeMap, initialSize))
         success = false; // No space in disk.
     else{
+        header->WriteBack(sector);
         if(not directory->Add(name, sector, isDirectory)){
             success = false;
             header -> Deallocate(freeMap);
         }else{
             // Everthing worked, flush all changes back to disk.
             success = true;
-            header->WriteBack(sector);
         }
     }
 

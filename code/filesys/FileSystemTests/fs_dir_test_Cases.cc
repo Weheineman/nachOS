@@ -255,20 +255,20 @@ void RemoveDirChild(void *args_){
 	Semaphore *parentReady = args -> parentReady;
 	Semaphore *childReady = args -> childReady;
 	char *subDirectory = args -> subDirectory;
-	
+
 	if(not fileSystem -> ChangeDirectory(subDirectory)){
 		printf("!!!! TestRemoveDirectoryWithThread failed: Child thread could not move to test directory\n");
 		return;
 	}
-	
+
 	childReady -> V();
 	parentReady -> P();
-	
+
 	if(not fileSystem -> ChangeDirectory("..")){
 		printf("!!!! TestRemoveDirectoryWithThread failed: Child thread could not move to its parent directory\n");
 		return;
 	}
-	
+
 	childReady -> V();
 }
 
@@ -276,37 +276,37 @@ void RemoveDirChild(void *args_){
 // Checks that an empty directory with a thread located inside it is still removable.
 void TestRemoveDirectoryWithThread(){
 	char subDirectory[] = "/Test";
-	
+
 	if(not fileSystem -> Create(subDirectory, 0, true)){
 		printf("!!!! TestRemoveDirectoryWithThread failed: Could not create test directory\n");
 		return;
 	}
-	
+
 	Semaphore *parentReady = new Semaphore("Parent Directory Ready", 0);
 	Semaphore *childReady  = new Semaphore("Child Directory Ready", 0);
-	
+
 	RemoveDirChildArg *childArgs = new RemoveDirChildArg;
 	childArgs -> parentReady = parentReady;
 	childArgs -> childReady = childReady;
 	childArgs -> subDirectory = subDirectory;
-	
+
 	Thread *childThread = new Thread("Child Thread");
 	childThread -> Fork(RemoveDirChild, (void *) childArgs);
-	
+
 	childReady -> P();
-	
+
 	if(not fileSystem -> Remove(subDirectory)){
 		printf("!!!! TestRemoveDirectoryWithThread failed: Could not remove test directory with child thread inside\n");
 		return;
 	}
-	
+
 	parentReady -> V();
 	childReady -> P();
 
 	delete parentReady;
 	delete childReady;
 	delete childArgs;
-	
+
 	printf("--- TestRemoveDirectoryWithThread successful!\n\n\n");
 }
 
@@ -320,35 +320,35 @@ void MultilevelStressThread(void *args_){
 	unsigned writeAmount = args -> writeAmount;
 	unsigned writeSize = args -> writeSize;
 	unsigned fileAmount = args -> fileAmount;
-	Semaphore *finishCheck = args -> finishCheck;	
-	
+	Semaphore *finishCheck = args -> finishCheck;
+
 	/// Move to the given subdirectory.
 	if(not fileSystem -> ChangeDirectory(path)){
 		printf("!!!! TestMultilevelStress failed: Child could not move to directory %s\n", path);
 		return;
 	}
-	
+
 	/// Create each file.
 	char fileName[10];
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 10, "%d", i); 
+		snprintf(fileName, 10, "%d", i);
 		if(not fileSystem -> Create(fileName, 0, false)){
 			printf("!!!! TestMultilevelStress failed: Child could not create file %d in directory %s\n", i, path);
 			return;
 		}
 	}
-	
+
 	/// Open each file.
 	OpenFile *descriptors[fileAmount];
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 10, "%d", i); 
+		snprintf(fileName, 10, "%d", i);
 		descriptors[i] = fileSystem -> Open(fileName);
 		if(descriptors[i] == nullptr){
 			printf("!!!! TestMultilevelStress failed: Child could not open file %d in directory %s\n", i, path);
 			return;
 		}
 	}
-	
+
 	/// Write to each file.
 	for(unsigned writeNum = 0; writeNum < writeAmount; writeNum ++){
 		for(unsigned file = 0; file < fileAmount; file ++){
@@ -359,7 +359,11 @@ void MultilevelStressThread(void *args_){
 			}
 		}
 	}
-	
+
+	// Move back the seek position to the beginning of the file.
+	for(unsigned file = 0; file < fileAmount; file++)
+		descriptors[file] -> Seek(0);
+
 	/// Read each file and check it was correctly written.
 	char buffer[writeSize + 1];
 	for(unsigned readNum = 0; readNum < writeAmount; readNum ++){
@@ -371,20 +375,22 @@ void MultilevelStressThread(void *args_){
 			}
 		}
 	}
-	
+
 	/// Close each file.
 	for(unsigned i = 0; i < fileAmount; i++)
 		delete descriptors[i];
-	
+
 	/// Remove each file.
 	for(unsigned i = 0; i < fileAmount; i++){
-		snprintf(fileName, 10, "%d", i); 
+		snprintf(fileName, 10, "%d", i);
 		if(not fileSystem -> Remove(fileName)){
 			printf("!!!! TestMultilevelStress failed: Child could not remove file %d in directory %s\n", i, path);
 			return;
 		}
 	}
-			
+
+	printf("Termino el chabon en %s\n", path);
+
 	/// Report to master thread.
 	finishCheck -> V();
 }
@@ -393,22 +399,22 @@ void MultilevelStressThread(void *args_){
 // files and write to them concurrently.
 void TestMultilevelStress(){
 	const unsigned subDirLen = 10;
-	char subDirs[][subDirLen] = {"/", "/1", "/2", "/1/A", "/1/B", "/2/A", "/2/B"};
+	char subDirs[][subDirLen] = {"/", "/A", "/B", "/A/A", "/A/B", "/B/A", "/B/B"};
 	unsigned subDirCount = (sizeof subDirs) / subDirLen;
-	
+
 	// Setting i initially to 1 on purpose to ignore the root level.
 	for(unsigned i = 1; i < subDirCount; i++)
 		if(not fileSystem -> Create(subDirs[i], 0, true)){
 			printf("!!!! TestMultilevelStress failed: Could not create directory %s\n", subDirs[i]);
 			return;
 		}
-	
+
 	char toWrite[] = "1234567890";
 	unsigned writeAmount = 100;
 	unsigned writeSize = sizeof toWrite;
 	unsigned fileAmount = 5;
 	Semaphore *finishCheck = new Semaphore("Multilevel Stress Test", 0);
-	
+
 	MultiLevelStressArg *threadArgs = new MultiLevelStressArg[subDirCount];
 	for(unsigned i = 0; i < subDirCount; i++){
 		threadArgs[i].path = subDirs[i];
@@ -423,12 +429,12 @@ void TestMultilevelStress(){
 
 	for(unsigned i = 0; i < subDirCount; i++)
 		finishCheck -> P();
-			
+
 	for(unsigned i = subDirCount - 1; i >= 1; i --)
 		if(not fileSystem -> Remove(subDirs[i]))
 			printf("!!!! TestMultilevelStress failed, kinda: Every child finished executing but could not remove directory %s\n", subDirs[i]);
-	
+
 	delete finishCheck;
-	
+
 	printf("--- TestMultilevelStress successful!\n\n\n");
 }

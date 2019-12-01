@@ -392,7 +392,7 @@ Directory::LockedAdd(FilePath *path, int newSector, bool isDirectory){
     }
 
     DirectoryEntry *newEntry = new DirectoryEntry(newSector, isDirectory, currentLevel);
-    
+
     if(IsEmpty())
         first = last = newEntry;
     else{
