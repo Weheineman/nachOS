@@ -11,5 +11,5 @@ vacio y cd .. anda piola.
 
 
 Decisiones sobre path:
-EN un principio asumimos correctitud de los paths que nos pasan, falta ver el error handling.
+En un principio asumimos correctitud de los paths que nos pasan, falta ver el error handling (lo hace Directory).
 Definimos que si un path empieza con '/' entonces es global. Si no, se lo considera local.
