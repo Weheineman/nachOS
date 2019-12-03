@@ -384,12 +384,10 @@ void MultilevelStressThread(void *args_){
 	for(unsigned i = 0; i < fileAmount; i++){
 		snprintf(fileName, 10, "%d", i);
 		if(not fileSystem -> Remove(fileName)){
-			printf("!!!! TestMultilevelStress failed: Child could not remove file %d in directory %s\n", i, path);
+			printf("!!!! TestMultilevelStress failed: Child could not remove file %d in directory %s\nfileName %s\n", i, path, fileName);
 			return;
 		}
 	}
-
-	printf("Termino el chabon en %s\n", path);
 
 	/// Report to master thread.
 	finishCheck -> V();

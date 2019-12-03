@@ -31,8 +31,7 @@ public:
     /// Pointer to the next DirectoryEntry
     DirectoryEntry *next;
     /// Text name for file, with +1 for the trailing `'\0'`.
-    //GUIDIOS: Le tuve que sacar el +1 por el tema del padding. Ver qué hacemos con esto.
-    char name[FILE_NAME_MAX_LEN];
+    char name[FILE_NAME_MAX_LEN + 1];
 
 };
 

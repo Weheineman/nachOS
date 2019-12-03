@@ -77,6 +77,7 @@ OpenFileList::CloseOpenFile(const char *fileName){
 bool
 OpenFileList::SetUpRemoval(const char *fileName){
     bool fileIsOpen;
+
     FileMetadataNode* node = FindOpenFile(fileName);
 	if(node != nullptr){
         node -> pendingRemove = true;
@@ -118,7 +119,8 @@ OpenFileList::IsEmpty(){
 FileMetadataNode*
 OpenFileList::CreateNode(const char* fileName){
 	FileMetadataNode* node = new FileMetadataNode;
-	node -> name = new char [FILE_NAME_MAX_LEN];
+    // We have well behaved users who will not hack us :)
+	node -> name = new char [strlen(fileName) + 1];
 	strcpy(node -> name, fileName);
 	node -> lock = new ReaderWriter();
 	node -> openInstances = 1;

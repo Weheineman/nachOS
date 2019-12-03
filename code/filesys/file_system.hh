@@ -83,12 +83,14 @@ public:
 
 #include "open_file_list.hh"
 #include "thread.hh"
+#include "file_path.hh"
 
 class Thread;
 class OpenFile;
 class Bitmap;
 class OpenFileList;
 class Lock;
+class FilePath;
 
 /// Sectors containing the file headers for the bitmap of free sectors, and
 /// the directory of files.  These file headers are placed in well-known
@@ -159,6 +161,12 @@ private:
     /// This is called after checking the given file is not open
     /// and assumes the lock from the OpenFileList is previously acquired.
     bool DeleteFromDisk(const char *name);
+
+    /// Generates a path based on the given string.
+    /// If the fileName is an absolute path, a FilePath is generated with it.
+    /// If it is a relative path, it is first merged with the current thread's
+    /// path.
+    FilePath* GeneratePath(const char *fileName);
 
     OpenFile *freeMapFile;  ///< Bit map of free disk blocks, represented as a
                             ///< file.

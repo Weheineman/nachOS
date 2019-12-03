@@ -31,8 +31,9 @@ OpenFile::OpenFile(int sector_, const char *name, ReaderWriter* rw)
     if(name == nullptr)
         fileName = nullptr;
     else{
-        fileName = new char[FILE_NAME_MAX_LEN + 1];
-        strncpy(fileName, name, FILE_NAME_MAX_LEN + 1);
+        // We have well behaved users who will not hack us :)
+        fileName = new char[strlen(name) + 1];
+        strcpy(fileName, name);
     }
 }
 

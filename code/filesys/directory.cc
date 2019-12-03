@@ -41,7 +41,6 @@ Directory::Directory(int _sector)
 /// De-allocate directory data structure.
 Directory::~Directory()
 {
-    // GUIDIOS: FIX FIX FIX
     FreeList();
 }
 
@@ -87,17 +86,14 @@ Directory::WriteBack()
 ///
 /// * `path` is the file path to look up.
 int
-Directory::Find(const char *pathString)
+Directory::Find(FilePath *path)
 {
-    ASSERT(pathString != nullptr);
+    ASSERT(path != nullptr);
 
-    FilePath *path = currentThread -> GetPath();
-    path -> Merge(pathString);
     AcquireRead();
     int result = LockedFind(path);
     ReturnToRoot();
 
-    delete path;
     return result;
 }
 
@@ -107,17 +103,14 @@ Directory::Find(const char *pathString)
 ///
 /// * `path` is the file path to look up.
 int
-Directory::FindDirectory(const char *pathString)
+Directory::FindDirectory(FilePath *path)
 {
-    ASSERT(pathString != nullptr);
+    ASSERT(path != nullptr);
 
-    FilePath *path = currentThread -> GetPath();
-    path -> Merge(pathString);
     AcquireRead();
     int result = LockedFindDirectory(path);
     ReturnToRoot();
 
-    delete path;
     return result;
 }
 
@@ -128,12 +121,9 @@ Directory::FindDirectory(const char *pathString)
 /// * `path` is the path of the file being added.
 /// * `newSector` is the disk sector containing the added file's header.
 bool
-Directory::Add(const char *pathString, int newSector, bool isDirectory)
+Directory::Add(FilePath *path, int newSector, bool isDirectory)
 {
-    ASSERT(pathString != nullptr);
-
-    FilePath *path = currentThread -> GetPath();
-    path -> Merge(pathString);
+    ASSERT(path != nullptr);
 
     if(path -> IsBottomLevel())
         AcquireWrite();
@@ -144,7 +134,6 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
 
     ReturnToRoot();
 
-    delete path;
     return result;
 }
 
@@ -153,15 +142,9 @@ Directory::Add(const char *pathString, int newSector, bool isDirectory)
 ///
 /// * `path` is the file path to be removed.
 bool
-Directory::Remove(const char *pathString)
+Directory::Remove(FilePath *path)
 {
-    ASSERT(pathString != nullptr);
-
-	/// GUIDIOS: Sacar esto, por el amor de Dios.
-    DEBUG('f', "Voy a nismanear %s\n", pathString);
-
-    FilePath *path = currentThread -> GetPath();
-    path -> Merge(pathString);
+    ASSERT(path != nullptr);
 
     if(path -> IsBottomLevel())
         AcquireWrite();
@@ -171,8 +154,6 @@ Directory::Remove(const char *pathString)
     bool result = LockedRemove(path);
     ReturnToRoot();
 
-    delete path;
-    DEBUG('f', "!!!!!!!!!!!!!!!!! remove dio %d\n", result);
     return result;
 }
 

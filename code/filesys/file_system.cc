@@ -181,17 +181,22 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
 
     Directory  *directory;
     FileHeader *header;
+    FilePath   *path;
     int         sector;
     bool        success;
 
-    // GUIDIOS:CHANCHADA
+    // A directory is initially empty, so the only thing that has to be stored
+    // is the number of entries (zero), which is an unsigned.
     if(isDirectory)
         initialSize = sizeof(unsigned);
 
     DEBUG('f', "Creating file %s, size %u\n", name, initialSize);
 
+    // Load the directory from disk.
     directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
+
+    path = GeneratePath(name);
 
     // Redundant because AcquireFreeMap already sets the value of freeMap, but
     // consistent with the use of freeMap outside of FileSystem.
@@ -205,7 +210,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
         success = false; // No space in disk.
     else{
         header->WriteBack(sector);
-        if(not directory->Add(name, sector, isDirectory)){
+        if(not directory->Add(path, sector, isDirectory)){
             success = false;
             header -> Deallocate(freeMap);
         }else{
@@ -216,6 +221,7 @@ FileSystem::Create(const char *name, unsigned initialSize, bool isDirectory)
 
     ReleaseFreeMap(freeMap);
     delete header;
+    delete path;
     delete directory;
     return success;
 }
@@ -234,18 +240,24 @@ FileSystem::Open(const char *name)
 
     Directory *directory = new Directory(DIRECTORY_SECTOR);
     OpenFile  *openFile = nullptr;
+    FilePath  *path;
+    char      *pathString;
     int        sector;
 
-    directory->FetchFrom();
+    directory -> FetchFrom();
+    path = GeneratePath(name);
+    pathString = path -> ToString();
 
-    sector = directory->Find(name);
+    sector = directory->Find(path);
     if (sector >= 0){
-        ReaderWriter* newFileRW = openFileList -> AddOpenFile(name);
+        ReaderWriter* newFileRW = openFileList -> AddOpenFile(pathString);
         if(newFileRW != nullptr)
-            openFile = new OpenFile(sector, name, newFileRW);  // `name` was found in directory.
+            openFile = new OpenFile(sector, pathString, newFileRW);  // `name` was found in directory.
     }
 
     delete directory;
+    delete path;
+    delete pathString;
     return openFile;  // Return null if not found.
 }
 
@@ -267,15 +279,20 @@ FileSystem::Remove(const char *name)
     ASSERT(name != nullptr);
 
     bool result = true;
+    FilePath *path = GeneratePath(name);
+    char *pathString = path -> ToString();
     openFileList -> AcquireListLock();
 
     // If the file is open, we set its pendingRemove flag.
     // If not, we search for it in the file system and remove it.
-    if(not openFileList -> SetUpRemoval(name))
+    if(not openFileList -> SetUpRemoval(pathString))
         // Stop other processes from opening the file that will be deleted.
-        result = DeleteFromDisk(name);
+        result = DeleteFromDisk(pathString);
 
     openFileList -> ReleaseListLock();
+
+    delete path;
+    delete pathString;
     return result;
 }
 
@@ -283,12 +300,15 @@ bool
 FileSystem::DeleteFromDisk(const char *name){
     Directory  *directory;
     FileHeader *fileHeader;
+    FilePath   *path;
     int         sector;
 
     directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
 
-    sector = directory->Find(name);
+    path = new FilePath(name);
+
+    sector = directory->Find(path);
     if (sector == -1 or sector == DIRECTORY_SECTOR) {
        delete directory;
        return false;  // file not found
@@ -300,13 +320,17 @@ FileSystem::DeleteFromDisk(const char *name){
     // consistent with the use of freeMap outside of FileSystem.
     freeMap = AcquireFreeMap();
 
-    bool success = directory->Remove(name);
+    //Reset the FilePath
+    path -> Merge(name);
+
+    bool success = directory->Remove(path);
     if(success){
         fileHeader->Deallocate(freeMap);  // Remove data blocks.
         freeMap->Clear(sector);           // Remove header block.
     }
 
     ReleaseFreeMap(freeMap);              // Flush to disk.
+    delete path;
     delete fileHeader;
     delete directory;
     return success;
@@ -320,12 +344,14 @@ FileSystem::ChangeDirectory(const char *pathString){
 	Directory *directory = new Directory(DIRECTORY_SECTOR);
     directory -> FetchFrom();
 
-    FilePath *path = currentThread -> GetPath();
-    path -> Merge(pathString);
+    FilePath *path = GeneratePath(pathString);
+    DEBUG('f', "Checking if %s is valid.\n", path -> ToString());
 
     // Check if the new path is valid.
-    bool validPath = (directory -> FindDirectory(pathString) != -1);
+    bool validPath = (directory -> FindDirectory(path) != -1);
 
+    // Reset path to its former state.
+    path -> Merge(pathString);
     if(validPath)
 		currentThread -> SetPath(path);
 
@@ -339,9 +365,6 @@ FileSystem::List()
 {
     Directory *directory = new Directory(DIRECTORY_SECTOR);
     directory->FetchFrom();
-
-    // GUIDIOS: Hace falta que ls pueda tomar un argumento?
-    // Ahora solo muestra el directorio actual.
 
     directory->List();
     delete directory;
@@ -596,4 +619,16 @@ void
 FileSystem::CloseFile(const char *name)
 {
     openFileList -> CloseOpenFile(name);
+}
+
+/// Generates a path based on the given string.
+/// If the fileName is an absolute path, a FilePath is generated with it.
+/// If it is a relative path, it is first merged with the current thread's
+/// path.
+FilePath*
+FileSystem::GeneratePath(const char *fileName)
+{
+    FilePath *path = currentThread -> GetPath();
+    path -> Merge(fileName);
+    return path;
 }

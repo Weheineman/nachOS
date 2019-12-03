@@ -187,6 +187,14 @@ main(int argc, char **argv)
             ASSERT(argc > 1);
             fileSystem->Remove(*(argv + 1));
             argCount = 2;
+        } else if (!strcmp(*argv, "-cd")) {  // Change current directory.
+            ASSERT(argc > 1);                // (all threads start at root)
+            fileSystem->ChangeDirectory(*(argv + 1));
+            argCount = 2;
+        } else if (!strcmp(*argv, "-mkdir")) {  // Create directory.
+            ASSERT(argc > 1);
+            fileSystem->Create(*(argv + 1), 0, true);
+            argCount = 2;
         } else if (!strcmp(*argv, "-ls")) {  // List Nachos directory.
             fileSystem->List();
             printf("\n");
@@ -199,8 +207,8 @@ main(int argc, char **argv)
 			FileSystemTestHandler();
 		  else if (!strcmp(*argv, "-dt"))    // Directory concurrency tests.
 			DirectoryTestHandler();
-		
-			
+
+
 
 #endif
 #ifdef NETWORK

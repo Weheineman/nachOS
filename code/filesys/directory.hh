@@ -39,20 +39,20 @@ public:
     void WriteBack();
 
     /// Find the sector number of the `FileHeader` for file in the given path.
-    int Find(const char *path);
+    int Find(FilePath *path);
 
     /// Find the sector number of the `FileHeader` for the directory in the
     /// given path. Returns -1 if the file does not exist or if it isn't a
     /// directory.
-    int FindDirectory(const char *path);
+    int FindDirectory(FilePath *path);
 
     /// Add a file or directory into the directory at the given path.
     /// If isDirectory is true, a directory is added.
     /// Otherwise, a non directory file is added.
-    bool Add(const char *path, int newSector, bool isDirectory);
+    bool Add(FilePath *path, int newSector, bool isDirectory);
 
     /// Remove a file from the directory.
-    bool Remove(const char *path);
+    bool Remove(FilePath *path);
 
     /// Print the names of all the files in the current directory.
     void List();

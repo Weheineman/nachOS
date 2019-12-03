@@ -45,13 +45,13 @@ class OpenFileList {
         // If the file is not open, it just returns false.
         // Assumes the fileListLock is already taken by the file system.
         bool SetUpRemoval(const char *fileName);
-        
+
         // Allows the file system to acquire the list's lock.
         void AcquireListLock();
-        
+
         // Allows the file system to release the list's lock.
         void ReleaseListLock();
-        
+
 
     private:
         FileMetadataNode* FindOpenFile(const char *fileName);
@@ -61,7 +61,7 @@ class OpenFileList {
 
         Lock *listLock;
         FileMetadataNode *first, *last;
-        
+
         FileSystem* myFileSystem;
 };
 
