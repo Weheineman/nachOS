@@ -1,0 +1,97 @@
+Realizamos los ejercicios en un orden distinto al planteado por la guía, pues había
+algunas tareas que nos resultaban complejas de abordar desde un principio sin tener
+un entendimiento completo del funcionamiento de ciertas partes del sistema. 
+Es por esto que tomamos un enfoque bottom up, yendo desde ejercicios que requirieran
+cambios más puntuales hacia los que implicaran replantearnos modificaciones en el 
+diseño general del file system. A continuación explicamos los cambios hechos 
+para resolver cada problema en orden de realización.
+
+
+Ejercicio 2:
+En el sistema original, cada FileHeader referencia a una tabla de entradas
+de los sectores donde se almacena el contenido del archivo.  Para permitir 
+tamaños mayores al máximo preestablecido, extendimos la clase FileHeader para 
+que ahora contenga un vector de FileHeader*. 
+Un archivo que no supere el tamaño máximo previamente alcanzable se comportará 
+de la misma forma que ya se venía utilizando. Sin embargo, si se requiere 
+utilizar doble indirección para lograr un tamaño mayor, el vector agregado
+guardará referencias a tablas del primer nivel, cada una de las cuales
+almacenará los sectores del contenido de una porción del archivo.
+Este enfoque recursivo podría ser extendido para soportar múltiples niveles
+de indirección, logrando así incrementar el tamaño máximo de archivo aún más.
+No obstante, vimos que con dos niveles resultaba suficiente para el tamaño pedido, 
+con lo que estructuramos el código para sólo soportar eso.
+Para testear este ejercicio nos valimos de la bandera -tf que ya venía integrada
+en el file system básico, utilizando distintos tamaños de archivo para verificar
+el correcto funcionamiento de la simple y doble indirección.
+
+
+Ejercicio 3:
+Modificamos de nuevo FileHeader para permitir que se extienda el tamaño de un archivo.
+Así, si una escritura excediera el tamaño actual, revisamos si es necesario
+reservar más sectores para alojar el nuevo contenido. 
+La mayor complicación que tuvimos durante la resolución involucró el pasaje
+de simple a doble indirección, donde la tabla simple que se venía usando 
+ahora debía ser reemplazada por una doble que referenciara a dicha simple
+como primer entrada. Más allá de eso, la implementación no requirió muchos más cambios que
+agregar el método FileHeader::Extend y llamarlo en caso de ser necesario desde OpenFile::WriteAt.
+Para testear también utilizamos la bandera -tf, ahora haciendo que el archivo a escribir
+arranque con tamaños menores al final y verificando que la extensión se hiciera correctamente.
+
+
+Ejercicio 1:
+Para este ejercicio y el siguiente, implementamos una clase ReaderWriter, la cual
+provee un acceso exclusivo entre múltiples threads a alguna región crítica distinguiendo
+entre los que quieren realizar tareas de lectura y escritura. Esto nos resultó útil 
+para accesos concurrentes en múltiples partes del sistema donde ciertas acciones
+destructivas debían tener acceso privilegiado pero no queríamos que múltiples lecturas
+en paralelo se bloquearan entre sí.
+A nivel de FileSystem, implementamos una lista de archivos abiertos desde la que se 
+centralizan los controles de apertura, cerrado y eliminación de los mismos. Cuando se abre
+un archivo, se crea un nodo que guarda información relevante al mismo, como un contador de
+instancias abiertas y una bandera que informa si fue llamado a eliminar mientras algún hilo
+lo tiene abierto. Una vez que todos los usuarios cerraron el archivo, el mismo se elimina de
+la lista. El llamar a eliminar un archivo que esté actualmente en uso activará la bandera del
+nodo correspondiente, lo cual evitará futuras aperturas y hará que se elimine del disco una
+vez haya sido cerrado por todos sus usuarios actuales. Como el acceso a la lista también es
+una región crítica, la misma posee un Lock para garantizar acceso exclusivo.
+Los OpenFile ahora también guardan una referencia al ReaderWriter del archivo correspondiente,
+al cual deberán llamar para pedir el tipo de acceso que necesiten cuando quieran realizar algún
+tipo de operación sobre los contenidos.
+Con la combinación de ambas estructuras se logran cubrir los requerimientos pedidos en el enunciado.
+Definimos también un conjunto de funciones de prueba exhaustivas para los distintos comportamientos 
+que esperamos que tenga el sistema. Las mismas pueden llamarse usando la bandera -ct y se encuentran
+junto con breves descripciones de sus funcionalidades en code/filesys/FileSystemTests/fs_test_Cases.cc .
+
+
+Ejercicio 5:
+Definimos una clase FilePath que representa el path global de un archivo o thread e implementa
+varias operaciones útiles, tales como la fusión de un path global con un path relativo. Gracias a ello,
+las llamadas al file system siguen tomando un char* como nombre del archivo objetivo, pero internamente
+operamos con la combinación del mismo con el path del thread actual que ejecute dicha función. Las
+operaciones soportan tanto el uso de un path global (que comience con "/") como el de uno relativo a la
+posición actual del thread, además de poder utilizar los atajos de directorio "./" y "../".
+Cada Thread ahora cuenta con un path interno que puede ser accedido y modificado por el file system mediante
+Thread::GetPath() y Thread::SetPath(). También definimos FileSystem::ChangeDirectory() para poder mover al thread actual.
+Para soportar jerarquía en los directorios, extendimos la clase Directory para que conozca la cantidad de 
+archivos que posee, junto con una lista de DirectoryEntry* que almacenan los sectores y nombres de
+cada archivo y directorio contenidos en él.
+El control del acceso concurrente a la jerarquía de archivos se centraliza en un DirectoryLockManager gestionado
+por el file system, donde se mantiene un único lock por cada directorio que se esté utilizando en un momento dado.
+Cada directorio se encuentra referenciado de manera única por el sector donde está alojado. 
+Cuando se necesita recorrer alguna parte de la estructura, se crea un Directory que realizará la búsqueda 
+desde el root hasta la dirección especificada por un path. Para desplazarse, el objeto realiza el siguiente procedimiento:
+ - Pide el Lock del directorio actual.
+ - Busca el objetivo actual dentro de los archivos del mismo.
+ - En caso de encontrarlo y necesitar moverse a un subdirectorio, pide su lock.
+ - Libera el lock del directorio actual.
+ - Actualiza su información para reflejar la del nuevo directorio actual.
+ - Repite el procedimiento, continuando la búsqueda en un nivel mayor de profundidad.
+De esta forma, sólo se mantiene en memoria un único lock por cada proceso que esté recorriendo el árbol de directorios.
+Tomamos la decisión de sólo poder eliminar directorios vacíos. Si un thread se encuentra en un directorio que es eliminado,
+no podrá realizar operaciones de creación o búsqueda hacia abajo de su dirección actual, pero podrá salir a una dirección válida
+llamando a ChangeDirectory.
+También implementamos las banderas -cd y -mkdir para poder utilizarlas directamente desde la terminal.
+Para este ejercicio definimos un conjunto de casos de prueba que revisan todas las funcionalidades del sistema jerárquico
+junto con el control del acceso concurrente al árbol por múltiples hilos. Pueden llamarse usando la bandera -dt y se encuentran 
+en el archivo code/filesys/FileSystemTests/fs_dir_test_Cases.cc .
